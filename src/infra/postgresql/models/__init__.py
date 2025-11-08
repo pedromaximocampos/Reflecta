@@ -1,0 +1,6 @@
+from src.infra.postgresql.configs.base import Base
+from datetime import datetime
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship
+from sqlalchemy import BigInteger, String, Boolean, TIMESTAMP, func, ForeignKey
+from src.infra.postgresql.models.auth_credentials_model import AuthCredentialsModel
+from src.infra.postgresql.models.users_model import UserModel

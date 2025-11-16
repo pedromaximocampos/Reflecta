@@ -1,11 +1,10 @@
 from src.infra.postgresql.models import *
-from src.shared.ulid_generator import ULIDGenerator
 
 class AuthSessionsModel(Base):
 
     __tablename__ = 'auth_sessions'
 
-    id: Mapped[str] = mapped_column(String(26), primary_key=True, default=ULIDGenerator.generate_ulid())
+    id: Mapped[str] = mapped_column(String(26), primary_key=True,nullable=False)
     user_id: Mapped[int] = mapped_column(String(26), ForeignKey("users.id",  ondelete="CASCADE") , nullable=False, index=True)
 
     issued_at: Mapped[datetime] = mapped_column(

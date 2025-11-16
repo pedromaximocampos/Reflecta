@@ -1,13 +1,14 @@
 from src.infra.postgresql.models import *
-from src.shared.ulid_generator import ULIDGenerator
-
+from datetime import datetime, date
 
 class UserModel(Base):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(26), primary_key=True, index=True, default=ULIDGenerator.generate_ulid())
+    id: Mapped[str] = mapped_column(String(26), primary_key=True, index=True, nullable=False)
     username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), unique=True, index=True, nullable=False)
+    date_of_birth: Mapped[date] = mapped_column(DATE, nullable=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=func.now())
     last_login_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=True)

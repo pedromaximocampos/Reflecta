@@ -4,3 +4,4 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship
 from sqlalchemy import BigInteger, String, Boolean, TIMESTAMP, func, ForeignKey
 from src.infra.postgresql.models.auth_credentials_model import AuthCredentialsModel
 from src.infra.postgresql.models.users_model import UserModel
+from src.infra.postgresql.models.auth_sessions_model import AuthSessionsModel

@@ -1,6 +1,6 @@
 import uuid
 
-from src.domain.ports.system.ulid_generator import IULIDGenerator
+from src.domain.ports.system.iulid_generator import IULIDGenerator
 import ulid
 
 

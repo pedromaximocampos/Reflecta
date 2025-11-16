@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime, date
 from typing import Optional
-from src.domain.ports.system.ulid_generator import IULIDGenerator
-from src.domain.ports.system.clock import IClock
+from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.domain.ports.system.iclock import IClock
 
 
 @dataclass(slots=True)

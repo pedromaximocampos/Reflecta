@@ -1,4 +1,4 @@
-from src.domain.ports.system.clock import IClock
+from src.domain.ports.system.iclock import IClock
 from datetime import datetime, timezone
 
 

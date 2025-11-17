@@ -1,30 +1,72 @@
 from dataclasses import dataclass
 from datetime import datetime, date
 from typing import Optional
-from src.domain.ports.system.iulid_generator import IULIDGenerator
-from src.domain.ports.system.iclock import IClock
+
+from src.domain.ports.security.ipassword_hasher import IPasswordHasher
+from src.domain.value_objects.password_algorithm import PasswordAlgorithm
+from src.domain.value_objects.password_hash import PasswordHash
 
 
-@dataclass(slots=True)
+@dataclass(eq=False, slots=True)
+class AuthCredentials:
+    user_id: str
+    password_hash: str
+    password_algorithm: PasswordAlgorithm
+    password_version: int
+    created_at: datetime
+    last_password_change: Optional[datetime] = None
+
+
+@dataclass(eq=False, slots=True)
 class User:
     id: str
     email: str
     username: str
     name: str
+    surname: str
     date_of_birth: date
     created_at: datetime
+    auth_credentials: AuthCredentials
     avatar_url: Optional[str] = None
     last_login_at: Optional[datetime] = None
 
-    @classmethod
-    def create(cls, id_generator: IULIDGenerator, clock: IClock, email: str,
-               username: str, name: str, date_of_birth: date, avatar_url: Optional[str] = None) -> 'User':
-        return cls(
-            id=id_generator.generate_ulid(),
-            email=email,
-            username=username,
-            name=name,
-            date_of_birth=date_of_birth,
-            created_at=clock.now(),
-            avatar_url=avatar_url
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, User):
+            return False
+        return self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __repr__(self) -> str:
+        return f"User(id={self.id}, username={self.username}, email={self.email})"
+
+    def update_last_login(self, last_login_at: datetime) -> None:
+        self.last_login_at = last_login_at
+
+    def update_avatar_url(self, avatar_url: str) -> None:
+        self.avatar_url = avatar_url
+
+    def set_credentials(self, credentials: AuthCredentials) -> None:
+        self.auth_credentials = credentials
+
+    def verify_password(self, plain_password: str, hasher: IPasswordHasher) -> bool:
+        if self.auth_credentials is None:
+            return False
+
+        ph = PasswordHash(
+            algorithm=self.auth_credentials.password_algorithm,
+            hash=self.auth_credentials.password_hash,
+            version=self.auth_credentials.password_version,
         )
+
+        return hasher.verify(plain_password, ph)
+
+    def update_last_password_change(self, change_time: datetime) -> None:
+        self.auth_credentials.last_password_change = change_time
+
+    def update_auth_credentials(self, new_credentials: PasswordHash, updated_at: datetime) -> None:
+        self.auth_credentials.password_hash = new_credentials.hash
+        self.auth_credentials.password_algorithm = new_credentials.algorithm
+        self.auth_credentials.password_version = new_credentials.version
+        self.auth_credentials.last_password_change = updated_at

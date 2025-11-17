@@ -1,5 +1,8 @@
 from src.infra.postgresql.models import *
-
+from src.infra.postgresql.configs.base import Base
+from datetime import datetime
+from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import BigInteger, String, TIMESTAMP, func, ForeignKey
 
 
 class AuthCredentialsModel(Base):

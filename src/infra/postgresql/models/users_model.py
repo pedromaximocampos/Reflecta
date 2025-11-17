@@ -1,5 +1,9 @@
 from src.infra.postgresql.models import *
-from datetime import datetime, date
+from datetime import date, datetime
+from src.infra.postgresql.configs.base import Base
+from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import String, TIMESTAMP, func, DATE
+
 
 class UserModel(Base):
     __tablename__ = "users"
@@ -8,6 +12,7 @@ class UserModel(Base):
     username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(200), unique=True, index=True, nullable=False)
+    surname: Mapped[str] = mapped_column(String(200), unique=False, index=False, nullable=True)
     date_of_birth: Mapped[date] = mapped_column(DATE, nullable=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=func.now())
     last_login_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)

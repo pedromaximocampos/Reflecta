@@ -10,7 +10,7 @@ class AuthSessionsModel(Base):
     __tablename__ = 'auth_sessions'
 
     id: Mapped[str] = mapped_column(String(26), primary_key=True,nullable=False)
-    user_id: Mapped[int] = mapped_column(String(26), ForeignKey("users.id",  ondelete="CASCADE") , nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(26), ForeignKey("users.id",  ondelete="CASCADE") , nullable=False, index=True)
 
     issued_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

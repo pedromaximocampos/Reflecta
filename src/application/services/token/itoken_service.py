@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-
-
+from datetime import datetime
+from .dto import GeneratedTokenDTO
 
 class ITokenService(ABC):
     """Contrato do serviço de tokens."""
 
     @abstractmethod
-    def generate_token(self, user_id: str, expires_in_seconds: int) -> str:
+    def generate_token(self, user_id: str, expires_in_seconds: int, now: datetime) -> GeneratedTokenDTO:
         """Gera um token para o usuário com tempo de expiração."""
         raise NotImplementedError
 

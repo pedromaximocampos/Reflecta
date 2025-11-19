@@ -1,2 +1,2 @@
 from .dto import LoginInput, LoginOutput
-from .interface import ILoginUseCase
+from .ilogin_use_case import ILoginUseCase

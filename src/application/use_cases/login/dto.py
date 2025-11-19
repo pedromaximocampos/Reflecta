@@ -1,4 +1,4 @@
-
+from typing import Optional
 from dataclasses import dataclass
 
 @dataclass(slots=True)
@@ -15,3 +15,4 @@ class LoginOutput:
     email: str
     access_token: str
     refresh_token: str
+    avatar_url: Optional[str] = None

@@ -8,7 +8,6 @@ from typing import Optional
 
 class UserRepository(IUserRepository):
 
-
     def __init__(self, db: DBConnectionHandler, user_mapper: UserMapper):
         self._db = db
         self._user_mapper = user_mapper
@@ -34,29 +33,13 @@ class UserRepository(IUserRepository):
 
             return user_entity
 
-    async def insert(self, user):
-        pass
-
-
-    async def add(self, user: User) -> None: ...
-
-
     async def update(self, user: User) -> None:
        pass
 
-
-    async def update_login(self, user:User) -> None:
+    async def update_auth_credentials(self, user: User) -> None:
         creds = user.auth_credentials
 
         async with self._db.session() as session:
-            user_query = (
-                update(UserModel)
-                .where(UserModel.id == user.id)
-                .values(last_login_at=user.last_login_at)
-            )
-
-            await session.execute(user_query)
-
             auth_query = (
                 update(AuthCredentialsModel)
                 .where(AuthCredentialsModel.user_id == creds.user_id)
@@ -67,5 +50,15 @@ class UserRepository(IUserRepository):
                     last_password_change=creds.last_password_change
                 )
             )
-
             await session.execute(auth_query)
+
+    async def update_last_login_at(self, user:User) -> None:
+
+        async with self._db.session() as session:
+            user_query = (
+                update(UserModel)
+                .where(UserModel.id == user.id)
+                .values(last_login_at=user.last_login_at)
+            )
+
+            await session.execute(user_query)

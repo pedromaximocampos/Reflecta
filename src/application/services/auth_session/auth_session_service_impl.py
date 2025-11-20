@@ -42,6 +42,11 @@ class SessionServiceImpl(IAuthSessionService):
             refresh_token=refresh_token.token,
         )
 
+    async def validate_session(self, refresh_jwt_token: str) -> AuthSessionResultDTO:
+        pass
+
+
+
     async def _check_sessions_limit(self, user_id: str) -> None:
         user_auth_sessions: list[AuthSession] = await self._session_repository.get_sessions_by_user_id(user_id)
 
@@ -65,5 +70,3 @@ class SessionServiceImpl(IAuthSessionService):
 
         return access_token, refresh_token
 
-    async def validate_session(self, session_id: str) -> AuthSessionResultDTO:
-        pass

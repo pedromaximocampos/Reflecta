@@ -11,6 +11,7 @@ class AuthSessionsMapper:
             issued_at=auth_session.issued_at,
             expires_at=auth_session.expires_at,
             refresh_jti_hash=auth_session.refresh_jti_hash,
+            updated_at=auth_session.updated_at,
             revoked_at=auth_session.revoked_at,
         )
 
@@ -23,5 +24,6 @@ class AuthSessionsMapper:
             issued_at=auth_session_model.issued_at,
             expires_at=auth_session_model.expires_at,
             refresh_jti_hash=auth_session_model.refresh_jti_hash,
+            updated_at=auth_session_model.updated_at,
             revoked_at=auth_session_model.revoked_at,
         )

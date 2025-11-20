@@ -9,6 +9,7 @@ class AuthSession:
     issued_at: datetime
     expires_at: datetime
     refresh_jti_hash: str
+    updated_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
 
 

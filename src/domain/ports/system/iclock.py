@@ -8,9 +8,9 @@ class IClock(ABC):
         pass
 
     @abstractmethod
-    def access_token_expiration(self) -> int:
+    def access_token_expiration_in_seconds(self) -> int:
         pass
 
     @abstractmethod
-    def refresh_token_expiration(self) -> int:
+    def refresh_token_expiration_in_seconds(self) -> int:
         pass

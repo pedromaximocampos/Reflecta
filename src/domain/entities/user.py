@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime, date
 from typing import Optional
-
+from src.domain.value_objects.email import Email
+from src.domain.value_objects.user_id import UserId
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
 from src.domain.value_objects.password_hash import PasswordHash
@@ -9,18 +10,16 @@ from src.domain.value_objects.password_hash import PasswordHash
 
 @dataclass(eq=False, slots=True)
 class AuthCredentials:
-    user_id: str
-    password_hash: str
-    password_algorithm: PasswordAlgorithm
-    password_version: int
+    user_id: UserId
+    password: PasswordHash
     created_at: datetime
     last_password_change: Optional[datetime] = None
 
 
 @dataclass(eq=False, slots=True)
 class User:
-    id: str
-    email: str
+    id: UserId
+    email: Email
     username: str
     name: str
     surname: str
@@ -55,9 +54,9 @@ class User:
             return False
 
         ph = PasswordHash(
-            algorithm=self.auth_credentials.password_algorithm,
-            hash=self.auth_credentials.password_hash,
-            version=self.auth_credentials.password_version,
+            algorithm=self.auth_credentials.password.algorithm,
+            hash=self.auth_credentials.password.hash,
+            version=self.auth_credentials.password.version,
         )
 
         return hasher.verify(plain_password, ph)
@@ -66,7 +65,5 @@ class User:
         self.auth_credentials.last_password_change = change_time
 
     def update_auth_credentials(self, new_credentials: PasswordHash, updated_at: datetime) -> None:
-        self.auth_credentials.password_hash = new_credentials.hash
-        self.auth_credentials.password_algorithm = new_credentials.algorithm
-        self.auth_credentials.password_version = new_credentials.version
+        self.auth_credentials.password = new_credentials
         self.auth_credentials.last_password_change = updated_at

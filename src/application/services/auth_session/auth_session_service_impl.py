@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from src.application.services.token.dto import GeneratedTokenDTO
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.domain.value_objects.token_jti import TokenJti
+from src.domain.value_objects.user_id import UserId
 
 
 class SessionServiceImpl(IAuthSessionService):
@@ -29,12 +31,12 @@ class SessionServiceImpl(IAuthSessionService):
 
         access_token, refresh_token = self._generate_tokens_jwts(user, now)
 
-        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(refresh_token.jti)
+        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(str(refresh_token.jti))
 
         auth_session: AuthSession = AuthSession(
             id=self._ulid_generator.generate_ulid(),
             user_id=user.id,
-            refresh_jti_hash=hashed_jti_refresh,
+            refresh_jti_hash=TokenJti(hashed_jti_refresh),
             issued_at=now,
             expires_at=refresh_token.expires_at,
         )
@@ -52,7 +54,7 @@ class SessionServiceImpl(IAuthSessionService):
 
 
 
-    async def _check_sessions_limit(self, user_id: str) -> None:
+    async def _check_sessions_limit(self, user_id: UserId) -> None:
         user_auth_sessions: list[AuthSession] = await self._session_repository.get_sessions_by_user_id(user_id)
 
         if len(user_auth_sessions) >= self._USER_SESSIONS_LIMIT:
@@ -61,8 +63,8 @@ class SessionServiceImpl(IAuthSessionService):
             await self._session_repository.revoke_session(oldest_session)
 
     def _generate_tokens_jwts(self, user: User, now: datetime) -> tuple[GeneratedTokenDTO, GeneratedTokenDTO]:
-        access_token_expiration = self._clock.access_token_expiration()
-        refresh_token_expiration = self._clock.refresh_token_expiration()
+        access_token_expiration = self._clock.access_token_expiration_in_seconds()
+        refresh_token_expiration = self._clock.refresh_token_expiration_in_seconds()
 
         access_token: GeneratedTokenDTO = self._token_service.generate_token(user_id=user.id,
                                                                expires_in_seconds=access_token_expiration,

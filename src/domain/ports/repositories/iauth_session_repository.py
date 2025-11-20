@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from src.domain.entities.auth_session import AuthSession
+from src.domain.value_objects.user_id import UserId
+
 
 class IAuthSessionRepository(ABC):
 
     @abstractmethod
-    async def get_sessions_by_user_id(self, user_id: str) -> list[AuthSession]:
+    async def get_sessions_by_user_id(self, user_id: UserId) -> list[AuthSession]:
         """Retorna todas as sessões ativas do usuário. Ordenadas de maneira crescente pela data de criação."""
         raise NotImplementedError
 

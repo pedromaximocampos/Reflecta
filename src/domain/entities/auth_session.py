@@ -2,13 +2,17 @@ from dataclasses import dataclass
 from datetime import datetime,timezone
 from typing import Optional
 
+from src.domain.value_objects.token_jti import TokenJti
+from src.domain.value_objects.user_id import UserId
+
+
 @dataclass(eq=False, slots=True)
 class AuthSession:
     id: str
-    user_id: str
+    user_id: UserId
     issued_at: datetime
     expires_at: datetime
-    refresh_jti_hash: str
+    refresh_jti_hash: TokenJti
     updated_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
 

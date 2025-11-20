@@ -3,6 +3,7 @@ from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.entities.user import User, AuthCredentials
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.ports.system.iclock import IClock
+from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
 from src.domain.exceptions.api_types import NotFoundError, AuthError
 from src.application.services.auth_session import *
@@ -50,12 +51,12 @@ class LoginUseCaseImpl(ILoginUseCase):
     @staticmethod
     def _create_password_hash_v_o(credentials: AuthCredentials) -> PasswordHash:
         return PasswordHash(
-            algorithm=credentials.password_algorithm,
-            hash=credentials.password_hash,
-            version=credentials.password_version,
+            algorithm=credentials.password.algorithm,
+            hash=credentials.password.hash,
+            version=credentials.password.version,
         )
 
-    async def _get_credentials_by_email(self, email: str) -> User:
+    async def _get_credentials_by_email(self, email: Email) -> User:
         user: User = await self._user_repository.find_by_email(email)
         if not user:
             raise NotFoundError("User not Found.")

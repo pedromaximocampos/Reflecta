@@ -1,6 +1,6 @@
 import uuid
 import jwt
-from hashlib import sha256
+
 from datetime import datetime, timedelta
 from typing import Any
 from src.application.services.token.dto import GeneratedTokenDTO
@@ -56,7 +56,3 @@ class TokenServiceImpl(ITokenService):
     @staticmethod
     def _generate_jti() -> str:
         return str(uuid.uuid4())
-
-    @staticmethod
-    def hash_jti(jti: str) -> str:
-        return sha256(jti.encode()).hexdigest()

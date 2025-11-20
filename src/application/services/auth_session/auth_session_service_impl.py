@@ -6,6 +6,7 @@ from src.domain.ports.system.iclock import IClock
 from src.domain.entities.auth_session import AuthSession
 from datetime import datetime, timezone
 from src.application.services.token.dto import GeneratedTokenDTO
+from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
 
 
@@ -13,11 +14,13 @@ class SessionServiceImpl(IAuthSessionService):
 
     _USER_SESSIONS_LIMIT = 5
 
-    def __init__(self, session_repository: IAuthSessionRepository,clock: IClock, token_service: ITokenService, ulid_generator: IULIDGenerator) -> None:
+    def __init__(self, session_repository: IAuthSessionRepository,clock: IClock, token_service: ITokenService,
+                 ulid_generator: IULIDGenerator, jti_hasher_generator: IHasherGenerator) -> None:
         self._session_repository = session_repository
         self._token_service = token_service
         self._clock = clock
         self._ulid_generator = ulid_generator
+        self._jti_hasher_generator = jti_hasher_generator
 
     async def create_session(self, user: User) -> AuthSessionResultDTO:
         await self._check_sessions_limit(user.id)
@@ -26,10 +29,12 @@ class SessionServiceImpl(IAuthSessionService):
 
         access_token, refresh_token = self._generate_tokens_jwts(user, now)
 
+        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(refresh_token.jti)
+
         auth_session: AuthSession = AuthSession(
             id=self._ulid_generator.generate_ulid(),
             user_id=user.id,
-            refresh_jti_hash=refresh_token.jti,
+            refresh_jti_hash=hashed_jti_refresh,
             issued_at=now,
             expires_at=refresh_token.expires_at,
         )
@@ -51,7 +56,6 @@ class SessionServiceImpl(IAuthSessionService):
         user_auth_sessions: list[AuthSession] = await self._session_repository.get_sessions_by_user_id(user_id)
 
         if len(user_auth_sessions) >= self._USER_SESSIONS_LIMIT:
-            user_auth_sessions.sort(key=lambda auth_session: auth_session.issued_at)
             oldest_session: AuthSession = user_auth_sessions[0]
             oldest_session.revoke(revoked_at=self._clock.now())
             await self._session_repository.revoke_session(oldest_session)

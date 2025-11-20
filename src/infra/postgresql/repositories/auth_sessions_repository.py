@@ -1,0 +1,55 @@
+from src.domain.entities.auth_session import AuthSession
+from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
+from src.domain.ports.system.iclock import IClock
+from src.infra.postgresql.connection import DBConnectionHandler
+from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
+from sqlalchemy import select
+from src.infra.postgresql.models.auth_sessions_model import AuthSessionsModel
+from typing import List
+
+
+class AuthSessionsRepository(IAuthSessionRepository):
+
+    def __init__(self, db: DBConnectionHandler, auth_session_mapper: AuthSessionsMapper, clock: IClock):
+        self._db = db
+        self._auth_session_mapper = auth_session_mapper
+        self._clock = clock
+
+
+    async def get_sessions_by_user_id(self, user_id: str) -> list[AuthSession]:
+        async with self._db.session() as session:
+            query = (
+                select(AuthSessionsModel)
+                .where(AuthSessionsModel.user_id == user_id,
+                       AuthSessionsModel.revoked_at.is_(None),
+                       AuthSessionsModel.expires_at > self._clock.now())
+
+            )
+            query = query.order_by(AuthSessionsModel.issued_at.asc())
+            result = await session.execute(query)
+            sessions_models: List[AuthSessionsModel] = result.scalars().all()
+
+            return [self._auth_session_mapper.to_entity(model) for model in sessions_models]
+
+    async def revoke_session(self, session_entity: AuthSession) -> None:
+        async with self._db.session() as db_sess:
+            model = await db_sess.get(AuthSessionsModel, session_entity.id)
+
+            if model is None:
+                return
+
+            model.revoked_at = session_entity.revoked_at
+
+        await db_sess.commit()
+
+
+    async def create_session(self, session_entity: AuthSession) -> AuthSession:
+        auth_session_model: AuthSessionsModel = self._auth_session_mapper.to_model(session_entity)
+
+        async with self._db.session() as session:
+            session.add(auth_session_model)
+            await session.commit()
+            await session.refresh(auth_session_model)
+
+        return self._auth_session_mapper.to_entity(auth_session_model)
+

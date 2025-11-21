@@ -1,13 +1,13 @@
+# src/domain/exceptions/api_types/bad_request_error.py
 
-class BadRequestError(Exception):
-    """Exception raised for bad requests.
+from src.domain.exceptions.domain_error import DomainError
 
-    Attributes:
-        message -- explanation of the error
-    """
 
-    def __init__(self, message="Bad request"):
-        super().__init__()
-        self.message = message
-        self.status_code = 400
-        self.name = "Bad Request"
+class BadRequestError(DomainError):
+    def __init__(self, message: str = "Bad request", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=400,
+            name="BadRequestError",
+            **kwargs,
+        )

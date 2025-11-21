@@ -1,15 +1,12 @@
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+from src.presentation.http_types.cookies import Cookie
 
 
-
-
+@dataclass
 class HttpResponse:
-    def __init__(self, status_code: int, body: dict, headers: dict = None):
-        self.status_code = status_code
-        self.body = body
-        self.headers = headers if headers is not None else {}
-
-    def to_dict(self):
-        return {
-            "status_code": self.status_code,
-            "body": self.body,
-        }
+    status_code: int
+    body: Any = None
+    headers: Dict[str, str] = field(default_factory=dict)
+    cookies: List[Cookie] = field(default_factory=list)

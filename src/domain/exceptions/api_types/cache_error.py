@@ -1,15 +1,13 @@
+# src/domain/exceptions/api_types/cache_error.py
+
+from src.domain.exceptions.domain_error import DomainError
 
 
-
-class CacheError(Exception):
-    """Exception raised for cache-related errors.
-
-    Attributes:
-        message -- explanation of the error
-    """
-
-    def __init__(self, message="Nao foi possivel conectar com a LBC"):
-        super().__init__()
-        self.message = message
-        self.status_code = 503
-        self.name = "Cache Error"
+class CacheError(DomainError):
+    def __init__(self, message: str = "Cache error", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=500,
+            name="CacheError",
+            **kwargs,
+        )

@@ -1,15 +1,13 @@
+# src/domain/exceptions/api_types/database_error.py
+
+from src.domain.exceptions.domain_error import DomainError
 
 
-
-class DatabaseError(Exception):
-    """Exception raised for database-related errors.
-
-    Attributes:
-        message -- explanation of the error
-    """
-
-    def __init__(self, message="Nao foi possivel conectar a LBC"):
-        super().__init__()
-        self.message = message
-        self.status_code = 503
-        self.name = "Database Error"
+class DatabaseError(DomainError):
+    def __init__(self, message: str = "Database error", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=500,
+            name="DatabaseError",
+            **kwargs,
+        )

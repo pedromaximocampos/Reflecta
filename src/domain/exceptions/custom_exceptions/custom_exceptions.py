@@ -1,7 +1,21 @@
+from src.domain.exceptions.domain_error import DomainError
 
 
-class UniqueViolation(Exception):
-    def __init__(self, field: str, value: str):
-        self.field = field
-        self.value = value
-        super().__init__(f"Unique constraint violated for {field} with value {value}")
+class BusinessRuleError(DomainError):
+    def __init__(self, message: str = "Business rule violated", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=400,
+            name="BusinessRuleError",
+            **kwargs,
+        )
+
+
+class OperationNotAllowedError(DomainError):
+    def __init__(self, message: str = "Operation not allowed", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=403,
+            name="OperationNotAllowedError",
+            **kwargs,
+        )

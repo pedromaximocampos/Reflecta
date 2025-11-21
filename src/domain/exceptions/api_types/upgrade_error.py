@@ -1,10 +1,13 @@
+# src/domain/exceptions/api_types/upgrade_error.py
+
+from src.domain.exceptions.domain_error import DomainError
 
 
-class UpgradeRequired(Exception):
-    """Exception raised when an upgrade is required."""
-
-    def __init__(self, message="E necessario uma atualizacao para acessar o gas monitor"):
-        super().__init__()
-        self.message = message
-        self.status_code = 426
-        self.name = "Upgrade Required"
+class UpgradeRequired(DomainError):
+    def __init__(self, message: str = "Upgrade required", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=426,  # HTTP 426 Upgrade Required
+            name="UpgradeRequired",
+            **kwargs,
+        )

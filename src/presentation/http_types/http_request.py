@@ -1,20 +1,25 @@
 
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
 
 
+@dataclass(slots=True)
 class HttpRequest:
-    def __init__(self, method: str, url: str, headers: dict = None, body: dict = None, query_params: dict = None, ipv4: str = None,
-                 path_params: dict = None, refresh_token: str = None, cookies: dict = None):
+    method: str
+    url: str
+    headers: Dict[str, Any] = field(default_factory=dict)
+    body: Optional[Any] = None
+    query_params: Dict[str, Any] = field(default_factory=dict)
+    ipv4: Optional[str] = None
+    path_params: Dict[str, Any] = field(default_factory=dict)
+    refresh_token: Optional[str] = None
+    cookies: Dict[str, Any] = field(default_factory=dict)
 
-        self.method = method
-        self.url = url
-        self.headers = headers if headers is not None else {}
-        self.body = body
-        self.query_params = query_params if query_params is not None else {}
-        self.ipv4 = ipv4
-        self.path_params = path_params if path_params is not None else {}
-        self.refresh_token = refresh_token
-        self.cookies = cookies if cookies is not None else {}
-
-
-    def __repr__(self):
-        return f"HttpRequest(method={self.method}, url={self.url}, headers={self.headers}, body={self.body})"
+    def __repr__(self) -> str:
+        return (
+            f"HttpRequest("
+            f"method={self.method}, "
+            f"url={self.url}, "
+            f"headers={self.headers}, "
+            f"body={self.body})"
+        )

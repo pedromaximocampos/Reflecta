@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from src.main.routes.fast_api.auth_routes import auth_router
+from src.core.constants import API_VERSION
+from src.main.server.fast_api.fast_api_exception_handler import add_exception_handlers
+
+def create_fast_api_app() -> FastAPI:
+    app = FastAPI(
+        title="Individuum MVP FastAPI Server",
+        description="Backend server for Individuum MVP using FastAPI",
+        version=API_VERSION,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # em produção, restringir
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    add_exception_handlers(app)
+
+    app.include_router(auth_router)
+
+    return app

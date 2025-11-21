@@ -1,5 +1,6 @@
 from src.application.use_cases.login import LoginInput, LoginOutput
-from src.presentation.http_types import HttpRequest, HttpResponse
+from src.domain.value_objects.email import Email
+from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
 from src.presentation.interfaces.controller_interface import IControllerInterface
 from src.application.use_cases.login.ilogin_use_case import ILoginUseCase
 from basicauth import decode, encode
@@ -15,9 +16,24 @@ class LoginController(IControllerInterface):
 
         username, password = self._decode_basic_auth(authorization_header)
 
-        login_input = LoginInput(username, password)
+        try:
+            email = Email(username)
+        except ValueError:
+            raise BadRequestError("Email inválido")
+
+        login_input = LoginInput(email, password)
 
         login_output: LoginOutput = await self._login_use_case.execute(login_input)
+        cookies = []
+        refresh_token_cookie = Cookie(
+            name="refresh_token",
+            value=login_output.refresh_token,
+            http_only=True,
+            secure=True,
+            path="/",
+            max_age=30 * 24 * 60 * 60  # 30 days
+        )
+        cookies.append(refresh_token_cookie)
 
         return HttpResponse(
             status_code=200,
@@ -31,7 +47,7 @@ class LoginController(IControllerInterface):
                     "avatar_url": login_output.avatar_url,
                 }
             },
-            headers={"refresh-token": login_output.refresh_token}
+            cookies=cookies
         )
 
     @classmethod

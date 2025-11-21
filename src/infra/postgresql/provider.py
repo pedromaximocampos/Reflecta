@@ -1,24 +1,17 @@
-import ssl
-
+from src.core.settings import get_settings
 from src.infra.postgresql.configs.settings import PostgresqlSettings
 from src.infra.postgresql.connection import DBConnectionHandler
 
-from src.shared.globalvars import (
-    LOCAL_PG_HOST,
-    LOCAL_PG_PORT,
-    LOCAL_PG_USER,
-    LOCAL_PG_DATABASE,
-    LOCAL_PG_PASSWORD
-)
+settings = get_settings()
 
 postgres_settings = PostgresqlSettings(
-    user=LOCAL_PG_USER,
-    password=LOCAL_PG_PASSWORD,
-    host=LOCAL_PG_HOST,
-    port=LOCAL_PG_PORT,
-    db_name=LOCAL_PG_DATABASE,
-    ssl=False,
-    echo=True
+    user=settings.postgres_user,
+    password=settings.postgres_password,
+    host=settings.postgres_host,
+    port=settings.postgres_port,
+    db_name=settings.postgres_db,
+    ssl=(settings.env == "prod"),
+    echo=settings.debug,
 )
 
 individuum_mvp_provider = DBConnectionHandler(postgres_settings)

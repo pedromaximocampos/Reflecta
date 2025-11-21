@@ -12,7 +12,7 @@ from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 
 
-class SessionServiceImpl(IAuthSessionService):
+class AuthSessionServiceImpl(IAuthSessionService):
 
     _USER_SESSIONS_LIMIT = 5
 

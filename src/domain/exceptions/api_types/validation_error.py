@@ -1,10 +1,13 @@
+# src/domain/exceptions/api_types/validation_error.py
+
+from src.domain.exceptions.domain_error import DomainError
 
 
-class ValidationFailed(Exception):
-    """Raised when validation of data fails."""
-
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
-        self.status_code = 422
-        self.name = "unprocessable Entity"
+class ValidationFailed(DomainError):
+    def __init__(self, message: str = "Invalid request data", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=400,  # se quiser, pode ser 422
+            name="ValidationFailed",
+            **kwargs,
+        )

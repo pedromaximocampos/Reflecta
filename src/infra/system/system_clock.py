@@ -1,17 +1,16 @@
 from src.domain.ports.system.iclock import IClock
 from datetime import datetime, timezone
-from typing import Final
+from src.core.settings import get_settings
+
+_settings = get_settings()
 
 class SystemClock(IClock):
-    _ACCESS_TOKEN_EXPIRES_IN_SECONDS: Final[int] = 15 * 60  # 15 minutos
-
-    _REFRESH_TOKEN_EXPIRES_IN_SECONDS: Final[int] = 30 * 24 * 60 * 60  # 30 dias
 
     def access_token_expiration_in_seconds(self) -> int:
-        return self._ACCESS_TOKEN_EXPIRES_IN_SECONDS
+        return _settings.access_token_minutes * 60
 
     def refresh_token_expiration_in_seconds(self) -> int:
-        return self._REFRESH_TOKEN_EXPIRES_IN_SECONDS
+        return _settings.refresh_token_days * 24 * 60 * 60
 
     def now(self) -> datetime:
         return datetime.now(timezone.utc)

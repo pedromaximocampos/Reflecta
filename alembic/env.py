@@ -8,14 +8,13 @@ from sqlalchemy.engine import make_url
 from src.infra.postgresql.models import *
 from alembic import context
 import os
-from dotenv import load_dotenv
-# Load environment variables
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DOTENV_PATH = PROJECT_ROOT / "src" / ".env"
+from src.core.settings import get_settings
 
-load_dotenv(DOTENV_PATH)
-raw_db_url = os.getenv("ALEMBIC_CONNECTION_STRING")
+_settings = get_settings()
+
+
+raw_db_url = _settings.alembic_connection_string
 
 # safe_url = raw_db_url.replace("%", "%%")
 

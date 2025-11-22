@@ -14,9 +14,9 @@ from src.core.settings import get_settings
 _settings = get_settings()
 
 
-raw_db_url = _settings.alembic_connection_string
+raw_db_url = _settings.ALEMBIC_CONNECTION_STRING
 
-# safe_url = raw_db_url.replace("%", "%%")
+safe_url = raw_db_url.replace("%", "%%")
 
 if not raw_db_url:
     raise RuntimeError("DATABASE_URL não encontrada nas variáveis de ambiente!")
@@ -30,7 +30,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", raw_db_url)
+config.set_main_option("sqlalchemy.url", safe_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

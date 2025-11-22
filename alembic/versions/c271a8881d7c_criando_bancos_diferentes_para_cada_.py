@@ -1,8 +1,8 @@
-"""criando tabelas de users, auth_credentials, auth_sessions
+"""criando bancos diferentes para cada tipo de configuracao (dev/prod/test)
 
-Revision ID: 80914a1f3d43
+Revision ID: c271a8881d7c
 Revises: 
-Create Date: 2025-11-15 21:52:37.300272
+Create Date: 2025-11-22 20:43:08.299133
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '80914a1f3d43'
+revision: str = 'c271a8881d7c'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,6 +25,9 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=26), nullable=False),
     sa.Column('username', sa.String(), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('name', sa.String(length=200), nullable=False),
+    sa.Column('surname', sa.String(length=200), nullable=True),
+    sa.Column('date_of_birth', sa.DATE(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('last_login_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('avatar_url', sa.String(), nullable=True),
@@ -32,6 +35,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_index(op.f('ix_users_name'), 'users', ['name'], unique=True)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('auth_credentials',
     sa.Column('user_id', sa.String(length=26), nullable=False),
@@ -50,6 +54,7 @@ def upgrade() -> None:
     sa.Column('issued_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('expires_at', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('refresh_jti_hash', sa.String(length=64), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('revoked_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
@@ -67,6 +72,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_auth_credentials_user_id'), table_name='auth_credentials')
     op.drop_table('auth_credentials')
     op.drop_index(op.f('ix_users_username'), table_name='users')
+    op.drop_index(op.f('ix_users_name'), table_name='users')
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

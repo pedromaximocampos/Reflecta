@@ -16,6 +16,8 @@ async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: 
             except Exception:
                 body = None
 
+        cookies_dict = dict(request.cookies)
+        refresh_token = cookies_dict.get("refresh_token")
 
         http_request = HttpRequest(
             method=request.method,
@@ -23,12 +25,14 @@ async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: 
             headers=dict(request.headers),
             body=body,
             query_params=dict(request.query_params),
-            path_params=request.path_params,
-            cookies=request.cookies,
+            path_params=dict(request.path_params),
+            cookies=cookies_dict,
+            refresh_token=refresh_token,
+            ipv4=request.client.host if request.client else None,
         )
 
-
         http_response: HttpResponse = await controller_handle(http_request)
+
     except Exception as ex:
         http_response = ExceptionHandler.handle_exception(ex)
 
@@ -37,15 +41,17 @@ async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: 
         content=http_response.body,
     )
 
+    # headers custom
     for name, value in getattr(http_response, "headers", {}).items():
         response.headers[name] = value
 
+    # cookies
     for cookie in getattr(http_response, "cookies", []):
         response.set_cookie(
             key=cookie.name,
             value=cookie.value,
             max_age=cookie.max_age,
-            httponly=cookie.httponly,
+            httponly=cookie.http_only,
             secure=cookie.secure,
             samesite=cookie.samesite,
             path=cookie.path,

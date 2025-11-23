@@ -23,3 +23,14 @@ class HttpRequest:
             f"headers={self.headers}, "
             f"body={self.body})"
         )
+
+    def pop_refresh_cookie(self) -> Optional[str]:
+        """
+        Remove o cookie `refresh_token` do dicionário de cookies local e o retorna.
+        Não afeta o cookie no cliente, apenas na representação da requisição.
+        """
+        token = self.cookies.pop("refresh_token", None)
+        # Mantém o campo refresh_token consistente
+        if token is not None:
+            self.refresh_token = token
+        return token

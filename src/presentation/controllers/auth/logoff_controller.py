@@ -12,7 +12,7 @@ class LogoffController(IControllerInterface):
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
         """Processa a requisição de logoff do usuário."""
-        refresh_token = request.cookies.get("refresh_token")
+        refresh_token = request.pop_refresh_cookie()
 
         if refresh_token:
             try:

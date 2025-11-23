@@ -32,3 +32,9 @@ class IAuthSessionRepository(ABC):
     async def invalidate_session(self, auth_session: AuthSession) -> None:
         """Deleta a sessão especificada pelo ID."""
         raise NotImplementedError
+
+
+    @abstractmethod
+    async def refresh_session(self, auth_session: AuthSession) -> AuthSession:
+        """Atualiza a sessão especificada."""
+        raise NotImplementedError

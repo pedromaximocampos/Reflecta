@@ -1,4 +1,5 @@
 from src.application.use_cases.login import LoginInput, LoginOutput
+from src.domain.ports.system.iclock import IClock
 from src.domain.value_objects.email import Email
 from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
 from src.presentation.interfaces.controller_interface import IControllerInterface
@@ -8,8 +9,9 @@ from src.domain.exceptions.api_types import BadRequestError
 
 class LoginController(IControllerInterface):
 
-    def __init__(self, login_use_case: ILoginUseCase):
+    def __init__(self, login_use_case: ILoginUseCase, system_clock: IClock):
         self._login_use_case = login_use_case
+        self._system_clock = system_clock
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
         authorization_header = request.headers.get("Authorization")
@@ -31,7 +33,7 @@ class LoginController(IControllerInterface):
             http_only=True,
             secure=True,
             path="/",
-            max_age=30 * 24 * 60 * 60  # 30 days
+            max_age=self._system_clock.refresh_token_expiration_in_seconds()
         )
         cookies.append(refresh_token_cookie)
 

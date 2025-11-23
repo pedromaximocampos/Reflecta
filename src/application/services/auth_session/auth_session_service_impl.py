@@ -95,3 +95,26 @@ class AuthSessionServiceImpl(IAuthSessionService):
 
         return access_token, refresh_token
 
+
+    async def refresh_session(self, session: AuthSession) -> AuthSessionResultDTO:
+        now = self._clock.now()
+
+        new_access_token: GeneratedTokenDTO = self._token_service.generate_token(session.user_id, self._clock.access_token_expiration_in_seconds(), now)
+        new_refresh_token: GeneratedTokenDTO = self._token_service.generate_token(session.user_id, self._clock.refresh_token_expiration_in_seconds(), now)
+
+        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(new_refresh_token.jti.value)
+
+        session.refresh_jti_hash = TokenJti(hashed_jti_refresh)
+        session.issued_at = now
+        session.expires_at = new_refresh_token.expires_at
+        session.updated_at = now
+
+
+        refreshed_session: AuthSession = await self._session_repository.refresh_session(session)
+
+        return AuthSessionResultDTO(
+            session_id=refreshed_session.id,
+            access_token=new_access_token.token,
+            refresh_token=new_refresh_token.token,
+        )
+

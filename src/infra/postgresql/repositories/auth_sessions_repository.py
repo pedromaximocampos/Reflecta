@@ -77,6 +77,31 @@ class AuthSessionsRepository(IAuthSessionRepository):
                 update(AuthSessionsModel)
                 .where(AuthSessionsModel.id == auth_session.id)
                 .values(revoked_at=self._clock.now())
+                .returning(AuthSessionsModel)
             )
             await session.execute(query)
             await session.commit()
+
+
+    async def refresh_session(self, auth_session: AuthSession) -> AuthSession:
+        async with self._db.session() as db_sess:
+            query = (
+                update(AuthSessionsModel)
+                .where(
+                    AuthSessionsModel.id == auth_session.id,
+                    AuthSessionsModel.revoked_at.is_(None),
+                       )
+                .values(
+                    refresh_jti_hash=auth_session.refresh_jti_hash.value,
+                    issued_at=auth_session.issued_at,
+                    expires_at=auth_session.expires_at,
+                    updated_at=auth_session.updated_at,
+                )
+                .returning(AuthSessionsModel)
+            )
+
+            result = await db_sess.execute(query)
+            await db_sess.commit()
+
+            model = result.scalar_one()
+            return self._auth_session_mapper.to_entity(model)

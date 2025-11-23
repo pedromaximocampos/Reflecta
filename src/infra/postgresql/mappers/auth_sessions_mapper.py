@@ -9,10 +9,10 @@ class AuthSessionsMapper:
     def to_model(auth_session: AuthSession) -> AuthSessionsModel:
         return AuthSessionsModel(
             id=auth_session.id,
-            user_id=str(auth_session.user_id),
+            user_id=auth_session.user_id.value,
             issued_at=auth_session.issued_at,
             expires_at=auth_session.expires_at,
-            refresh_jti_hash=str(auth_session.refresh_jti_hash),
+            refresh_jti_hash=auth_session.refresh_jti_hash.value,
             updated_at=auth_session.updated_at,
             revoked_at=auth_session.revoked_at,
         )

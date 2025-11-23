@@ -1,7 +1,8 @@
 from typing import Optional
 
 from src.application.services.auth_session import *
-from src.domain.entities.user import User
+from src.domain.entities.user import User, AuthCredentials
+from src.domain.exceptions.api_types import AuthError
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.application.services.token.itoken_service import ITokenService
 from src.domain.ports.system.iclock import IClock
@@ -52,11 +53,24 @@ class AuthSessionServiceImpl(IAuthSessionService):
             refresh_token=refresh_token.token,
         )
 
-    async def validate_session_by_refresh_token(self, refresh_jwt_token: str) -> Optional[AuthSessionResultDTO]:
-        pass
+    async def validate_session_by_refresh_token(self, refresh_jwt_token: str) -> Optional[AuthSession]:
+        try:
+            decoded_refresh_token = self._token_service.validate_token(refresh_jwt_token)
+        except AuthError:
+            raise AuthError("Invalid refresh token")
 
-    async def invalidate_session(self, session_id: str) -> None:
-        pass
+        jti = decoded_refresh_token.get("jti")
+
+        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(jti)
+
+        auth_session: Optional[AuthSession] = await self._session_repository.get_session_by_hashed_jti(
+            TokenJti(hashed_jti_refresh)
+        )
+
+        return auth_session
+
+    async def invalidate_session(self, session: AuthSession) -> None:
+        await self._session_repository.invalidate_session(session)
 
 
     async def _check_sessions_limit(self, user_id: UserId) -> None:

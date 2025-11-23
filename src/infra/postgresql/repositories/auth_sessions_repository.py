@@ -3,9 +3,9 @@ from src.domain.ports.repositories.iauth_session_repository import IAuthSessionR
 from src.domain.ports.system.iclock import IClock
 from src.infra.postgresql.connection import DBConnectionHandler
 from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
-from sqlalchemy import select
+from sqlalchemy import select, update
 from src.infra.postgresql.models.auth_sessions_model import AuthSessionsModel
-from typing import List
+from typing import List, Optional
 
 
 class AuthSessionsRepository(IAuthSessionRepository):
@@ -53,3 +53,30 @@ class AuthSessionsRepository(IAuthSessionRepository):
 
         return self._auth_session_mapper.to_entity(auth_session_model)
 
+    async def get_session_by_hashed_jti(self, hashed_jti: str) -> Optional[AuthSession]:
+
+        async with self._db.session() as session:
+            query = (
+                select(AuthSessionsModel)
+                .where(AuthSessionsModel.refresh_jti_hash == hashed_jti,
+                       AuthSessionsModel.revoked_at.is_(None),
+                       AuthSessionsModel.expires_at > self._clock.now())
+            )
+
+            result = await session.execute(query)
+            session_model: Optional[AuthSessionsModel] = result.scalar_one_or_none()
+
+            if session_model is None:
+                return None
+
+            return self._auth_session_mapper.to_entity(session_model)
+
+    async def invalidate_session(self, auth_session: AuthSession) -> None:
+        async with self._db.session() as session:
+            query =(
+                update(AuthSessionsModel)
+                .where(AuthSessionsModel.id == auth_session.id)
+                .values(revoked_at=self._clock.now())
+            )
+            await session.execute(query)
+            await session.commit()

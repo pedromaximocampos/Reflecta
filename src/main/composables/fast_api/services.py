@@ -1,0 +1,22 @@
+from src.main.composables.shared.security import get_token_service
+from src.main.server.fast_api.fast_api_auth_service import FastAPIAuthService
+from src.application.services.http_request_auth.authenticate_request_service_impl import AuthenticateRequestServiceImpl
+from src.main.composables.auth.repositories import get_user_repository
+
+
+def get_fast_api_auth_service() -> FastAPIAuthService:
+    """ Retorna uma instância do FastAPIAuthService com suas dependências injetadas. """
+
+    return FastAPIAuthService(
+        get_authenticate_request_service()
+    )
+
+
+def get_authenticate_request_service() -> AuthenticateRequestServiceImpl:
+    """ Retorna uma instância do AuthenticateRequestServiceImpl com suas dependências injetadas. """
+
+
+    return AuthenticateRequestServiceImpl(
+        get_user_repository(),
+        get_token_service()
+    )

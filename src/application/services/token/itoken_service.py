@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-
+from typing import Any
 from src.domain.value_objects.user_id import UserId
 from .dto import GeneratedTokenDTO
 
@@ -13,6 +13,6 @@ class ITokenService(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def validate_token(self, token: str) -> str:
+    def validate_token(self, token: str) -> dict[str, Any]:
         """Valida o token e retorna o ID do usuário associado."""
         raise NotImplementedError

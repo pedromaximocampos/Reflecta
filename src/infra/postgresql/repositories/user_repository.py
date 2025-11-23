@@ -12,7 +12,7 @@ class UserRepository(IUserRepository):
         self._db = db
         self._user_mapper = user_mapper
 
-    async def find_by_id(self, user_id: str) -> User:
+    async def find_by_id(self, user_id: str) -> Optional[User]:
         pass
 
     async def find_by_email(self, email: str) -> Optional[User]:

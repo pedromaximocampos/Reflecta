@@ -10,3 +10,8 @@ class HttpResponse:
     body: Any = None
     headers: Dict[str, str] = field(default_factory=dict)
     cookies: List[Cookie] = field(default_factory=list)
+
+
+
+    def set_new_cookie(self, cookie: Cookie):
+        self.cookies.append(cookie)

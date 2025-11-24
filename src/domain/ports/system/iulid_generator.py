@@ -1,8 +1,6 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 
+class IULIDGenerator(Protocol):
 
-class IULIDGenerator(ABC):
-
-    @abstractmethod
     def generate_ulid(self) -> str: pass

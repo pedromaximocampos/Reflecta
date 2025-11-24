@@ -1,10 +1,8 @@
-from abc import ABC, abstractmethod
-
+from typing import Protocol
 from src.domain.entities.email_verification import EmailVerification
 
 
-class IUserEmailVerificationRepository(ABC):
+class IUserEmailVerificationRepository(Protocol):
 
-    @abstractmethod
-    async def create_verification_code(self, email_verification: EmailVerification) -> None:
+    async def create_verification_code(self, email_verification: EmailVerification) -> EmailVerification:
         ...

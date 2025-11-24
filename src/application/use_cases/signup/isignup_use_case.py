@@ -1,9 +1,8 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 from dto import SignupInputDTO, SignupOutputDTO
 
 
-class ISignUpUseCase(ABC):
+class ISignUpUseCase(Protocol):
 
-    @abstractmethod
     async def execute(self, signup_input: SignupInputDTO) -> SignupOutputDTO:
         ...

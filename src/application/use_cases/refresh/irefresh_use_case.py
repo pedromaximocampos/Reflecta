@@ -1,10 +1,8 @@
-from abc import ABC, abstractmethod
-
+from typing import Protocol
 from src.application.use_cases.refresh.dto import RefreshResultDTO
 
 
-class IRefreshUseCase(ABC):
+class IRefreshUseCase(Protocol):
 
-    @abstractmethod
     async def execute(self, refresh_token: str) -> RefreshResultDTO:
         ...

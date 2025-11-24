@@ -8,6 +8,7 @@ from src.domain.exceptions.api_types import AuthError
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
 from src.application.services.token.itoken_service import ITokenService
 from src.domain.value_objects.token_jti import TokenJti
+from src.domain.value_objects.user_id import UserId
 
 
 class TokenServiceImpl(ITokenService):
@@ -16,7 +17,7 @@ class TokenServiceImpl(ITokenService):
         self._issuer = issuer
         self._algorithm = algorithm
 
-    def generate_token(self, user_id: str, expires_in_seconds: int, now: datetime) -> GeneratedTokenDTO:
+    def generate_token(self, user_id: UserId, expires_in_seconds: int, now: datetime) -> GeneratedTokenDTO:
         jti = TokenJti(self._generate_jti())
 
         expiration = now + timedelta(seconds=expires_in_seconds)

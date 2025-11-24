@@ -1,10 +1,8 @@
-from abc import ABC, abstractmethod
-
+from typing import Protocol
 from src.application.use_cases.login import LoginInput, LoginOutput
 
 
-class ILoginUseCase(ABC):
+class ILoginUseCase(Protocol):
 
-    @abstractmethod
     async def execute(self, login_input: LoginInput) -> LoginOutput:
         ...

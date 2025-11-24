@@ -29,3 +29,7 @@ class IUserRepository(ABC):
 
     @abstractmethod
     async def update_last_login_at(self, user: User) -> None: ...
+
+
+    @abstractmethod
+    async def create(self, user: User) -> User: ...

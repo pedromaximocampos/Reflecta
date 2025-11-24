@@ -26,6 +26,8 @@ class User:
     date_of_birth: date
     created_at: datetime
     auth_credentials: AuthCredentials
+    is_email_verified: bool
+    email_verified_at: Optional[datetime] = None
     avatar_url: Optional[str] = None
     last_login_at: Optional[datetime] = None
 

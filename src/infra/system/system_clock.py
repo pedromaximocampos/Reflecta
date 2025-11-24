@@ -14,3 +14,6 @@ class SystemClock(IClock):
 
     def now(self) -> datetime:
         return datetime.now(timezone.utc)
+
+    def email_verification_code_expiration_in_seconds(self) -> int:
+        return _settings.email_verification_code_expiration_minutes * 60

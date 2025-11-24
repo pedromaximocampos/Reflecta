@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_MINUTES: Final[int] = 15
     REFRESH_TOKEN_DAYS: Final[int] = 30
+    EMAIL_VERIFICATION_MINUTES: Final[int] = 15
 
     class Config:
         env_file = ".env.dev"

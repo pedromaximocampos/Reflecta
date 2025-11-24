@@ -14,3 +14,7 @@ class IClock(ABC):
     @abstractmethod
     def refresh_token_expiration_in_seconds(self) -> int:
         pass
+
+    @abstractmethod
+    def email_verification_code_expiration_in_seconds(self) -> int:
+        pass

@@ -1,8 +1,12 @@
+from sqlalchemy.exc import IntegrityError
+
+from src.domain.exceptions.custom_exceptions.user_custom_exceptions import EmailAlreadyExistsError, \
+    UsernameAlreadyExistsError
 from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.infra.postgresql.connection import DBConnectionHandler
 from src.infra.postgresql.mappers.user_mapper import UserMapper
 from src.infra.postgresql.models import UserModel, AuthCredentialsModel
-from src.domain.entities.user import User
+from src.domain.entities.user import User, AuthCredentials
 from sqlalchemy import select, Result, Row, update
 from typing import Optional
 
@@ -37,16 +41,16 @@ class UserRepository(IUserRepository):
        pass
 
     async def update_auth_credentials(self, user: User) -> None:
-        creds = user.auth_credentials
+        creds: AuthCredentials = user.auth_credentials
 
         async with self._db.session() as session:
             auth_query = (
                 update(AuthCredentialsModel)
                 .where(AuthCredentialsModel.user_id == creds.user_id)
                 .values(
-                    password_hash=creds.password_hash,
-                    password_algorithm=creds.password_algorithm,
-                    password_version=creds.password_version,
+                    password_hash=creds.password.hash,
+                    password_algorithm=creds.password.algorithm,
+                    password_version=creds.password.version,
                     last_password_change=creds.last_password_change
                 )
             )
@@ -62,3 +66,27 @@ class UserRepository(IUserRepository):
             )
 
             await session.execute(user_query)
+
+
+    async def create(self, user: User) -> User:
+        try:
+            async with self._db.session() as session:
+                user_model, creds_model = self._user_mapper.to_model(user)
+
+                session.add(user_model)
+                session.add(creds_model)
+
+            return self._user_mapper.to_entity(
+                user_model=user_model,
+                auth_credentials_model=creds_model,
+            )
+
+        except IntegrityError as e:
+            constraint = str(e.orig).lower()
+
+            if "users_email_key" in constraint:
+                raise EmailAlreadyExistsError()
+            if "users_username_key" in constraint:
+                raise UsernameAlreadyExistsError()
+
+            raise

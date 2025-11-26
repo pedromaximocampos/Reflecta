@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_DAYS: Final[int] = 30
     EMAIL_VERIFICATION_MINUTES: Final[int] = 15
 
+    RABBITMQ_HOST: str = "localhost"
+    RABBITMQ_PORT: int = 5672
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASSWORD: str = "guest"
+
+    FRONT_END_DOMAIN: str = "http://localhost:8000"
+
+    APP_NAME: str = "Individuum"
+
     class Config:
         env_file = ".env.dev"
         env_file_encoding = "utf-8"
@@ -42,6 +51,13 @@ class Settings(BaseSettings):
             f"postgresql+asyncpg://"
             f"{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def rabbitmq_url(self) -> str:
+        return (
+            f"amqp://{self.rabbitmq_user}:{self.rabbitmq_password}"
+            f"@{self.rabbitmq_host}:{self.rabbitmq_port}/"
         )
 
 

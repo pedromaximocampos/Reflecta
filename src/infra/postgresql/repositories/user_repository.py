@@ -67,19 +67,22 @@ class UserRepository(IUserRepository):
 
             await session.execute(user_query)
 
-
     async def create(self, user: User) -> User:
+        user_model, creds_model = self._user_mapper.to_model(user)
+
         try:
             async with self._db.session() as session:
-                user_model, creds_model = self._user_mapper.to_model(user)
-
                 session.add(user_model)
                 session.add(creds_model)
 
-            return self._user_mapper.to_entity(
-                user_model=user_model,
-                auth_credentials_model=creds_model,
-            )
+                await session.flush()
+
+                entity = self._user_mapper.to_entity(
+                    user_model=user_model,
+                    auth_credentials_model=creds_model,
+                )
+
+            return entity
 
         except IntegrityError as e:
             constraint = str(e.orig).lower()

@@ -4,12 +4,14 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "aio-pika==9.5.8",
+    "aiosmtplib==5.0.0",
     "alembic==1.17.2",
     "argon2-cffi==25.1.0",
-    "asyncpg==0.30.0",
+    "asyncpg==0.31.0",
     "basicauth==1.0.0",
     "email-validator==2.3.0",
-    "fastapi==0.121.3",
+    "fastapi==0.122.0",
     "pgvector==0.4.1",
     "psycopg2-binary==2.9.11",
     "pydantic-settings==2.12.0",

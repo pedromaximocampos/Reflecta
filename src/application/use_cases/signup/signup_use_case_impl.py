@@ -1,18 +1,15 @@
-from datetime import timedelta, datetime
-import secrets
+from datetime import datetime
 from isignup_use_case import ISignUpUseCase
+from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 from src.application.use_cases.signup.dto import SignupInputDTO, SignupOutputDTO
-from src.domain.entities.email_verification import EmailVerification
 from src.domain.entities.user import User, AuthCredentials
-from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
-from src.domain.value_objects.password_hash import PasswordHash
 from src.domain.value_objects.user_id import UserId
-from src.domain.exceptions.custom_exceptions.user_custom_exceptions import UsernameAlreadyExistsError, EmailAlreadyExistsError
+
 
 class SignupUseCaseImpl(ISignUpUseCase):
 
@@ -23,54 +20,30 @@ class SignupUseCaseImpl(ISignUpUseCase):
         system_clock: IClock,
         ulid_generator: IULIDGenerator,
         hash_generator: IHasherGenerator,
-        user_email_verification_repository: IUserEmailVerificationRepository
+        email_verification_service: IEmailVerificationService,
     ) -> None:
         self._user_repository = user_repository
         self._password_hasher = password_hasher
         self._clock = system_clock
         self._ulid_generator = ulid_generator
         self._hash_generator = hash_generator
-        self._email_verification_repo = user_email_verification_repository
+        self._email_verification_service = email_verification_service
 
     async def execute(self, dto: SignupInputDTO) -> SignupOutputDTO:
 
-        now = self._clock.now()
+        created_user = await self._create_new_user_(dto)
 
-        new_user = self._create_new_user_entity(dto, now)
-
-        created_user = await self._user_repository.create(new_user)
-
-        email_verif, raw_token = self._create_email_verification(created_user, now)
-        # TODO: implement email verification creation
-
-        await self._email_verification_repo.create_verification_code(email_verif)
-
-        #TODO: Send verification email
+        email_verification, raw_token = await self._email_verification_service.issue_for_user(created_user)
 
         return SignupOutputDTO(
             user=created_user,
             raw_token_to_verify_email=raw_token
         )
 
-    def _create_email_verification(self, user: User, now: datetime) -> tuple[EmailVerification, str]:
-        raw = secrets.token_urlsafe(32)
-        token_hash = self._hash_generator.generate_hash(raw)
 
-        expires_at = now + timedelta(
-            seconds=self._clock.email_verification_code_expiration_in_seconds()
-        )
+    async def _create_new_user_(self, dto: SignupInputDTO) -> User:
+        now = self._clock.now()
 
-        verification = EmailVerification(
-            id=self._ulid_generator.generate_ulid(),
-            user_id=user.id,
-            token_hash=token_hash,
-            created_at=now,
-            expires_at=expires_at
-        )
-
-        return verification, raw
-
-    def _create_new_user_entity(self, dto: SignupInputDTO, now: datetime) -> User:
         user_id = UserId(self._ulid_generator.generate_ulid())
 
         password_hash = self._password_hasher.hash(dto.password)
@@ -81,7 +54,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
             created_at=now
         )
 
-        return User(
+        new_user = User(
             id=user_id,
             email=dto.email,
             name=dto.name,
@@ -92,3 +65,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
             auth_credentials=credentials,
             is_email_verified=False
         )
+
+        created_user = await self._user_repository.create(new_user)
+
+        return created_user

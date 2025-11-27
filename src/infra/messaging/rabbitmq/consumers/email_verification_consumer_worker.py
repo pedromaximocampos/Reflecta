@@ -13,7 +13,7 @@ class EmailVerificationConsumerWorker(BaseRabbitMQConsumerWorker):
     async def handle_message(self, payload: dict):
         verification_dto  = self._return_email_verification_dto(payload)
 
-        await self.__email_verification_notifier.send_email(verification_dto)
+        # await self.__email_verification_notifier.send_email(verification_dto)
 
 
     @staticmethod

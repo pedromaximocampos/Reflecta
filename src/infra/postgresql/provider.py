@@ -5,13 +5,13 @@ from src.infra.postgresql.connection import DBConnectionHandler
 settings = get_settings()
 
 postgres_settings = PostgresqlSettings(
-    user=settings.postgres_user,
-    password=settings.postgres_password,
-    host=settings.postgres_host,
-    port=settings.postgres_port,
-    db_name=settings.postgres_db,
-    ssl=(settings.env == "prod"),
-    echo=settings.debug,
+    user=settings.POSTGRES_USER,
+    password=settings.POSTGRES_PASSWORD,
+    host=settings.POSTGRES_HOST,
+    port=settings.POSTGRES_PORT,
+    db_name=settings.POSTGRES_DB,
+    ssl=(settings.ENV == "prod"),
+    echo=settings.DEBUG,
 )
 
 individuum_mvp_provider = DBConnectionHandler(postgres_settings)

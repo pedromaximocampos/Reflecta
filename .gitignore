@@ -218,4 +218,6 @@ marimo/_lsp/
 __marimo__/
 
 # Streamlit
-.streamlit/secrets.toml
+.streamlit/secrets.toml!/Dockerfile
+!/docker-compose.yml
+/docker-compose.yml

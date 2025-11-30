@@ -6,7 +6,7 @@ _settings = get_settings()
 
 # Criados uma vez — usados por todo o sistema
 _password_hasher = Argon2IdPasswordHasher()
-_token_service = TokenServiceImpl(_settings.jwt_secret)
+_token_service = TokenServiceImpl(_settings.JWT_SECRET)
 
 
 def get_password_hasher() -> Argon2IdPasswordHasher:

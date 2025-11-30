@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     ALEMBIC_CONNECTION_STRING: str
     ALEMBIC_MIGRATE: bool = False
 
+    # SMTP
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+
     # Segurança / JWT
     JWT_SECRET: str
     JWT_ALGORITHM: Final[PasswordAlgorithm] = PasswordAlgorithm.HS256

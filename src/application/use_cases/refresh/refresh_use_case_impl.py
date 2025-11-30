@@ -1,6 +1,6 @@
 from typing import Optional
-from irefresh_use_case import IRefreshUseCase
-from dto import RefreshResultDTO
+from .irefresh_use_case import IRefreshUseCase
+from .dto import RefreshResultDTO
 from src.application.services.auth_session import IAuthSessionService, AuthSessionResultDTO
 from src.application.services.token.itoken_service import ITokenService
 from src.domain.entities.auth_session import AuthSession

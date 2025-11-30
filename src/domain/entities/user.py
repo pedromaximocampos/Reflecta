@@ -31,6 +31,10 @@ class User:
     avatar_url: Optional[str] = None
     last_login_at: Optional[datetime] = None
 
+    @property
+    def is_email_verified(self) -> bool:
+        return self.is_email_verified
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, User):
             return False
@@ -69,3 +73,7 @@ class User:
     def update_auth_credentials(self, new_credentials: PasswordHash, updated_at: datetime) -> None:
         self.auth_credentials.password = new_credentials
         self.auth_credentials.last_password_change = updated_at
+
+    def mark_email_as_verified(self, verified_at: datetime) -> None:
+        self.is_email_verified = True
+        self.email_verified_at = verified_at

@@ -22,3 +22,6 @@ class IUserRepository(Protocol):
     async def update_last_login_at(self, user: User) -> None: ...
 
     async def create(self, user: User) -> User: ...
+
+    async def verify_email(self, user):
+        pass

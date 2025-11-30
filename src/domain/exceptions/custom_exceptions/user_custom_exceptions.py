@@ -28,3 +28,13 @@ class UsernameAlreadyExistsError(DomainError):
             name="UsernameAlreadyExistsError",
             **kwargs,
         )
+
+
+class UserNotFoundError(DomainError):
+    def __init__(self, message: str = "Usuário não encontrado.", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=404,  # não encontrado
+            name="UserNotFoundError",
+            **kwargs,
+        )

@@ -11,3 +11,12 @@ class IEmailVerificationService(Protocol):
             Cria uma nova entidade a ser associada ao usuário e retorna a entidade criada junto com o token bruto que deve ser enviado ao usuário por email.
         """
         ...
+
+    async def ensure_active_verification_for_user(self, user: User) -> EmailVerification:
+        """
+        Garante que o usuário tenha uma verificação ativa:
+        - se não existir, cria e envia
+        - se existir e estiver expirada, revoga, cria e envia
+        - se existir e estiver válida, só não faz nada
+        """
+        ...

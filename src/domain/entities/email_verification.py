@@ -17,9 +17,24 @@ class EmailVerification:
 
 
     @property
+    def is_revoked(self) -> bool:
+        return self.revoked_at is None
+
+    @property
+    def is_expired(self) -> bool:
+        return self.expires_at <= datetime.now(timezone.utc)
+
+    @property
+    def is_verified(self) -> bool:
+        return self.verified_at is not None
+
+    @property
     def is_active(self) -> bool:
         return self.verified_at is not None and self.revoked_at is None and self.expires_at > datetime.now(timezone.utc)
 
 
     def verify(self, verified_at: datetime) -> None:
         self.verified_at = verified_at
+
+    def revoke(self, revoked_at: datetime) -> None:
+        self.revoked_at = revoked_at

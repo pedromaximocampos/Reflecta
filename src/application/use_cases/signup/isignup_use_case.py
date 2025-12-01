@@ -1,5 +1,5 @@
 from typing import Protocol
-from dto import SignupInputDTO, SignupOutputDTO
+from .dto import SignupInputDTO, SignupOutputDTO
 
 
 class ISignUpUseCase(Protocol):

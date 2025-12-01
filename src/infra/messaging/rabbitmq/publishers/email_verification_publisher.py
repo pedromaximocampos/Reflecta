@@ -1,7 +1,9 @@
 import aio_pika
 from src.application.ports.messaging.iemail_verification_publisher import IEmailVerificationPublisher
+from src.core.settings import get_settings
 from src.domain.events.email_verification_requested import EmailVerificationRequested
 
+_settings = get_settings()
 
 class EmailVerificationPublisher(IEmailVerificationPublisher):
 
@@ -22,7 +24,8 @@ class EmailVerificationPublisher(IEmailVerificationPublisher):
                 "user_name": event.user_name,
                 "user_email": str(event.user_email),
                 "raw_code": event.raw_code,
-                "occurred_at": event.occurred_at.isoformat()
+                "occurred_at": event.occurred_at.isoformat(),
+                "verification_url": f"{_settings.FRONTEND_BASE_URL}/verify-email?code={event.raw_code}"
             }
 
             message = aio_pika.Message(body=str(message_body).encode())

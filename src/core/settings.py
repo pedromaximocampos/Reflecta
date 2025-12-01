@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASSWORD: str = "guest"
 
+    RABBITMQ_EMAIL_EXCHANGE: str = "email_exchange"
+    RABBITMQ_EMAIL_VERIFICATION_QUEUE: str = "email_verification_queue"
+    RABBITMQ_EMAIL_VERIFICATION_ROUTING_KEY: str = "email_verification"
+
     FRONT_END_DOMAIN: str = "http://localhost:8000"
 
     APP_NAME: str = "Individuum"
@@ -55,15 +59,14 @@ class Settings(BaseSettings):
     def database_url(self) -> str:
         return (
             f"postgresql+asyncpg://"
-            f"{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"@{self.POSTGRES_PORT}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
     @property
     def rabbitmq_url(self) -> str:
         return (
-            f"amqp://{self.rabbitmq_user}:{self.rabbitmq_password}"
-            f"@{self.rabbitmq_host}:{self.rabbitmq_port}/"
+            f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}"
         )
 
 

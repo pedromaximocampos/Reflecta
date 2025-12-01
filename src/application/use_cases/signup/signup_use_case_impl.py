@@ -1,5 +1,5 @@
 from datetime import datetime
-from isignup_use_case import ISignUpUseCase
+from .isignup_use_case import ISignUpUseCase
 from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 from src.application.use_cases.signup.dto import SignupInputDTO, SignupOutputDTO
 from src.domain.entities.user import User, AuthCredentials

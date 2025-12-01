@@ -1,6 +1,6 @@
 # src/presentation/exception_handler.py
 from typing import Tuple, Type
-
+from src.domain.exceptions.domain_error import DomainError
 from src.presentation.http_types.http_response import HttpResponse
 from src.core.settings import get_settings
 
@@ -11,18 +11,7 @@ _settings = get_settings()
 
 class ExceptionHandler:
     # tuple de TIPOS (classes), sem duplicatas
-    API_EXCEPTIONS: Tuple[Type[Exception], ...] = (
-        BadRequestError,
-        AuthError,
-        UserIsNotAdmin,
-        CacheError,
-        ConflictError,
-        UpgradeRequired,
-        DatabaseError,
-        NotFoundError,
-        ValidationFailed,
-        ForbiddenError,
-    )
+
 
     @staticmethod
     def handle_exception(e: Exception) -> HttpResponse:
@@ -38,7 +27,7 @@ class ExceptionHandler:
 
                     meta =  trace
 
-        if isinstance(e, ExceptionHandler.API_EXCEPTIONS):
+        if isinstance(e, DomainError):
             http_response = HttpResponse(
                 status_code=e.status_code,
                 body={

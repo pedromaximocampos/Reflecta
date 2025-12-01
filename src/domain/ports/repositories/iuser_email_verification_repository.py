@@ -9,14 +9,14 @@ class IUserEmailVerificationRepository(Protocol):
         ...
 
 
-    async def get_by_code(self, code: str) -> Optional[EmailVerification]:
+    async def get_by_code(self, hashed_code: str) -> Optional[EmailVerification]:
         ...
 
-    async def validate_email_verification(self, email_verification):
-        pass
+    async def validate_email_verification(self, email_verification: EmailVerification) -> None:
+        ...
 
     async def revoke(self, email_verification: EmailVerification) -> None:
         ...
 
-    async def get_by_user_id(self, user_id: UserId) -> Optional[EmailVerification]:
+    async def get_active_email_verification_by_user_id(self, user_id: UserId) -> Optional[EmailVerification]:
         ...

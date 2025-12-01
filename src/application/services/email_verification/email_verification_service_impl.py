@@ -41,7 +41,7 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
 
     async def ensure_active_verification_for_user(self, user: User) -> EmailVerification:
         now = self.__clock.now()
-        verification: Optional[EmailVerification] = await self.__user_email_verification_repository.get_by_user_id(user.id)
+        verification: Optional[EmailVerification] = await self.__user_email_verification_repository.get_active_email_verification_by_user_id(user.id)
 
         if not verification:
             await self.issue_for_user(user)

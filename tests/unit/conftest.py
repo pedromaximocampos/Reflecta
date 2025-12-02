@@ -1,7 +1,7 @@
-from uuid import uuid4
 import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
 from datetime import datetime,  timezone
+from src.domain.entities.auth_session import AuthSession
 from src.domain.entities.user import User, AuthCredentials
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
@@ -31,6 +31,13 @@ def mock_auth_session_service():
     return AsyncMock()
 
 @pytest.fixture
+def mock_auth_session(new_id):
+    mock = Mock(spec=AuthSession)
+    mock.id = new_id
+    mock.refresh_token = "test_refresh_token"
+    return mock
+
+@pytest.fixture
 def mock_email_verification_service():
     return AsyncMock()
 
@@ -57,10 +64,10 @@ def mock_auth_credentials(mock_password_hash):
     return mock
 
 @pytest.fixture
-def mock_user_id():
+def mock_user_id(new_id):
     """Mock de UserId"""
 
-    return UserId(str(uuid4()))
+    return UserId(new_id)
 
 @pytest.fixture
 def mock_user(mock_email, mock_auth_credentials, mock_user_id):

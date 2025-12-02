@@ -4,5 +4,4 @@ from src.application.use_cases.login import LoginInput, LoginOutput
 
 class ILoginUseCase(Protocol):
 
-    async def execute(self, login_input: LoginInput) -> LoginOutput:
-        ...
+    async def execute(self, login_input: LoginInput) -> LoginOutput: ...

@@ -25,12 +25,12 @@ class LoginUseCaseImpl(ILoginUseCase):
 
         user: User = await self.__get_credentials_by_email(login_input.email)
 
-        if not user.is_email_verified:
-            await self.__email_verification_service.ensure_active_verification_for_user(user)
-
         password_hash:  PasswordHash = self.__create_password_hash_v_o(user.auth_credentials)
 
         self.__verify_password(login_input.password, password_hash)
+
+        if not user.is_email_verified:
+            await self.__email_verification_service.ensure_active_verification_for_user(user)
 
         needs_rehash = self.__password_hasher.needs_rehash(password_hash)
 

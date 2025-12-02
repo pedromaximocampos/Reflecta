@@ -1,7 +1,7 @@
 import os
 import pytest
 import asyncio
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from uuid import uuid4
 from src.core.settings import get_settings
 
@@ -43,4 +43,4 @@ def block_network(monkeypatch):
         raise RuntimeError("Chamadas HTTP externas estão bloqueadas nos testes.")
 
     monkeypatch.setattr("httpx.get", fake_get)
-    monkeypatch.setattr("requests.get", fake_get)
+    #monkeypatch.setattr("requests.get", fake_get)

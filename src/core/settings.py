@@ -1,6 +1,6 @@
 # src/core/settings.py
 from functools import lru_cache
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
 from typing import Final
 import os
@@ -75,7 +75,7 @@ def get_settings() -> Settings:
     """
     Retorna uma instância única de Settings (singleton via cache).
     """
-    env = os.getenv("ENV", "dev")
+    env = os.getenv("ENV")
 
     env_file_map = {
         "dev": ".env.dev",
@@ -83,6 +83,6 @@ def get_settings() -> Settings:
         "prod": ".env.prod",
     }
 
-    env_file = env_file_map.get(env, ".env.dev")
+    env_file = env_file_map.get(env)
 
     return Settings(_env_file=env_file)

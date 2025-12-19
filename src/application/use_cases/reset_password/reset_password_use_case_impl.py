@@ -62,6 +62,10 @@ class ResetPasswordUseCase(IResetPasswordUseCase):
 
         await self.__user_repository.update_auth_credentials(user)
 
+        reset_password_entity.mark_as_used(now)
+
+        await self.__reset_password_repository.update_as_used(reset_password_entity)
+
 
 
 

@@ -18,4 +18,4 @@ class RequestPasswordResetUseCaseImpl(IRequestPasswordResetUseCase):
         if not user:
             return  # Não revelar se o email existe ou não
 
-        await self.__password_reset_service.issue_password_reset_for_user(user)
+        await self.__password_reset_service.issue_for_user(user)

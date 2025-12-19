@@ -68,7 +68,7 @@ class VerifyEmailVerificationUseCaseImpl(IVerifyEmailVerification):
 
         return user
 
-    async def __get_email_verification_by_code(self, raw_code: str) -> Optional[EmailVerification]:
+    async def __get_email_verification_by_code(self, raw_code: str) -> EmailVerification:
         hashed_code = self.__hasher_generator.generate_hash(raw_code)
 
         email_verification:  Optional[EmailVerification] = await self.__user_email_verification_repository.get_by_code(hashed_code)

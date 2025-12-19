@@ -17,3 +17,6 @@ class SystemClock(IClock):
 
     def email_verification_code_expiration_in_seconds(self) -> int:
         return _settings.email_verification_code_expiration_minutes * 60
+
+    def password_reset_expiration_in_seconds(self) -> int:
+        return _settings.password_reset_code_expiration_minutes * 60

@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_MINUTES: Final[int] = 15
     REFRESH_TOKEN_DAYS: Final[int] = 30
     EMAIL_VERIFICATION_MINUTES: Final[int] = 15
+    RESET_PASSWORD_MINUTES: Final[int] = 15
+
+    MINIMUM_PASSWORD_LENGTH: Final[int] = 12
 
     RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672

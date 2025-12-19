@@ -1,4 +1,6 @@
 from datetime import datetime
+
+from src.domain.value_objects.password_plain import PasswordPlain
 from .isignup_use_case import ISignUpUseCase
 from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 from src.application.use_cases.signup.dto import SignupInputDTO, SignupOutputDTO
@@ -46,7 +48,9 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         user_id = UserId(self._ulid_generator.generate_ulid())
 
-        password_hash = self._password_hasher.hash(dto.password)
+        password_plain  = PasswordPlain(dto.password)
+
+        password_hash = password_plain.to_hash(self._password_hasher)
 
         credentials = AuthCredentials(
             user_id=user_id,

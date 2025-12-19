@@ -3,6 +3,8 @@ from sqlalchemy.exc import IntegrityError
 from src.domain.exceptions.custom_exceptions.user_custom_exceptions import EmailAlreadyExistsError, \
     UsernameAlreadyExistsError
 from src.domain.ports.repositories.iuser_repository import IUserRepository
+from src.domain.value_objects.email import Email
+from src.domain.value_objects.user_id import UserId
 from src.infra.postgresql.connection import DBConnectionHandler
 from src.infra.postgresql.mappers.user_mapper import UserMapper
 from src.infra.postgresql.models import UserModel, AuthCredentialsModel
@@ -16,15 +18,30 @@ class UserRepository(IUserRepository):
         self._db = db
         self._user_mapper = user_mapper
 
-    async def find_by_id(self, user_id: str) -> Optional[User]:
-        pass
-
-    async def find_by_email(self, email: str) -> Optional[User]:
+    async def find_by_id(self, user_id: UserId) -> Optional[User]:
         async with self._db.session() as session:
             query =  (
                 select(UserModel, AuthCredentialsModel)
                 .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-                .where(UserModel.email == email)
+                .where(UserModel.id == str(user_id.value))
+            )
+            row: Row[tuple[UserModel, AuthCredentialsModel]] = (await session.execute(query)).first()
+
+            if not row:
+                return None
+
+            user_model, credentials_model = row
+
+            user_entity: User = self._user_mapper.to_entity(user_model=user_model, auth_credentials_model=credentials_model)
+
+            return user_entity
+
+    async def find_by_email(self, email: Email) -> Optional[User]:
+        async with self._db.session() as session:
+            query =  (
+                select(UserModel, AuthCredentialsModel)
+                .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
+                .where(UserModel.email == email.value)
             )
             row: Row[tuple[UserModel, AuthCredentialsModel]] = (await session.execute(query)).first()
 
@@ -61,7 +78,7 @@ class UserRepository(IUserRepository):
         async with self._db.session() as session:
             user_query = (
                 update(UserModel)
-                .where(UserModel.id == user.id)
+                .where(UserModel.id == user.id.value)
                 .values(last_login_at=user.last_login_at)
             )
 

@@ -14,3 +14,6 @@ class IClock(Protocol):
 
     def email_verification_code_expiration_in_seconds(self) -> int:
         pass
+
+    def password_reset_expiration_in_seconds(self) -> int:
+        pass

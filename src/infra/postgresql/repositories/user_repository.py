@@ -1,108 +1,121 @@
-from sqlalchemy.exc import IntegrityError
+from __future__ import annotations
 
-from src.domain.exceptions.custom_exceptions.user_custom_exceptions import EmailAlreadyExistsError, \
-    UsernameAlreadyExistsError
+from typing import Optional
+from sqlalchemy import select, update, Row
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domain.entities.user import User, AuthCredentials
+from src.domain.exceptions.custom_exceptions.user_custom_exceptions import (
+    EmailAlreadyExistsError,
+    UsernameAlreadyExistsError,
+)
 from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.user_id import UserId
-from src.infra.postgresql.connection import DBConnectionHandler
 from src.infra.postgresql.mappers.user_mapper import UserMapper
 from src.infra.postgresql.models import UserModel, AuthCredentialsModel
-from src.domain.entities.user import User, AuthCredentials
-from sqlalchemy import select, Result, Row, update
-from typing import Optional
+
 
 class UserRepository(IUserRepository):
-
-    def __init__(self, db: DBConnectionHandler, user_mapper: UserMapper):
-        self._db = db
-        self._user_mapper = user_mapper
+    def __init__(self, session: AsyncSession, user_mapper: UserMapper) -> None:
+        self.__session = session
+        self.__user_mapper = user_mapper
 
     async def find_by_id(self, user_id: UserId) -> Optional[User]:
-        async with self._db.session() as session:
-            query =  (
-                select(UserModel, AuthCredentialsModel)
-                .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-                .where(UserModel.id == str(user_id.value))
-            )
-            row: Row[tuple[UserModel, AuthCredentialsModel]] = (await session.execute(query)).first()
+        query = (
+            select(UserModel, AuthCredentialsModel)
+            .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
+            .where(UserModel.id == str(user_id.value))
+        )
 
-            if not row:
-                return None
+        row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (await self.__session.execute(query)).first()
+        if not row:
+            return None
 
-            user_model, credentials_model = row
-
-            user_entity: User = self._user_mapper.to_entity(user_model=user_model, auth_credentials_model=credentials_model)
-
-            return user_entity
+        user_model, credentials_model = row
+        return self.__user_mapper.to_entity(
+            user_model=user_model,
+            auth_credentials_model=credentials_model,
+        )
 
     async def find_by_email(self, email: Email) -> Optional[User]:
-        async with self._db.session() as session:
-            query =  (
-                select(UserModel, AuthCredentialsModel)
-                .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-                .where(UserModel.email == email.value)
-            )
-            row: Row[tuple[UserModel, AuthCredentialsModel]] = (await session.execute(query)).first()
+        query = (
+            select(UserModel, AuthCredentialsModel)
+            .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
+            .where(UserModel.email == email.value)
+        )
 
-            if not row:
-                return None
+        row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (await self.__session.execute(query)).first()
+        if not row:
+            return None
 
-            user_model, credentials_model = row
-
-            user_entity: User = self._user_mapper.to_entity(user_model=user_model, auth_credentials_model=credentials_model)
-
-            return user_entity
+        user_model, credentials_model = row
+        return self.__user_mapper.to_entity(
+            user_model=user_model,
+            auth_credentials_model=credentials_model,
+        )
 
     async def update(self, user: User) -> None:
-       pass
+        query = (
+            update(UserModel)
+            .where(UserModel.id == user.id.value)
+            .values(
+                username=user.username,
+                email=user.email.value,
+                name=user.name,
+                surname=user.surname,
+                date_of_birth=user.date_of_birth,
+                avatar_url=user.avatar_url,
+                last_login_at=user.last_login_at,
+            )
+        )
+        await self.__session.execute(query)
 
     async def update_auth_credentials(self, user: User) -> None:
         creds: AuthCredentials = user.auth_credentials
 
-        async with self._db.session() as session:
-            auth_query = (
-                update(AuthCredentialsModel)
-                .where(AuthCredentialsModel.user_id == creds.user_id)
-                .values(
-                    password_hash=creds.password.hash,
-                    password_algorithm=creds.password.algorithm,
-                    password_version=creds.password.version,
-                    last_password_change=creds.last_password_change
-                )
+        auth_query = (
+            update(AuthCredentialsModel)
+            .where(AuthCredentialsModel.user_id == creds.user_id)
+            .values(
+                password_hash=creds.password.hash,
+                password_algorithm=creds.password.algorithm,
+                password_version=creds.password.version,
+                last_password_change=creds.last_password_change,
             )
-            await session.execute(auth_query)
+        )
+        await self.__session.execute(auth_query)
 
-    async def update_last_login_at(self, user:User) -> None:
-
-        async with self._db.session() as session:
-            user_query = (
-                update(UserModel)
-                .where(UserModel.id == user.id.value)
-                .values(last_login_at=user.last_login_at)
-            )
-
-            await session.execute(user_query)
+    async def update_last_login_at(self, user: User) -> None:
+        user_query = (
+            update(UserModel)
+            .where(UserModel.id == user.id.value)
+            .values(last_login_at=user.last_login_at)
+        )
+        await self.__session.execute(user_query)
 
     async def create(self, user: User) -> User:
-        user_model, creds_model = self._user_mapper.to_model(user)
+        user_model, creds_model = self.__user_mapper.to_model(user)
 
         try:
-            async with self._db.session() as session:
-                session.add(user_model)
-                session.add(creds_model)
+            self.__session.add(user_model)
+            self.__session.add(creds_model)
 
-                await session.flush()
 
-                entity = self._user_mapper.to_entity(
-                    user_model=user_model,
-                    auth_credentials_model=creds_model,
-                )
+            await self.__session.flush()
 
-            return entity
+            # se algum default server-side existir e você precisar, pode dar refresh:
+            # await self.__session.refresh(user_model)
+            # await self.__session.refresh(creds_model)
+
+            return self.__user_mapper.to_entity(
+                user_model=user_model,
+                auth_credentials_model=creds_model,
+            )
 
         except IntegrityError as e:
-            constraint = str(e.orig).lower()
+            constraint = str(getattr(e, "orig", e)).lower()
 
             if "users_email_key" in constraint:
                 raise EmailAlreadyExistsError()

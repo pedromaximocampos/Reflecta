@@ -1,6 +1,7 @@
 from src.domain.entities.auth_session import AuthSession
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.domain.ports.system.iclock import IClock
+from src.domain.value_objects.user_id import UserId
 from src.infra.postgresql.connection import DBConnectionHandler
 from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
 from sqlalchemy import select, update
@@ -16,7 +17,7 @@ class AuthSessionsRepository(IAuthSessionRepository):
         self._clock = clock
 
 
-    async def get_sessions_by_user_id(self, user_id: str) -> list[AuthSession]:
+    async def get_sessions_by_user_id(self, user_id: UserId) -> list[AuthSession]:
         async with self._db.session() as session:
             query = (
                 select(AuthSessionsModel)

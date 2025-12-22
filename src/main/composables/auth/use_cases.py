@@ -4,10 +4,12 @@ from src.application.use_cases.refresh.refresh_use_case_impl import RefreshUseCa
 from src.application.use_cases.signup.signup_use_case_impl import SignupUseCaseImpl
 from src.main.composables.auth.services import get_auth_session_service
 from src.main.composables.auth.repositories import get_user_repository, get_user_email_verification_repository
+from src.main.composables.auth.units_of_work import get_auth_unit_of_work
 from src.main.composables.shared.security import get_password_hasher
 from src.main.composables.shared.system import get_clock, get_ulid_generator, get_jti_hasher
 from src.main.composables.auth.services import get_email_verification_service
 from src.application.use_cases.verify_email.verify_email_verification_use_case_impl import VerifyEmailVerificationUseCaseImpl
+from src.application.use_cases.reset_password.reset_password_use_case_impl import ResetPasswordUseCaseImpl
 
 def get_login_use_case() -> LoginUseCaseImpl:
     """ Retorna uma instância do caso de uso de login com todas as dependências injetadas."""
@@ -60,3 +62,15 @@ def get_verify_email_use_case() -> VerifyEmailVerificationUseCaseImpl:
         get_user_repository(),
         get_clock()
     )
+
+
+def get_reset_password_use_case() -> ResetPasswordUseCaseImpl:
+
+
+    return ResetPasswordUseCaseImpl(
+        get_clock(),
+        get_auth_unit_of_work(),
+        get_jti_hasher(),
+        get_password_hasher()
+    )
+

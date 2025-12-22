@@ -25,6 +25,3 @@ class ResetPassword:
 
     def mark_as_used(self, now: datetime) -> None:
        self.used_at = now
-
-
-

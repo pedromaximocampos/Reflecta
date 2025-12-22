@@ -4,6 +4,7 @@ from sqlalchemy import String, TIMESTAMP, DATE, func
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from src.infra.postgresql.configs.base import Base
+from src.infra.postgresql.models.reset_password_model import ResetPasswordModel
 
 
 class UserModel(Base):
@@ -42,6 +43,14 @@ class UserModel(Base):
     # agora 1:N: um user pode ter várias verificações ao longo do tempo
     email_verifications: Mapped[list["UserEmailVerificationModel"]] = relationship(
         "UserEmailVerificationModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+
+    password_resets: Mapped[list[ResetPasswordModel]] = relationship(
+        "ResetPasswordModel",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",

@@ -8,33 +8,39 @@ from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.password_plain import PasswordPlain
 from src.domain.value_objects.user_id import UserId
 
 
-class ResetPasswordUseCase(IResetPasswordUseCase):
+class ResetPasswordUseCaseImpl(IResetPasswordUseCase):
 
-    def __init__(self, user_repository: IUserRepository, system_clock: IClock, reset_password_repository: IResetPasswordRepository,
+    def __init__(self, system_clock: IClock, auth_unit_of_work: IAuthUnitOfWork,
                  hasher_generator: IHasherGenerator, password_hasher: IPasswordHasher) -> None:
-        self.__user_repository = user_repository
+        self.__auth_unit_of_work = auth_unit_of_work
         self.__system_clock = system_clock
-        self.__reset_password_repository = reset_password_repository
         self.__hasher_generator = hasher_generator
         self.__password_hasher = password_hasher
 
-
-    async def __validate_reset_token(self, reset_raw_token: str) -> ResetPassword:
+    async def __validate_reset_token(self, reset_raw_token: str, uow: IAuthUnitOfWork) -> ResetPassword:
         hashed_reset_token = self.__hasher_generator.generate_hash(reset_raw_token)
 
-        reset_password_entity  = await self.__reset_password_repository.find_by_hashed_token(hashed_reset_token)
+        reset_password_entity  = await uow.reset_password_repository.find_by_hashed_token(hashed_reset_token)
 
         if not reset_password_entity:
             raise ResetPasswordTokenException("Invalid token.")
 
+        if reset_password_entity.is_used:
+            raise ResetPasswordTokenException("Token has already been used.")
+
+        if reset_password_entity.is_expired:
+            raise ResetPasswordTokenException("Token has expired.")
+
         return reset_password_entity
 
-    async def __validate_user(self, user_id: UserId) -> User:
-        user = await self.__user_repository.find_by_id(user_id)
+    @staticmethod
+    async def __validate_user(user_id: UserId, uow: IAuthUnitOfWork) -> User:
+        user = await uow.users_repository.find_by_id(user_id)
 
         if not user:
             raise ResetPasswordTokenException("User not found.")
@@ -44,29 +50,19 @@ class ResetPasswordUseCase(IResetPasswordUseCase):
     async def execute(self, reset_raw_token: str, new_password: str) -> None:
         now = self.__system_clock.now()
 
-        reset_password_entity = await self.__validate_reset_token(reset_raw_token)
+        async with self.__auth_unit_of_work as uow:
+            reset_password_entity = await self.__validate_reset_token(reset_raw_token, uow)
 
-        if reset_password_entity.is_used:
-            raise ResetPasswordTokenException("Token has already been used.")
+            user = await self.__validate_user(reset_password_entity.user_id, uow)
 
-        if reset_password_entity.is_expired:
-            raise ResetPasswordTokenException("Token has expired.")
+            password_plain = PasswordPlain(new_password)
 
-        user = await self.__validate_user(reset_password_entity.user_id)
+            hashed_new_password = password_plain.to_hash(self.__password_hasher)
 
-        password_plain = PasswordPlain(new_password)
+            user.update_auth_credentials(hashed_new_password, now)
 
-        hashed_new_password = password_plain.to_hash(self.__password_hasher)
+            await uow.users_repository.update_auth_credentials(user)
 
-        user.update_auth_credentials(hashed_new_password, now)
+            reset_password_entity.mark_as_used(now)
 
-        await self.__user_repository.update_auth_credentials(user)
-
-        reset_password_entity.mark_as_used(now)
-
-        await self.__reset_password_repository.update_as_used(reset_password_entity)
-
-
-
-
-
+            await uow.reset_password_repository.update_as_used(reset_password_entity)

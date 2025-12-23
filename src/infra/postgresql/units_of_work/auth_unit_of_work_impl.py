@@ -76,3 +76,13 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
 
         self.__reset_password_repository = ResetPasswordRepository(session, self.__reset_password_mapper)
 
+
+    def _clear_repositories(self) -> None:
+        """
+        Limpa as referências dos repositórios ao sair do contexto.
+        :return: None
+        """
+        self.__user_repository = None
+        self.__user_email_verification_repository = None
+        self.__auth_sessions_repository = None
+        self.__reset_password_repository = None

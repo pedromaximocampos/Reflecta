@@ -43,9 +43,11 @@ class Settings(BaseSettings):
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASSWORD: str = "guest"
 
-    RABBITMQ_EMAIL_EXCHANGE: str = "email_exchange"
-    RABBITMQ_EMAIL_VERIFICATION_QUEUE: str = "email_verification_queue"
-    RABBITMQ_EMAIL_VERIFICATION_ROUTING_KEY: str = "email_verification"
+    RABBITMQ_EMAIL_EXCHANGE: str
+    RABBITMQ_EMAIL_VERIFICATION_QUEUE: str
+    RABBITMQ_EMAIL_VERIFICATION_ROUTING_KEY: str
+    RABBITMQ_PASSWORD_RESET_QUEUE: str
+    RABBITMQ_PASSWORD_RESET_ROUTING_KEY: str
 
     FRONT_END_DOMAIN: str = "http://localhost:8000"
 

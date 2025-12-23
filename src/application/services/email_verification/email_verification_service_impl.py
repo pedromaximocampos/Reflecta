@@ -8,6 +8,7 @@ from src.domain.ports.repositories.iuser_email_verification_repository import IU
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from .iemail_verification_service import  IEmailVerificationService
 import secrets
 from datetime import timedelta
@@ -18,20 +19,19 @@ from ...ports.messaging.iemail_verification_publisher import IEmailVerificationP
 class EmailVerificationServiceImpl(IEmailVerificationService):
 
 
-    def __init__(self, user_email_verification_repository: IUserEmailVerificationRepository, hash_generator: IHasherGenerator,
-                 system_clock: IClock, ulid_generator: IULIDGenerator, email_verification_publisher:  IEmailVerificationPublisher)  -> None :
-        self.__user_email_verification_repository = user_email_verification_repository
+    def __init__(self, hash_generator: IHasherGenerator,system_clock: IClock, ulid_generator: IULIDGenerator,
+                 email_verification_publisher:  IEmailVerificationPublisher)  -> None :
         self.__hash_generator = hash_generator
         self.__clock = system_clock
         self.__ulid_generator = ulid_generator
         self.__email_verification_publisher = email_verification_publisher
 
 
-    async def issue_for_user(self, user: User) -> tuple[EmailVerification, str]:
+    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> tuple[EmailVerification, str]:
 
         verification, raw = self.__create_email_verification_entity(user)
 
-        created_verification = await self.__user_email_verification_repository.create_verification_code(verification)
+        created_verification = await uow.user_email_verification_repository.create_verification_code(verification)
 
         email_verification_event = self.__create_email_verification_event(user, raw)
 
@@ -39,19 +39,19 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
 
         return created_verification, raw
 
-    async def ensure_active_verification_for_user(self, user: User) -> EmailVerification:
+    async def ensure_active_verification_for_user(self, user: User, uow: IAuthUnitOfWork) -> EmailVerification:
         now = self.__clock.now()
-        verification: Optional[EmailVerification] = await self.__user_email_verification_repository.get_active_email_verification_by_user_id(user.id)
+        verification: Optional[EmailVerification] = await uow.user_email_verification_repository.get_active_email_verification_by_user_id(user.id)
 
         if not verification:
-            await self.issue_for_user(user)
-            raise EmailVerificationException("Voce ainda nao esta verificado. Um código de verificação foi enviado para seu email.")
+            await self.issue_for_user(user, uow)
+            raise EmailVerificationException()
 
         if verification.is_expired:
             verification.revoke(now)
-            await self.__user_email_verification_repository.revoke(verification)
-            await self.issue_for_user(user)
-            raise EmailVerificationException("Voce ainda nao esta verificado. Um código de verificação foi enviado para seu email.")
+            await uow.user_email_verification_repository.revoke(verification)
+            await self.issue_for_user(user, uow)
+            raise EmailVerificationException()
 
         return verification
 

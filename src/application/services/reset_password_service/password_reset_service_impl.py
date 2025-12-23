@@ -9,14 +9,14 @@ from src.domain.events.password_reset_requested import PasswordResetRequested
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 
 
 class PasswordResetServiceImpl(IPasswordResetService):
 
 
-    def __init__(self, password_reset_repository, password_reset_publisher: IPasswordResetPublisher, system_clock: IClock,
+    def __init__(self, password_reset_publisher: IPasswordResetPublisher, system_clock: IClock,
                  ulid_generator: IULIDGenerator, hasher_generator: IHasherGenerator) -> None:
-        self.__password_reset_repository = password_reset_repository
         self.__password_reset_publisher = password_reset_publisher
         self.__system_clock = system_clock
         self.__ulid_generator = ulid_generator
@@ -39,11 +39,11 @@ class PasswordResetServiceImpl(IPasswordResetService):
         return password_reset_event
 
 
-    async def issue_for_user(self, user: User) -> ResetPassword:
+    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> ResetPassword:
         now = self.__system_clock.now()
         reset_password_entity, raw_code = self.__create_reset_password_entity(user, now)
 
-        created_reset_password_entity = await self.__password_reset_repository.create_new_password_reset(reset_password_entity)
+        created_reset_password_entity = await uow.reset_password_repository.create_new_password_reset(reset_password_entity)
 
         password_reset_event = self.__create_password_reset_event(user, raw_code)
 

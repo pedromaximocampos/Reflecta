@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager
-from typing import Optional
+from typing import Optional, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ class SQLAlchemyUnitOfWork(ABC, AbstractAsyncContextManager):
         self._db = db
         self._session: Optional[AsyncSession] = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         self._session = self._db.get_session()
         await self._init_repositories(self._session)
         return self
@@ -34,12 +34,23 @@ class SQLAlchemyUnitOfWork(ABC, AbstractAsyncContextManager):
         try:
             if exc_type is not None:
                 await self._session.rollback()
-            else:
-                await self._session.commit()
         finally:
             await self._session.close()
             self._session = None
+            self._clear_repositories()
+
+    async def commit(self) -> None:
+        assert self._session is not None
+        await self._session.commit()
+
+    async def rollback(self) -> None:
+        assert self._session is not None
+        await self._session.rollback()
 
     @abstractmethod
     async def _init_repositories(self, session: AsyncSession) -> None:
-        raise NotImplementedError
+        ...
+
+    @abstractmethod
+    def _clear_repositories(self) -> None:
+        ...

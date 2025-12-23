@@ -12,7 +12,7 @@ class IUserEmailVerificationRepository(Protocol):
     async def get_by_code(self, hashed_code: str) -> Optional[EmailVerification]:
         ...
 
-    async def validate_email_verification(self, email_verification: EmailVerification) -> None:
+    async def mark_as_verified(self, email_verification: EmailVerification) -> None:
         ...
 
     async def revoke(self, email_verification: EmailVerification) -> None:

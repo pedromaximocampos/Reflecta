@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.password_plain import PasswordPlain
 from .isignup_use_case import ISignUpUseCase
 from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
@@ -17,40 +18,44 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
     def __init__(
         self,
-        user_repository: IUserRepository,
+        auth_unit_of_work: IAuthUnitOfWork,
         password_hasher: IPasswordHasher,
         system_clock: IClock,
         ulid_generator: IULIDGenerator,
         hash_generator: IHasherGenerator,
         email_verification_service: IEmailVerificationService,
     ) -> None:
-        self._user_repository = user_repository
-        self._password_hasher = password_hasher
-        self._clock = system_clock
-        self._ulid_generator = ulid_generator
-        self._hash_generator = hash_generator
-        self._email_verification_service = email_verification_service
+        self.__auth_unit_of_work = auth_unit_of_work
+        self.__password_hasher = password_hasher
+        self.__clock = system_clock
+        self.__ulid_generator = ulid_generator
+        self.__hash_generator = hash_generator
+        self.__email_verification_service = email_verification_service
 
     async def execute(self, dto: SignupInputDTO) -> SignupOutputDTO:
 
-        created_user = await self._create_new_user_(dto)
+        async with self.__auth_unit_of_work as uow:
 
-        email_verification, raw_token = await self._email_verification_service.issue_for_user(created_user)
+            created_user = await self.__create_new_user_(dto, uow)
 
-        return SignupOutputDTO(
-            user=created_user,
-            raw_token_to_verify_email=raw_token
-        )
+            email_verification, raw_token = await self.__email_verification_service.issue_for_user(created_user, uow)
+
+            await uow.commit()
+
+            return SignupOutputDTO(
+                user=created_user,
+                raw_token_to_verify_email=raw_token
+            )
 
 
-    async def _create_new_user_(self, dto: SignupInputDTO) -> User:
-        now = self._clock.now()
+    async def __create_new_user_(self, dto: SignupInputDTO, uow: IAuthUnitOfWork) -> User:
+        now = self.__clock.now()
 
-        user_id = UserId(self._ulid_generator.generate_ulid())
+        user_id = UserId(self.__ulid_generator.generate_ulid())
 
         password_plain  = PasswordPlain(dto.password)
 
-        password_hash = password_plain.to_hash(self._password_hasher)
+        password_hash = password_plain.to_hash(self.__password_hasher)
 
         credentials = AuthCredentials(
             user_id=user_id,
@@ -70,6 +75,6 @@ class SignupUseCaseImpl(ISignUpUseCase):
             is_email_verified=False
         )
 
-        created_user = await self._user_repository.create(new_user)
+        created_user = await uow.users_repository.create(new_user)
 
         return created_user

@@ -45,7 +45,7 @@ class UserEmailVerificationRepository(IUserEmailVerificationRepository):
         )
         await self._session.execute(query)
 
-    async def validate_email_verification(self, email_verification: EmailVerification) -> None:
+    async def mark_as_verified(self, email_verification: EmailVerification) -> None:
         model = self._mapper.to_model(email_verification)
         query = (
             update(UserEmailVerificationModel)

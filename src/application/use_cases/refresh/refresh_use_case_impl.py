@@ -1,4 +1,6 @@
 from typing import Optional
+
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from .irefresh_use_case import IRefreshUseCase
 from .dto import RefreshResultDTO
 from src.application.services.auth_session import IAuthSessionService, AuthSessionResultDTO
@@ -12,29 +14,33 @@ from src.domain.ports.system.iclock import IClock
 class RefreshUseCaseImpl(IRefreshUseCase):
 
 
-    def __init__(self, auth_session_service: IAuthSessionService, user_repository: IUserRepository,
+    def __init__(self, auth_session_service: IAuthSessionService, auth_unit_of_work: IAuthUnitOfWork,
                  system_clock : IClock):
-        self._auth_session_service = auth_session_service
-        self._user_repository = user_repository
+        self.__auth_session_service = auth_session_service
+        self.__auth_unit_of_work = auth_unit_of_work
         self._clock = system_clock
 
 
     async def execute(self, refresh_token: str) -> RefreshResultDTO:
 
-        past_session: Optional[AuthSession] = await self._auth_session_service.validate_session_by_refresh_token(refresh_token)
+        async with self.__auth_unit_of_work as uow:
 
-        if not past_session:
-            raise AuthError("Sessão inválida ou expirou.")
+            past_session: Optional[AuthSession] = await self.__auth_session_service.validate_session_by_refresh_token(refresh_token, uow)
 
-        user = await self._user_repository.find_by_id(past_session.user_id)
+            if not past_session:
+                raise AuthError("Invalid or expired session")
 
-        if not user:
-            raise AuthError("Usuário não encontrado para o token fornecido.")
+            user = await uow.users_repository.find_by_id(past_session.user_id)
 
-        auth_session_result: AuthSessionResultDTO  = await self._auth_session_service.refresh_session(past_session)
+            if not user:
+                raise AuthError("Usuário não encontrado para o token fornecido.")
 
-        return RefreshResultDTO(
-            access_token=auth_session_result.access_token,
-            refresh_token=auth_session_result.refresh_token,
-            user=user
-        )
+            auth_session_result: AuthSessionResultDTO  = await self.__auth_session_service.refresh_session(past_session, uow)
+
+            await uow.commit()
+
+            return RefreshResultDTO(
+                access_token=auth_session_result.access_token,
+                refresh_token=auth_session_result.refresh_token,
+                user=user
+            )

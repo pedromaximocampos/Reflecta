@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from src.application.services.token.dto import GeneratedTokenDTO
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 
@@ -28,8 +29,8 @@ class AuthSessionServiceImpl(IAuthSessionService):
         self._ulid_generator = ulid_generator
         self._jti_hasher_generator = jti_hasher_generator
 
-    async def create_session(self, user: User) -> AuthSessionResultDTO:
-        await self._check_sessions_limit(user.id)
+    async def create_session(self, user: User, uow: IAuthUnitOfWork) -> AuthSessionResultDTO:
+        await self._check_sessions_limit(user.id, uow)
 
         now = self._clock.now()
 
@@ -45,7 +46,7 @@ class AuthSessionServiceImpl(IAuthSessionService):
             expires_at=refresh_token.expires_at,
         )
 
-        created_auth_session: AuthSession = await self._session_repository.create_session(auth_session)
+        created_auth_session: AuthSession = await uow.auth_sessions_repository.create_session(auth_session)
 
         return AuthSessionResultDTO(
             session_id=created_auth_session.id,
@@ -69,17 +70,17 @@ class AuthSessionServiceImpl(IAuthSessionService):
 
         return auth_session
 
-    async def invalidate_session(self, session: AuthSession) -> None:
-        await self._session_repository.invalidate_session(session)
+    async def invalidate_session(self, session: AuthSession, uow: IAuthUnitOfWork) -> None:
+        await uow.auth_sessions_repository.invalidate_session(session)
 
 
-    async def _check_sessions_limit(self, user_id: UserId) -> None:
-        user_auth_sessions: list[AuthSession] = await self._session_repository.get_sessions_by_user_id(user_id)
+    async def _check_sessions_limit(self, user_id: UserId, uow: IAuthUnitOfWork) -> None:
+        user_auth_sessions: list[AuthSession] = await uow.auth_sessions_repository.get_sessions_by_user_id(user_id)
 
         if len(user_auth_sessions) >= self._USER_SESSIONS_LIMIT:
             oldest_session: AuthSession = user_auth_sessions[0]
             oldest_session.revoke(revoked_at=self._clock.now())
-            await self._session_repository.revoke_session(oldest_session)
+            await uow.auth_sessions_repository.revoke_session(oldest_session)
 
     def _generate_tokens_jwts(self, user: User, now: datetime) -> tuple[GeneratedTokenDTO, GeneratedTokenDTO]:
         access_token_expiration = self._clock.access_token_expiration_in_seconds()
@@ -96,7 +97,7 @@ class AuthSessionServiceImpl(IAuthSessionService):
         return access_token, refresh_token
 
 
-    async def refresh_session(self, session: AuthSession) -> AuthSessionResultDTO:
+    async def refresh_session(self, session: AuthSession, uow: IAuthUnitOfWork) -> AuthSessionResultDTO:
         now = self._clock.now()
 
         new_access_token: GeneratedTokenDTO = self._token_service.generate_token(session.user_id, self._clock.access_token_expiration_in_seconds(), now)
@@ -110,7 +111,7 @@ class AuthSessionServiceImpl(IAuthSessionService):
         session.updated_at = now
 
 
-        refreshed_session: AuthSession = await self._session_repository.refresh_session(session)
+        refreshed_session: AuthSession = await uow.auth_sessions_repository.refresh_session(session)
 
         return AuthSessionResultDTO(
             session_id=refreshed_session.id,

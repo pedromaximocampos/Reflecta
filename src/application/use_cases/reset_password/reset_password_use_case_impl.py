@@ -66,3 +66,5 @@ class ResetPasswordUseCaseImpl(IResetPasswordUseCase):
             reset_password_entity.mark_as_used(now)
 
             await uow.reset_password_repository.update_as_used(reset_password_entity)
+
+            await uow.commit()

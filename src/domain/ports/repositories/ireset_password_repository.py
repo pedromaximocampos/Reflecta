@@ -13,3 +13,7 @@ class IResetPasswordRepository(Protocol):
     async def update_as_used(self, reset_password: ResetPassword) -> ResetPassword:
         """ Mark the given ResetPassword entity as used. """
         ...
+
+    async def create_new_password_reset(self, reset_password: ResetPassword) -> ResetPassword:
+        """ Create a new ResetPassword entity. """
+        ...

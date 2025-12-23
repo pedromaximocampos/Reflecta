@@ -20,9 +20,8 @@ class EmailVerification:
     def is_revoked(self) -> bool:
         return self.revoked_at is None
 
-    @property
-    def is_expired(self) -> bool:
-        return self.expires_at <= datetime.now(timezone.utc)
+    def is_expired(self, now: datetime) -> bool:
+        return self.expires_at <= now
 
     @property
     def is_verified(self) -> bool:

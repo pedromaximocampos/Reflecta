@@ -2,31 +2,58 @@ from abc import  ABC, abstractmethod
 from typing import Any
 from email.message import EmailMessage
 import aiosmtplib
-from src.core.settings import get_settings
 
-_settings = get_settings()
+from src.domain.exceptions.custom_exceptions.emails_notification_erros import TransientEmailError, PermanentEmailError
+from aiosmtplib.errors import (
+    SMTPConnectError,
+    SMTPServerDisconnected,
+    SMTPTimeoutError,
+    SMTPRecipientsRefused,
+    SMTPResponseException,
+    SMTPAuthenticationError,
+)
+
+from src.infra.email.smtp.configs.settings import SMTPSettings
+
 
 class BaseSMTPEmailNotifier(ABC):
 
-    def __init__(self, smtp_server: str, smtp_port: int, username: str, password: str):
-        self.__smtp_server = smtp_server
-        self.__smtp_port = smtp_port
-        self.__username = username
-        self.__password = password
-        self._domain = _settings.FRONT_END_DOMAIN
-        self._app_name = _settings.APP_NAME
-        self._from = f"{self._app_name} <no-reply@{self._domain}>"
+    def __init__(self, smtp_config: SMTPSettings) -> None:
+        self._config = smtp_config
 
 
     async def _send(self, message: EmailMessage) -> None:
-        await aiosmtplib.send(
-            message,
-            hostname=self.__smtp_server,
-            port=self.__smtp_port,
-            username=self.__username,
-            password=self.__password,
-            start_tls=True,
-        )
+
+        try:
+            await aiosmtplib.send(
+                message,
+                hostname=self._config.smtp_server,
+                port=self._config.smtp_port,
+                username=self._config.username,
+                password=self._config.password,
+                start_tls=True,
+            )
+        except (
+                SMTPConnectError,
+                SMTPServerDisconnected,
+                SMTPTimeoutError,
+                TimeoutError,
+                ConnectionError,
+            ) as exc:
+            raise TransientEmailError("Temporary SMTP error") from exc
+
+
+        except SMTPResponseException as exc:
+            if 400 <= exc.code < 500:
+                raise TransientEmailError(f"SMTP temporary error ({exc.code})") from exc
+            else:
+                raise PermanentEmailError(f"SMTP permanent error ({exc.code})") from exc
+
+        except SMTPRecipientsRefused as exc:
+            raise PermanentEmailError("Invalid recipient email address") from exc
+
+        except Exception as exc:
+            raise PermanentEmailError("SMTP authentication failed") from exc
 
     @abstractmethod
     async def send_email(self, dto: Any) -> None:

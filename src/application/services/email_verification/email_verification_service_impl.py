@@ -82,5 +82,5 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
             user_id=user.id,
             user_email=user.email,
             raw_code=raw_token,
-            user_name=user.username,
+            username=user.username,
         )

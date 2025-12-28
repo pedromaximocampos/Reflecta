@@ -8,7 +8,7 @@ from src.domain.value_objects.user_id import UserId
 @dataclass(frozen=True, slots=True)
 class EmailVerificationRequested:
     user_id: UserId
-    user_name: str
+    username: str
     user_email: Email
     raw_code: str
     occurred_at: datetime

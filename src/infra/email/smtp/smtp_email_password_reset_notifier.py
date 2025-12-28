@@ -1,23 +1,23 @@
-
-from src.application.ports.emails.dto import EmailVerificationDTO
-from src.application.ports.emails.iemail_verification_notifier import IEmailVerificationNotifier
-from src.infra.email.smtp.base_smtp_email_notifier import BaseSMTPEmailNotifier
 from email.message import EmailMessage
+from typing import Any
+
+from src.application.ports.emails.dto import EmailPasswordResetDTO
+from src.application.ports.emails.iemail_password_reset_notifier import IEmailPasswordResetNotifier
+from src.infra.email.smtp.base_smtp_email_notifier import BaseSMTPEmailNotifier
 
 
-class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNotifier):
+class SmtpEmailPasswordResetNotifier(BaseSMTPEmailNotifier, IEmailPasswordResetNotifier):
 
     def get_subject(self) -> str:
-        return f"Verify your email for {self._config.app_name}"
+        return f"Reset password link for {self._config.app_name}"
 
-
-    def get_template(self, dto: EmailVerificationDTO) -> str:
+    def get_template(self, dto: EmailPasswordResetDTO) -> str:
         return f"""
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8" />
-            <title>Verify your email</title>
+            <title>Reset your password</title>
         </head>
         <body style="font-family: Arial, sans-serif; background:#f6f7f9; padding: 20px;">
 
@@ -27,19 +27,23 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
                 <tr>
                     <td style="text-align: center;">
                         <h2 style="color: #333333; margin-bottom: 10px;">
-                            Confirm your email address
+                            Reset your password
                         </h2>
 
                         <p style="color: #555555; font-size: 15px;">
-                            Hello {dto.user_name}, thank you for creating an account!
+                            Hello {dto.user_name},
                         </p>
 
                         <p style="color: #555555; font-size: 15px;">
-                            To complete your registration, please click the button below
-                            to verify your email address:
+                            We received a request to reset the password associated with
+                            your account ({dto.email.value}).
                         </p>
 
-                        <a href="{dto.verification_link}"
+                        <p style="color: #555555; font-size: 15px;">
+                            Click the button below to create a new password:
+                        </p>
+
+                        <a href="{dto.reset_password_link}"
                            style="display: inline-block;
                                   margin-top: 20px;
                                   padding: 12px 24px;
@@ -48,7 +52,7 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
                                   text-decoration: none;
                                   border-radius: 6px;
                                   font-size: 16px;">
-                            Verify email
+                            Reset password
                         </a>
 
                         <p style="color: #777777; font-size: 13px; margin-top: 25px;">
@@ -56,7 +60,8 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
                         </p>
 
                         <p style="color: #aaaaaa; font-size: 12px; margin-top: 30px;">
-                            If you did not create an account, you can safely ignore this email.
+                            If you did not request a password reset, you can safely ignore
+                            this email. Your password will remain unchanged.
                         </p>
                     </td>
                 </tr>
@@ -66,12 +71,13 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
         </html>
         """
 
-    async def send_email(self, dto: EmailVerificationDTO) -> None:
-        message = EmailMessage()
-        message["From"] = self._config.from_address
-        message["To"] = dto.email
+    async def send_email(self, email_password_reset_dto: EmailPasswordResetDTO) -> None:
+        message =  EmailMessage()
         message["Subject"] = self.get_subject()
-        message.set_content(self.get_template(dto), subtype="html")
-
+        message["From"] = self._config.from_address
+        message["To"] = email_password_reset_dto.email.value
+        message.set_content(
+            self.get_template(email_password_reset_dto),
+            subtype="html"
+        )
         await self._send(message)
-

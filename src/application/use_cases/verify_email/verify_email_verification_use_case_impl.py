@@ -7,8 +7,6 @@ from src.domain.entities.email_verification import EmailVerification
 from src.domain.entities.user import User
 from src.domain.exceptions.custom_exceptions.email_verification_exceptions import EmailVerificationException
 from src.domain.exceptions.custom_exceptions.user_custom_exceptions import UserNotFoundError
-from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
-from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from .iverify_email_verification import IVerifyEmailVerification

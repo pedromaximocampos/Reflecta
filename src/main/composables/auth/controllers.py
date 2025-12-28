@@ -4,6 +4,7 @@ from src.main.composables.auth.use_cases import get_login_use_case, get_logoff_u
     get_sign_up_use_case, get_verify_email_use_case, get_reset_password_use_case
 from src.main.composables.shared.system import get_clock
 from src.presentation.controllers.auth.refresh_controller import RefreshController
+from src.presentation.controllers.auth.request_reset_password_controller import RequestResetPasswordController
 from src.presentation.controllers.auth.reset_password_controller import ResetPasswordController
 from src.presentation.controllers.auth.sign_up_controller import SignUpController
 from src.presentation.controllers.auth.verify_email_controller import VerifyEmailController
@@ -53,4 +54,11 @@ def get_reset_password_controller():
 
     return ResetPasswordController(
         get_reset_password_use_case()
+    )
+
+def get_request_reset_password_controller():
+    """ Retorna uma instância do caso de uso de solicitação de redefinição de senha com todas as dependências injetadas."""
+
+    return RequestResetPasswordController(
+
     )

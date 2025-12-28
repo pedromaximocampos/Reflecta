@@ -3,12 +3,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SMTPSettings:
-    smtp_server: str
-    smtp_port: int
+    server: str
+    port: int
     username: str
     password: str
     frontend_domain: str
     app_name: str
+    use_ssl: bool
 
     @property
     def from_address(self) -> str:

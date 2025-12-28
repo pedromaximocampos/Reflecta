@@ -27,8 +27,8 @@ class BaseSMTPEmailNotifier(ABC):
         try:
             await aiosmtplib.send(
                 message,
-                hostname=self._config.smtp_server,
-                port=self._config.smtp_port,
+                hostname=self._config.server,
+                port=self._config.port,
                 username=self._config.username,
                 password=self._config.password,
                 start_tls=True,

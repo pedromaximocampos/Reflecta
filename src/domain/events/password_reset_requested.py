@@ -11,4 +11,4 @@ class PasswordResetRequested:
     username: str
     user_email: Email
     raw_code: str
-    occurred_at: datetime = datetime.now(timezone.utc)
+    occurred_at: datetime

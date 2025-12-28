@@ -1,4 +1,5 @@
 from ireset_password_use_case import IResetPasswordUseCase
+from src.application.services.auth_session import IAuthSessionService
 from src.application.services.reset_password_service.ipassword_reset_service import IPasswordResetService
 from src.domain.entities.reset_password import ResetPassword
 from src.domain.entities.user import User
@@ -16,11 +17,12 @@ from src.domain.value_objects.user_id import UserId
 class ResetPasswordUseCaseImpl(IResetPasswordUseCase):
 
     def __init__(self, system_clock: IClock, auth_unit_of_work: IAuthUnitOfWork,
-                 hasher_generator: IHasherGenerator, password_hasher: IPasswordHasher) -> None:
+                 hasher_generator: IHasherGenerator, password_hasher: IPasswordHasher, auth_sessions_service: IAuthSessionService) -> None:
         self.__auth_unit_of_work = auth_unit_of_work
         self.__system_clock = system_clock
         self.__hasher_generator = hasher_generator
         self.__password_hasher = password_hasher
+        self.__auth_sessions_service = auth_sessions_service
 
     async def __validate_reset_token(self, reset_raw_token: str, uow: IAuthUnitOfWork) -> ResetPassword:
         hashed_reset_token = self.__hasher_generator.generate_hash(reset_raw_token)
@@ -66,5 +68,7 @@ class ResetPasswordUseCaseImpl(IResetPasswordUseCase):
             reset_password_entity.mark_as_used(now)
 
             await uow.reset_password_repository.update_as_used(reset_password_entity)
+
+            await self.__auth_sessions_service.invalidate_all_sessions_for_user(user.id, uow)
 
             await uow.commit()

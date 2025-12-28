@@ -111,3 +111,19 @@ class AuthSessionsRepository(IAuthSessionRepository):
         result = await self._session.execute(query)
         model = result.scalar_one()  # se não encontrou, lança (ok)
         return self._auth_session_mapper.to_entity(model)
+
+    async def invalidate_all_sessions_for_user(self, user_id: UserId) -> None:
+        """
+        Invalida (revoga) todas as sessões ativas de um usuário.
+        Usa clock para revoked_at.
+        Não comita.
+        """
+        query = (
+            update(AuthSessionsModel)
+            .where(
+                AuthSessionsModel.user_id == str(user_id),
+                AuthSessionsModel.revoked_at.is_(None),
+            )
+            .values(revoked_at=self._clock.now())
+        )
+        await self._session.execute(query)

@@ -8,3 +8,12 @@ class EmailVerificationDTO:
     expires_in_minutes: int
     user_name: str
     verification_link: str
+
+
+@dataclass(frozen=True, slots=True)
+class EmailPasswordResetDTO:
+    raw_code: str
+    email: Email
+    expires_in_minutes: int
+    user_name: str
+    verification_link: str

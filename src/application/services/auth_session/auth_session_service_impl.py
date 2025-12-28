@@ -54,7 +54,7 @@ class AuthSessionServiceImpl(IAuthSessionService):
             refresh_token=refresh_token.token,
         )
 
-    async def validate_session_by_refresh_token(self, refresh_jwt_token: str) -> Optional[AuthSession]:
+    async def validate_session_by_refresh_token(self, refresh_jwt_token: str, uow: IAuthUnitOfWork) -> Optional[AuthSession]:
         try:
             decoded_refresh_token = self._token_service.validate_token(refresh_jwt_token)
         except AuthError:
@@ -64,11 +64,16 @@ class AuthSessionServiceImpl(IAuthSessionService):
 
         hashed_jti_refresh = self._jti_hasher_generator.generate_hash(jti)
 
-        auth_session: Optional[AuthSession] = await self._session_repository.get_session_by_hashed_jti(
+        auth_session: Optional[AuthSession] = await uow.auth_sessions_repository.get_session_by_hashed_jti(
             TokenJti(hashed_jti_refresh)
         )
 
         return auth_session
+
+
+    async def invalidate_all_sessions_for_user(self, user_id: UserId, uow: IAuthUnitOfWork) -> None:
+        await uow.auth_sessions_repository.invalidate_all_sessions_for_user(user_id)
+
 
     async def invalidate_session(self, session: AuthSession, uow: IAuthUnitOfWork) -> None:
         await uow.auth_sessions_repository.invalidate_session(session)

@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional, Protocol
 
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
+from src.domain.value_objects.user_id import UserId
 
 
 class IAuthSessionService(Protocol):
@@ -26,4 +27,8 @@ class IAuthSessionService(Protocol):
 
     async def refresh_session(self, session: AuthSession, uow: IAuthUnitOfWork) -> AuthSessionResultDTO:
         """Atualiza a sessão existente e retorna novos tokens."""
+        raise NotImplementedError
+
+    async def invalidate_all_sessions_for_user(self, user_id: UserId, uow: IAuthUnitOfWork) -> None:
+        """Invalida todas as sessões associadas a um usuário específico."""
         raise NotImplementedError

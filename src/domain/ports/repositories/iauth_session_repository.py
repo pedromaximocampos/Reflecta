@@ -30,3 +30,7 @@ class IAuthSessionRepository(Protocol):
         """Atualiza a sessão especificada."""
         raise NotImplementedError
 
+    async def invalidate_all_sessions_for_user(self, user_id: UserId) -> None:
+        """Invalida todas as sessões associadas a um usuário específico."""
+        raise NotImplementedError
+

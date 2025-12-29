@@ -1,10 +1,10 @@
-from src.application.use_cases.login import LoginInput, LoginOutput
+from src.application.use_cases.auth.login import LoginInput, LoginOutput
 from src.domain.ports.system.iclock import IClock
 from src.domain.value_objects.email import Email
 from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
 from src.presentation.interfaces.controller_interface import IControllerInterface
-from src.application.use_cases.login.ilogin_use_case import ILoginUseCase
-from basicauth import decode, encode
+from src.application.use_cases.auth.login.ilogin_use_case import ILoginUseCase
+from basicauth import decode
 from src.domain.exceptions.api_types import BadRequestError
 
 class LoginController(IControllerInterface):

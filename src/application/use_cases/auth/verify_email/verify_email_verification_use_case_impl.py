@@ -10,7 +10,7 @@ from src.domain.exceptions.custom_exceptions.user_custom_exceptions import UserN
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from .iverify_email_verification import IVerifyEmailVerification
-from ...services.email_verification.iemail_verification_service import IEmailVerificationService
+from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 
 
 class VerifyEmailVerificationUseCaseImpl(IVerifyEmailVerification):

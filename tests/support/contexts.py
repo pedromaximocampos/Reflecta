@@ -2,10 +2,8 @@
 from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, Mock
 
-from src.application.use_cases.login.login_use_case_impl import LoginUseCaseImpl
-from src.application.use_cases.logoff.logoff_use_case_impl import LogoffUseCaseImpl
-from src.domain.entities.user import User
-from src.domain.entities.auth_session import AuthSession
+from src.application.use_cases.auth.login import LoginUseCaseImpl
+from src.application.use_cases.auth.logoff.logoff_use_case_impl import LogoffUseCaseImpl
 
 
 @dataclass

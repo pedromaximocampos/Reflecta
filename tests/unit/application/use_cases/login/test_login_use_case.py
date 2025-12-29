@@ -1,7 +1,6 @@
-from src.application.use_cases.login import LoginInput, LoginOutput
+from src.application.use_cases.auth.login import LoginOutput
 from src.domain.exceptions.api_types import AuthError, NotFoundError
 from src.domain.exceptions.custom_exceptions.email_verification_exceptions import EmailVerificationException
-from tests.unit.application.use_cases.login.conftest import login_use_case_with_mocks
 import pytest
 from unittest.mock import Mock
 

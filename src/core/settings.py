@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     SMTP_USER: str
     SMTP_PASSWORD: str
 
+    MAX_SESSIONS_PER_USER: Final[int] = 5
+
     # Segurança / JWT
     JWT_SECRET: str
     JWT_ALGORITHM: Final[PasswordAlgorithm] = PasswordAlgorithm.HS256

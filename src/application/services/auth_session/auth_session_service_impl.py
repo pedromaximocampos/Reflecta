@@ -1,9 +1,9 @@
 from typing import Optional
 
 from src.application.services.auth_session import *
-from src.domain.entities.user import User, AuthCredentials
+from src.core.settings import get_settings
+from src.domain.entities.user import User
 from src.domain.exceptions.api_types import AuthError
-from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.application.services.token.itoken_service import ITokenService
 from src.domain.ports.system.iclock import IClock
 from src.domain.entities.auth_session import AuthSession
@@ -15,15 +15,15 @@ from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 
+_settings = get_settings()
 
 class AuthSessionServiceImpl(IAuthSessionService):
 
 
-    _USER_SESSIONS_LIMIT = 5
+    _USER_SESSIONS_LIMIT = _settings.MAX_SESSIONS_PER_USER
 
-    def __init__(self, session_repository: IAuthSessionRepository,clock: IClock, token_service: ITokenService,
+    def __init__(self, clock: IClock, token_service: ITokenService,
                  ulid_generator: IULIDGenerator, jti_hasher_generator: IHasherGenerator) -> None:
-        self._session_repository = session_repository
         self._token_service = token_service
         self._clock = clock
         self._ulid_generator = ulid_generator

@@ -1,5 +1,5 @@
-from src.application.use_cases.refresh.dto import RefreshResultDTO
-from src.application.use_cases.refresh.irefresh_use_case import IRefreshUseCase
+from src.application.use_cases.auth.refresh.dto import RefreshResultDTO
+from src.application.use_cases.auth.refresh.irefresh_use_case import IRefreshUseCase
 from src.domain.exceptions.api_types import AuthError
 from src.domain.ports.system.iclock import IClock
 from src.presentation.http_types import HttpRequest, HttpResponse, Cookie

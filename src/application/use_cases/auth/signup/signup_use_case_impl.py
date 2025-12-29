@@ -1,12 +1,9 @@
-from datetime import datetime
-
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.password_plain import PasswordPlain
 from .isignup_use_case import ISignUpUseCase
 from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
-from src.application.use_cases.signup.dto import SignupInputDTO, SignupOutputDTO
+from src.application.use_cases.auth.signup.dto import SignupInputDTO, SignupOutputDTO
 from src.domain.entities.user import User, AuthCredentials
-from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator

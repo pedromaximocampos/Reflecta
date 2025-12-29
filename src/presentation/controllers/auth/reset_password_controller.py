@@ -1,4 +1,4 @@
-from src.application.use_cases.reset_password.ireset_password_use_case import IResetPasswordUseCase
+from src.application.use_cases.auth.reset_password import IResetPasswordUseCase
 from src.domain.exceptions.custom_exceptions.passwords_exceptions import ResetPasswordTokenException
 from src.presentation.http_types import HttpRequest, HttpResponse
 from src.presentation.interfaces.controller_interface import IControllerInterface

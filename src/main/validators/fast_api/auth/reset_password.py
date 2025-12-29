@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class ResetPasswordValidator(BaseModel):
@@ -6,3 +6,5 @@ class ResetPasswordValidator(BaseModel):
     new_password: str
 
 
+class RequestResetPasswordValidator(BaseModel):
+    email: EmailStr

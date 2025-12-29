@@ -1,5 +1,5 @@
 from typing import Protocol
-from src.application.use_cases.login import LoginInput, LoginOutput
+from src.application.use_cases.auth.login import LoginInput, LoginOutput
 
 
 class ILoginUseCase(Protocol):

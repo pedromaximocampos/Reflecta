@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Request, Query
 from src.main.adapters.fast_api.fast_api_adapter import adapter_fastapi_request
 from src.main.composables.auth.controllers import get_login_controller, get_logoff_controller, get_refresh_controller, \
-    get_signup_controller, get_email_verification_controller, get_reset_password_controller
+    get_signup_controller, get_email_verification_controller, get_reset_password_controller, \
+    get_request_reset_password_controller
 from src.main.validators.fast_api.auth.login import LoginRequestValidator, LoginResponseValidator
-from src.main.validators.fast_api.auth.reset_password import ResetPasswordValidator
+from src.main.validators.fast_api.auth.reset_password import ResetPasswordValidator, RequestResetPasswordValidator
 from src.main.validators.fast_api.auth.sign_up import SignUpValidator
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -15,6 +16,7 @@ _REFRESH_CONTROLLER = get_refresh_controller()
 _SIGNUP_CONTROLLER = get_signup_controller()
 _VALIDATE_EMAIL_CONTROLLER = get_email_verification_controller()
 _RESET_PASSWORD_CONTROLLER = get_reset_password_controller()
+_REQUEST_PASSWORD_RESET_CONTROLLER = get_request_reset_password_controller()
 
 
 @auth_router.post("/login", response_model=LoginResponseValidator)
@@ -53,3 +55,9 @@ async def auth_verify_email(
 async def auth_reset_password(body: ResetPasswordValidator,  request: Request):
     """ Auth User reset password endpoint"""
     return await adapter_fastapi_request(request, _RESET_PASSWORD_CONTROLLER.handle_request, body)
+
+
+@auth_router.post("/request-reset-password")
+async def auth_request_reset_password(body: RequestResetPasswordValidator, request: Request):
+    """ Auth User request reset password endpoint"""
+    return await adapter_fastapi_request(request, _REQUEST_PASSWORD_RESET_CONTROLLER.handle_request, body)

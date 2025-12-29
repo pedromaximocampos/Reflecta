@@ -1,6 +1,6 @@
 from typing import Optional
 from src.application.services.auth_session.iauth_session_service import IAuthSessionService
-from src.application.use_cases.logoff.ilogoff_use_case import ILogoffUseCase
+from src.application.use_cases.auth.logoff.ilogoff_use_case import ILogoffUseCase
 from src.domain.entities.auth_session import AuthSession
 from src.domain.exceptions.api_types import AuthError
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork

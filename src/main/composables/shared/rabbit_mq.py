@@ -1,3 +1,4 @@
+from src.core.settings import get_settings
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig, RabbitMQPublisherConfig
 
 _settings = get_settings()

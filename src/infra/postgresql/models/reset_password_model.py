@@ -15,7 +15,7 @@ class ResetPasswordModel(Base):
 
     user: Mapped["UserModel"] = relationship(
         "UserModel",
-        back_populates="email_verifications",
+        back_populates="password_resets",
         lazy="joined",
     )
 

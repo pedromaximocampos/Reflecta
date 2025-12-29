@@ -15,7 +15,7 @@ class PasswordPlain:
     def __post_init__(self) -> None:
         v = self.value
 
-        if len(v) < _settings.PASSWORD_MIN_LENGTH:
+        if len(v) < _settings.MINIMUM_PASSWORD_LENGTH:
             raise WeekPasswordException(f"Password must have at least {_settings.PASSWORD_MIN_LENGTH} characters.")
         if not re.search(r"[A-Za-z]", v):
             raise WeekPasswordException("Password must contain at least one letter.")

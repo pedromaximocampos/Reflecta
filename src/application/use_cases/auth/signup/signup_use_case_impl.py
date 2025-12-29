@@ -1,4 +1,5 @@
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
+from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_plain import PasswordPlain
 from .isignup_use_case import ISignUpUseCase
 from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
@@ -62,7 +63,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         new_user = User(
             id=user_id,
-            email=dto.email,
+            email=Email(dto.email),
             name=dto.name,
             surname=dto.surname,
             date_of_birth=dto.date_of_birth,

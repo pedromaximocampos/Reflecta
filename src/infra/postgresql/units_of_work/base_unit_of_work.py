@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.postgresql.connection import DBConnectionHandler
 
 
-class SQLAlchemyUnitOfWork(ABC, AbstractAsyncContextManager):
+class SQLAlchemyUnitOfWork(AbstractAsyncContextManager):
     """
     Base Unit of Work para SQLAlchemy (AsyncSession).
 

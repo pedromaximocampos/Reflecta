@@ -7,16 +7,16 @@ _settings = get_settings()
 class SystemClock(IClock):
 
     def access_token_expiration_in_seconds(self) -> int:
-        return _settings.access_token_minutes * 60
+        return _settings.ACCESS_TOKEN_MINUTES * 60
 
     def refresh_token_expiration_in_seconds(self) -> int:
-        return _settings.refresh_token_days * 24 * 60 * 60
+        return _settings.REFRESH_TOKEN_DAYS * 24 * 60 * 60
 
     def now(self) -> datetime:
         return datetime.now(timezone.utc)
 
     def email_verification_code_expiration_in_seconds(self) -> int:
-        return _settings.email_verification_code_expiration_minutes * 60
+        return _settings.EMAIL_VERIFICATION_MINUTES * 60
 
     def password_reset_expiration_in_seconds(self) -> int:
-        return _settings.password_reset_code_expiration_minutes * 60
+        return _settings.RESET_PASSWORD_MINUTES * 60

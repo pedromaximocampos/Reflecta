@@ -24,7 +24,7 @@ def get_email_verification_consumer_config() -> RabbitMQConsumerConfig:
         dlx_exchange=_settings.RABBITMQ_EMAIL_DLX_EXCHANGE,
 
         max_retries=_settings.RABBITMQ_MAX_RETRIES,
-        frontend_base_url=_settings.FRONTEND_BASE_URL,
+        frontend_base_url=_settings.FRONT_END_DOMAIN,
     )
 
 
@@ -44,7 +44,7 @@ def get_password_reset_consumer_config() -> RabbitMQConsumerConfig:
         dlx_exchange=_settings.RABBITMQ_EMAIL_DLX_EXCHANGE,
 
         max_retries=_settings.RABBITMQ_MAX_RETRIES,
-        frontend_base_url=_settings.FRONTEND_BASE_URL,
+        frontend_base_url=_settings.FRONT_END_DOMAIN,
     )
 
 
@@ -60,7 +60,7 @@ def get_email_verification_publisher_config() -> RabbitMQPublisherConfig:
         routing_key=_settings.RABBITMQ_EMAIL_VERIFICATION_ROUTING_KEY,
         queue_name=_settings.RABBITMQ_EMAIL_VERIFICATION_QUEUE,
 
-        frontend_base_url=_settings.FRONTEND_BASE_URL,
+        frontend_base_url=_settings.FRONT_END_DOMAIN,
     )
 
 
@@ -72,5 +72,5 @@ def get_password_reset_publisher_config() -> RabbitMQPublisherConfig:
         routing_key=_settings.RABBITMQ_PASSWORD_RESET_ROUTING_KEY,
         queue_name=_settings.RABBITMQ_PASSWORD_RESET_QUEUE,
 
-        frontend_base_url=_settings.FRONTEND_BASE_URL,
+        frontend_base_url=_settings.FRONT_END_DOMAIN,
     )

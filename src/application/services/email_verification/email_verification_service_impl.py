@@ -76,11 +76,12 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
         return verification, raw
 
 
-    @staticmethod
-    def __create_email_verification_event(user: User, raw_token: str) -> EmailVerificationRequested:
+
+    def __create_email_verification_event(self,user: User, raw_token: str) -> EmailVerificationRequested:
         return EmailVerificationRequested(
             user_id=user.id,
             user_email=user.email,
             raw_code=raw_token,
             username=user.username,
+            occurred_at=self.__clock.now()
         )

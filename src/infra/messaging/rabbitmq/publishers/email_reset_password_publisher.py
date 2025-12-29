@@ -15,7 +15,7 @@ class EmailResetPasswordPublisher(IPasswordResetPublisher):
         connection = await aio_pika.connect_robust(self.__config.url)
         async with connection:
             channel = await connection.channel()
-            exchange  = await channel.declare_exchange(self.__config.exchange_name, aio_pika.ExchangeType.FANOUT)
+            exchange  = await channel.declare_exchange(self.__config.exchange_name, aio_pika.ExchangeType.TOPIC, durable=True)
 
             message_body = {
                 "username": password_reset_event.username,

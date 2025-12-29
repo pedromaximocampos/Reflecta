@@ -7,7 +7,7 @@ from src.domain.value_objects.email import Email
 
 @dataclass(slots=True)
 class SignupInputDTO:
-    email: Email
+    email: str
     password: str
     username: str
     name: str

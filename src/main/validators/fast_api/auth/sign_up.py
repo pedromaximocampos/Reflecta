@@ -43,6 +43,8 @@ class SignUpValidator(BaseModel):
         # se quiser regra de idade mínima, pode colocar aqui ou no domínio
         return v
 
+
+
     @model_validator(mode="after")
     def check_password_match(self):
         if self.password != self.password_confirm:

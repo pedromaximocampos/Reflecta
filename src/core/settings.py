@@ -8,7 +8,7 @@ import os
 class Settings(BaseSettings):
     # Ambiente
     ENV: str = "dev"              # dev | prod | test
-    DEBUG: bool = True
+    DEBUG: bool = True if ENV == "dev" else False
 
     # Postgres
     POSTGRES_HOST: str = "localhost"

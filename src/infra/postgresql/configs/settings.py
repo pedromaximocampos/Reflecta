@@ -19,5 +19,4 @@ class PostgresqlSettings:
         return (
             f"postgresql+{self.driver}://{self.user}:{self.password}"
             f"@{self.host}:{self.port}/{self.db_name}"
-            f"&sslmode={ssl_mode}"
         )

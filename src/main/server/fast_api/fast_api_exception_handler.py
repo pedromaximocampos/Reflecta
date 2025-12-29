@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
@@ -17,20 +18,12 @@ def add_exception_handlers(app: FastAPI) -> None:
     # --------------------------
     @app.exception_handler(RequestValidationError)
     async def pydantic_error_handler(request: Request, exc: RequestValidationError):
-        """
-        Traduz erro de Pydantic para seu ValidationFailed (DomainError).
-        """
         domain_exc = ValidationFailed(
             message="Invalid request data",
-            details=exc.errors(),
+            details=jsonable_encoder(exc.errors()),
         )
-
         http_response = ExceptionHandler.handle_exception(domain_exc)
-
-        return JSONResponse(
-            status_code=http_response.status_code,
-            content=http_response.body,
-        )
+        return JSONResponse(status_code=http_response.status_code, content=http_response.body)
 
     # --------------------------
     # 2) DomainError que escape do adapter (raro)

@@ -17,7 +17,7 @@ class ExceptionHandler:
     def handle_exception(e: Exception) -> HttpResponse:
         meta = {}
 
-        if _settings.debug:
+        if _settings.DEBUG:
             exc_type, exc_value, exc_tb = sys.exc_info()  # informações da exceção
             if exc_tb:
                 tb = traceback.extract_tb(sys.exc_info()[2]) # pega a traceback
@@ -25,7 +25,8 @@ class ExceptionHandler:
                     filename, lineno, func, text = tb[-1]         # último frame
                     trace  = f"Erro em {filename}, linha {lineno}, função {func}: {text}"
 
-                    meta =  trace
+                    meta["trace"] = trace
+                    meta["raw_error"] = str(e)
 
         if isinstance(e, DomainError):
             http_response = HttpResponse(

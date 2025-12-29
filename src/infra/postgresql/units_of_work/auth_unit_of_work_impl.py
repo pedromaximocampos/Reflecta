@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from base_unit_of_work import SQLAlchemyUnitOfWork
+from .base_unit_of_work import SQLAlchemyUnitOfWork
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository

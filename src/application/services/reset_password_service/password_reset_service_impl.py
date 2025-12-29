@@ -1,7 +1,7 @@
 import secrets
 from datetime import timedelta, datetime
 
-from ipassword_reset_service import IPasswordResetService
+from .ipassword_reset_service import IPasswordResetService
 from src.application.ports.messaging.ipassword_reset_publisher import IPasswordResetPublisher
 from src.domain.entities.reset_password import ResetPassword
 from src.domain.entities.user import User

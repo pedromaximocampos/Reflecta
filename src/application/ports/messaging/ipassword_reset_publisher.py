@@ -8,5 +8,3 @@ class IPasswordResetPublisher(Protocol):
 
     async def publish_password_reset_requested(self, password_reset_event: PasswordResetRequested) -> None:
         ...
-
-    async def publish

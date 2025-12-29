@@ -1,4 +1,4 @@
-from src.application.use_cases.auth.verify_email import IVerifyEmailVerification
+from src.application.use_cases.auth.verify_email.iverify_email_verification import IVerifyEmailVerification
 from src.presentation.http_types import HttpRequest, HttpResponse
 from src.presentation.interfaces.controller_interface import IControllerInterface
 

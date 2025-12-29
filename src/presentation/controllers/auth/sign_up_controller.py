@@ -1,4 +1,4 @@
-from src.application.use_cases.auth.signup import ISignUpUseCase
+from src.application.use_cases.auth.signup.isignup_use_case import ISignUpUseCase
 from src.presentation.http_types import HttpRequest, HttpResponse
 from src.presentation.interfaces.controller_interface import IControllerInterface
 

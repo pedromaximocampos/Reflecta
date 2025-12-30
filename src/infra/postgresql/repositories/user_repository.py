@@ -123,3 +123,21 @@ class UserRepository(IUserRepository):
                 raise UsernameAlreadyExistsError()
 
             raise
+
+    async def verify_email(self, user: User) -> User:
+
+        user_model, creds_model = self.__user_mapper.to_model(user)
+        query = (
+            update(UserModel)
+            .where(UserModel.id == user.id.value)
+            .values(
+                is_email_verified=True,
+                email_verified_at=user_model.email_verified_at,
+            )
+            .returning(UserModel)
+        )
+
+        result = await self.__session.execute(query)
+        updated_user = result.scalar_one()  # ou scalar_one_or_none()
+
+        return updated_user

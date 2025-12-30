@@ -23,5 +23,5 @@ class EmailPasswordResetConsumerWorker(BaseRabbitMQConsumerWorker):
             email=payload.get("user_email"),
             raw_code=payload.get("raw_code"),
             expires_in_minutes=payload.get("expires_in"),
-            user_name=payload.get("username"),
+            username=payload.get("username"),
             reset_password_link=payload.get("reset_password_link"))

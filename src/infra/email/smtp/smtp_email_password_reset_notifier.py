@@ -31,7 +31,7 @@ class SmtpEmailPasswordResetNotifier(BaseSMTPEmailNotifier, IEmailPasswordResetN
                         </h2>
 
                         <p style="color: #555555; font-size: 15px;">
-                            Hello {dto.user_name},
+                            Hello {dto.username},
                         </p>
 
                         <p style="color: #555555; font-size: 15px;">

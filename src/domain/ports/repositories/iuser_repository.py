@@ -23,5 +23,4 @@ class IUserRepository(Protocol):
 
     async def create(self, user: User) -> User: ...
 
-    async def verify_email(self, user):
-        pass
+    async def verify_email(self, user) -> User: ...

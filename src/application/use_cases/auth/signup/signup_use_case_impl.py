@@ -35,7 +35,6 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         async with self.__auth_unit_of_work as uow:
 
-
             created_user = await self.__create_new_user_(dto, uow)
 
             email_verification, raw_token = await self.__email_verification_service.issue_for_user(created_user, uow)
@@ -56,7 +55,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         user_email = Email(dto.email)
 
-        existent_user = self.__check_email_already_exists_(user_email, uow)
+        existent_user = await self.__check_email_already_exists_(user_email, uow)
 
         if existent_user:
             raise EmailAlreadyExistsError()

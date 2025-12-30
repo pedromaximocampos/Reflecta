@@ -15,5 +15,5 @@ class EmailPasswordResetDTO:
     raw_code: str
     email: Email
     expires_in_minutes: int
-    user_name: str
+    username: str
     reset_password_link: str

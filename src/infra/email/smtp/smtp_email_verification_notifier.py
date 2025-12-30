@@ -31,7 +31,7 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
                         </h2>
 
                         <p style="color: #555555; font-size: 15px;">
-                            Hello {dto.user_name}, thank you for creating an account!
+                            Hello {dto.username}, thank you for creating an account!
                         </p>
 
                         <p style="color: #555555; font-size: 15px;">

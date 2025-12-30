@@ -41,10 +41,12 @@ class Settings(BaseSettings):
     MINIMUM_PASSWORD_LENGTH: Final[int] = 12
 
     # RabbitMQ connection
+    RABBITMQ_URL: str
     RABBITMQ_HOST: str
     RABBITMQ_PORT: int
     RABBITMQ_USER: str
     RABBITMQ_PASSWORD: str
+    RABBITMQ_USE_SSL: bool = False
 
 
     # Exchanges
@@ -93,9 +95,8 @@ class Settings(BaseSettings):
 
     @property
     def rabbitmq_url(self) -> str:
-        return (
-            f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}"
-        )
+        return f"{self.RABBITMQ_URL}"
+
 
 
 @lru_cache

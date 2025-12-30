@@ -19,6 +19,8 @@ class RabbitMQConsumerConfig:
     
     frontend_base_url: str
 
+    ssl: bool = False
+
 
 @dataclass(frozen=True, slots=True)
 class RabbitMQPublisherConfig:

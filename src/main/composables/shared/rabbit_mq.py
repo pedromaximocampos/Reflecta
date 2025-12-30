@@ -25,6 +25,7 @@ def get_email_verification_consumer_config() -> RabbitMQConsumerConfig:
 
         max_retries=_settings.RABBITMQ_MAX_RETRIES,
         frontend_base_url=_settings.FRONT_END_DOMAIN,
+        ssl =_settings.RABBITMQ_USE_SSL,
     )
 
 
@@ -45,6 +46,7 @@ def get_password_reset_consumer_config() -> RabbitMQConsumerConfig:
 
         max_retries=_settings.RABBITMQ_MAX_RETRIES,
         frontend_base_url=_settings.FRONT_END_DOMAIN,
+        ssl=_settings.RABBITMQ_USE_SSL,
     )
 
 

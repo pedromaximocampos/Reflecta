@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from threading import settrace_all_threads
 from typing import Optional
-
+import ssl
 import aio_pika
 import json
 
@@ -20,14 +21,24 @@ class BaseRabbitMQConsumerWorker(ABC):
         self._dlx_exchange: Optional[AbstractExchange] = None
 
     async def start(self):
-        self._connection = await aio_pika.connect_robust(self.__config.url)
+        ssl_default = None
+        if self.__config.ssl:
+            ssl_default = ssl.create_default_context(cafile=None)
+        self._connection = await aio_pika.connect_robust(self.__config.url, ssl_context=ssl_default)
 
+        args = {
+            "x-queue-type": "classic",
+            "x-dead-letter-exchange": self.__config.dlx_exchange,
+            "x-dead-letter-routing-key": self.__config.retry_routing_key,
+        }
 
         async with self._connection:
+            print(f"[*] RabbitMQ Consumer Worker started for {self.__config.queue_name}. Waiting for messages...")
             self._channel = await self._connection.channel()
 
+            # Exchange DLX para envio de mensagens para a fila de retry ou para a fila de "mortos"
             self._dlx_exchange = await self._channel.get_exchange(self.__config.dlx_exchange, ensure=True)
-            queue = await self._channel.declare_queue(self.__config.queue_name, durable=True)
+            queue = await self._channel.declare_queue(self.__config.queue_name, durable=True, arguments=args)
 
 
             async with queue.iterator() as queue_iter:
@@ -49,9 +60,12 @@ class BaseRabbitMQConsumerWorker(ABC):
             retries = self._get_retry_count(message)
 
             if retries >= self.__config.max_retries:
+                # Caso e mensagem exceda o número maximo de retries, publicamos na DLQ
                 await self._publish_to_dlq(payload or {}, message, reason=f"Retries exceeded: {exc}")
                 await message.ack()
             else:
+                # Ao usarmos o nack com o requeue=False, como nossa configuração da fila possui uma exchange de dead-letter,
+                # e uma routing key de retry, a mensagem será roteada para a fila de retry automaticamente.
                 await message.nack(requeue=False)
 
         except PermanentEmailError as exc:

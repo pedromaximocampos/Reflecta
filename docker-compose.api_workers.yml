@@ -26,7 +26,6 @@ services:
       ENV: dev
       DEBUG: "1"
       POSTGRES_HOST: postgres_dev
-      RABBITMQ_HOST: rabbitmq
     # Apontando para a rede criada no docker-compose.infra.yml
     networks:
       - individuum-net
@@ -46,7 +45,7 @@ services:
       ENV: dev
       DEBUG: "1"
       POSTGRES_HOST: postgres_dev
-      RABBITMQ_HOST: rabbitmq
+
     networks:
       - individuum-net
     restart: unless-stopped
@@ -63,7 +62,7 @@ services:
       ENV: dev
       DEBUG: "1"
       POSTGRES_HOST: postgres_dev
-      RABBITMQ_HOST: rabbitmq
+
     networks:
       - individuum-net
     restart: unless-stopped

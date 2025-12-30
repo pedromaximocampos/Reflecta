@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  postgres_dev:
+    image: pgvector/pgvector:pg16
+    container_name: individuum-postgres-dev
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: individuum_mvp_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - individuum-net
+
+  postgres_test:
+    image: pgvector/pgvector:pg16
+    container_name: individuum-postgres-test
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: individuum_mvp_test
+    ports:
+      - "5433:5432"   # repara: porta externa 5433, interna 5432
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+    networks:
+      - individuum-net
+
+  rabbitmq:
+    image: rabbitmq:management   # você já tem essa imagem
+    container_name: individuum-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"    # porta AMQP (app se conecta aqui)
+      - "15672:15672"  # painel web
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - individuum-net
+
+volumes:
+  pgdata_dev:
+  pgdata_test:
+  rabbitmq_data:
+
+networks:
+  individuum-net:
+    name: individuum-net
+    driver: bridge

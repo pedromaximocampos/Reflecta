@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # Nome do container que estou criando no caso individuum-api
+  api:
+    ## Arquivo de ambiente
+    env_file:
+      - .env.dev
+    build:
+      #Conteúdo do build (no caso o . é o diretório atual (app))
+      context: .
+      # Dockerfile que criei configurnado o uv
+      dockerfile: Dockerfile
+    container_name: individuum-api
+    # Comando para rodar o uvicorn
+    command: >
+      uv run uvicorn src.main.server.fast_api.run:app
+      --host 0.0.0.0
+      --port 8000
+
+    # porta que ficara exposta
+    ports:
+      - "8000:8000"
+    # Sobrescrevendo variáveis de ambiente
+    environment:
+      ENV: dev
+      DEBUG: "1"
+      POSTGRES_HOST: postgres_dev
+      RABBITMQ_HOST: rabbitmq
+    # Apontando para a rede criada no docker-compose.infra.yml
+    networks:
+      - individuum-net
+
+    # Reinicia o container caso ele pare
+    restart: unless-stopped
+
+  worker_email_verification:
+    env_file:
+      - .env.dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: individuum-worker-email-verification
+    command: uv run python -m src.main.workers.auth.email_verification
+    environment:
+      ENV: dev
+      DEBUG: "1"
+      POSTGRES_HOST: postgres_dev
+      RABBITMQ_HOST: rabbitmq
+    networks:
+      - individuum-net
+    restart: unless-stopped
+
+  worker_email_password_reset:
+    env_file:
+      - .env.dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: individuum-worker-email-password-reset
+    command: uv run python -m src.main.workers.auth.email_password_reset
+    environment:
+      ENV: dev
+      DEBUG: "1"
+      POSTGRES_HOST: postgres_dev
+      RABBITMQ_HOST: rabbitmq
+    networks:
+      - individuum-net
+    restart: unless-stopped
+
+networks:
+  individuum-net:
+    external: true

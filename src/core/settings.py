@@ -1,5 +1,8 @@
 # src/core/settings.py
+import logging
 from functools import lru_cache
+from logging.config import dictConfig
+
 from pydantic_settings import BaseSettings
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
 from typing import Final
@@ -9,6 +12,7 @@ class Settings(BaseSettings):
     # Ambiente
     ENV: str = "dev"              # dev | prod | test
     DEBUG: bool = True if ENV == "dev" else False
+    LOG_LEVEL: str = "ERROR"       # DEBUG | INFO | WARNING | ERROR | CRITICAL
 
     # Postgres
     POSTGRES_HOST: str = "localhost"
@@ -97,6 +101,29 @@ class Settings(BaseSettings):
     def rabbitmq_url(self) -> str:
         return f"{self.RABBITMQ_URL}"
 
+    def configure_logging(self) -> None:
+        level = getattr(logging, self.LOG_LEVEL.upper(), logging.INFO)
+        dictConfig({
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "default": {
+                    "format": "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+                }
+            },
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "default",
+                    "level": level
+                }
+            },
+            "root": {
+                "handlers": ["console"],
+                "level": level
+            }
+        })
+
 
 
 @lru_cache
@@ -114,4 +141,6 @@ def get_settings() -> Settings:
 
     env_file = env_file_map.get(env)
 
-    return Settings(_env_file=env_file)
+    settings =  Settings(_env_file=env_file)
+    settings.configure_logging()
+    return settings

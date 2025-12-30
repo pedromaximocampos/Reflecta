@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
-from threading import settrace_all_threads
 from typing import Optional
 import ssl
 import aio_pika
 import json
+import logging
 
-from aio_pika import Exchange, IncomingMessage
+
 from aio_pika.abc import AbstractRobustConnection, AbstractChannel, AbstractIncomingMessage, AbstractExchange
 
 from src.domain.exceptions.custom_exceptions.emails_notification_erros import TransientEmailError, PermanentEmailError
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
+logger = logging.getLogger(__name__)
 
 class BaseRabbitMQConsumerWorker(ABC):
 
@@ -33,7 +34,7 @@ class BaseRabbitMQConsumerWorker(ABC):
         }
 
         async with self._connection:
-            print(f"[*] RabbitMQ Consumer Worker started for {self.__config.queue_name}. Waiting for messages...")
+            logger.info(msg=f"[*] RabbitMQ Consumer Worker started for {self.__config.queue_name}. Waiting for messages...")
             self._channel = await self._connection.channel()
 
             # Exchange DLX para envio de mensagens para a fila de retry ou para a fila de "mortos"
@@ -43,6 +44,7 @@ class BaseRabbitMQConsumerWorker(ABC):
 
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:
+                    logger.info(msg=f"[x] Received message: {message.body.decode()}")
                     await self._process_message(message)
 
 

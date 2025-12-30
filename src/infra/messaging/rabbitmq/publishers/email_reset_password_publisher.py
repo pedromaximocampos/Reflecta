@@ -1,3 +1,5 @@
+import json
+
 import aio_pika
 
 from src.application.ports.messaging.ipassword_reset_publisher import IPasswordResetPublisher
@@ -15,7 +17,7 @@ class EmailResetPasswordPublisher(IPasswordResetPublisher):
         connection = await aio_pika.connect_robust(self.__config.url)
         async with connection:
             channel = await connection.channel()
-            exchange  = await channel.declare_exchange(self.__config.exchange_name, aio_pika.ExchangeType.TOPIC, durable=True)
+            exchange  = await channel.get_exchange(self.__config.exchange_name, ensure=True)
 
             message_body = {
                 "username": password_reset_event.username,
@@ -25,5 +27,7 @@ class EmailResetPasswordPublisher(IPasswordResetPublisher):
                 "reset_password_link": f"{self.__config.frontend_base_url}/reset-password?code={password_reset_event.raw_code}"
             }
 
-            message = aio_pika.Message(body=str(message_body).encode())
+            message = aio_pika.Message( body=json.dumps(message_body).encode(),
+                                        content_type="application/json",
+                                        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,)
             await exchange.publish(message, routing_key=self.__config.routing_key)

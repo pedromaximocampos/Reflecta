@@ -13,4 +13,4 @@ class SMTPSettings:
 
     @property
     def from_address(self) -> str:
-        return f"{self.app_name} <no-reply@{self.frontend_domain}>"
+        return f"individuum.mvp.app.adm@gmail.com"

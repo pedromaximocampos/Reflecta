@@ -69,7 +69,7 @@ class SMTPEmailVerificationNotifier(BaseSMTPEmailNotifier, IEmailVerificationNot
     async def send_email(self, dto: EmailVerificationDTO) -> None:
         message = EmailMessage()
         message["From"] = self._config.from_address
-        message["To"] = dto.email
+        message["To"] = dto.email.value
         message["Subject"] = self.get_subject()
         message.set_content(self.get_template(dto), subtype="html")
 

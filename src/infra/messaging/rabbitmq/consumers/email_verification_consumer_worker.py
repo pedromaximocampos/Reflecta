@@ -1,5 +1,6 @@
 from src.application.ports.emails.dto import EmailVerificationDTO
 from src.application.ports.emails.iemail_verification_notifier import IEmailVerificationNotifier
+from src.domain.value_objects.email import Email
 from src.infra.messaging.rabbitmq.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
@@ -20,16 +21,16 @@ class EmailVerificationConsumerWorker(BaseRabbitMQConsumerWorker):
     @staticmethod
     def __return_email_verification_dto(payload: dict) -> EmailVerificationDTO:
         raw_token = payload.get("raw_code")
-        user_email = payload.get("user_email")
+        user_email = Email(payload.get("user_email"))
         expires_in = payload.get("expires_in")
         verification_url = payload.get("verification_url")
-        user_name = payload.get("user_name")
+        username = payload.get("username")
 
         return EmailVerificationDTO(
             email=user_email,
             raw_code=raw_token,
             expires_in_minutes=expires_in,
-            user_name=user_name,
+            username=username,
             verification_link=verification_url
         )
 

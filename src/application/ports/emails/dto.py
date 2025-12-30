@@ -6,7 +6,7 @@ class EmailVerificationDTO:
     raw_code: str
     email: Email
     expires_in_minutes: int
-    user_name: str
+    username: str
     verification_link: str
 
 

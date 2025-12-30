@@ -1,3 +1,4 @@
+from src.domain.exceptions.custom_exceptions.user_custom_exceptions import EmailAlreadyExistsError
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_plain import PasswordPlain
@@ -34,6 +35,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         async with self.__auth_unit_of_work as uow:
 
+
             created_user = await self.__create_new_user_(dto, uow)
 
             email_verification, raw_token = await self.__email_verification_service.issue_for_user(created_user, uow)
@@ -45,8 +47,20 @@ class SignupUseCaseImpl(ISignUpUseCase):
                 raw_token_to_verify_email=raw_token
             )
 
+    @staticmethod
+    async def __check_email_already_exists_(email: Email, uow: IAuthUnitOfWork) -> bool:
+        existing_user = await uow.users_repository.find_by_email(email)
+        return existing_user is not None
 
     async def __create_new_user_(self, dto: SignupInputDTO, uow: IAuthUnitOfWork) -> User:
+
+        user_email = Email(dto.email)
+
+        existent_user = self.__check_email_already_exists_(user_email, uow)
+
+        if existent_user:
+            raise EmailAlreadyExistsError()
+
         now = self.__clock.now()
 
         user_id = UserId(self.__ulid_generator.generate_ulid())
@@ -63,7 +77,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
         new_user = User(
             id=user_id,
-            email=Email(dto.email),
+            email=user_email,
             name=dto.name,
             surname=dto.surname,
             date_of_birth=dto.date_of_birth,

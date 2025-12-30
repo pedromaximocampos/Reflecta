@@ -12,7 +12,7 @@ class EmailVerificationTokenAlreadyExistsError(DomainError):
 
 
 class EmailAlreadyExistsError(DomainError):
-    def __init__(self, message: str = "Este e-mail já está em uso.", **kwargs):
+    def __init__(self, message: str = "This email is already associated to a user", **kwargs):
         super().__init__(
             message=message,
             status_code=409,  # conflito — recurso já existe

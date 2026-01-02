@@ -24,7 +24,7 @@ class BaseRabbitMQConsumerWorker(ABC):
     async def start(self):
         ssl_default = None
         if self.__config.ssl:
-            ssl_default = ssl.create_default_context(cafile=None)
+            ssl_default = ssl.create_default_context()
         self._connection = await aio_pika.connect_robust(self.__config.url, ssl_context=ssl_default)
 
         args = {

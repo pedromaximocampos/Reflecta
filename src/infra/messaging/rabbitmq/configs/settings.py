@@ -4,6 +4,12 @@ from dataclasses import dataclass
 class RabbitMQConsumerConfig:
     url: str
 
+    host: str
+    port: int
+    user: str
+    password: str
+    virtual_host: str
+
     queue_name: str
     exchange_name: str
     routing_key: str

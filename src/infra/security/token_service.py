@@ -18,13 +18,13 @@ class TokenServiceImpl(ITokenService):
         self._algorithm = algorithm
 
     def generate_token(self, user_id: UserId, expires_in_seconds: int, now: datetime) -> GeneratedTokenDTO:
-        jti = TokenJti(self._generate_jti())
+        jti = self._generate_jti()
 
         expiration = now + timedelta(seconds=expires_in_seconds)
 
         payload = {
-            "sub": user_id,
-            "jti": jti,
+            "sub": user_id.value,
+            "jti": jti.value,
             "iat": now,
             "exp": expiration,
             "iss": self._issuer,
@@ -56,5 +56,5 @@ class TokenServiceImpl(ITokenService):
             raise AuthError("Credenciais invalidas") from e
 
     @staticmethod
-    def _generate_jti() -> str:
-        return str(uuid.uuid4())
+    def _generate_jti() -> TokenJti:
+        return TokenJti(str(uuid.uuid4()))

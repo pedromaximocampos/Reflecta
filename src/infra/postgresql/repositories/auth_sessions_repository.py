@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.auth_session import AuthSession
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.domain.ports.system.iclock import IClock
+from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
 from src.infra.postgresql.models.auth_sessions_model import AuthSessionsModel
@@ -27,7 +28,7 @@ class AuthSessionsRepository(IAuthSessionRepository):
         query = (
             select(AuthSessionsModel)
             .where(
-                AuthSessionsModel.user_id == str(user_id),
+                AuthSessionsModel.user_id == user_id.value,
                 AuthSessionsModel.revoked_at.is_(None),
                 AuthSessionsModel.expires_at > self._clock.now(),
             )
@@ -60,11 +61,11 @@ class AuthSessionsRepository(IAuthSessionRepository):
 
         return self._auth_session_mapper.to_entity(model)
 
-    async def get_session_by_hashed_jti(self, hashed_jti: str) -> Optional[AuthSession]:
+    async def get_session_by_hashed_jti(self, hashed_jti: TokenJti) -> Optional[AuthSession]:
         query = (
             select(AuthSessionsModel)
             .where(
-                AuthSessionsModel.refresh_jti_hash == hashed_jti,
+                AuthSessionsModel.refresh_jti_hash == hashed_jti.value,
                 AuthSessionsModel.revoked_at.is_(None),
                 AuthSessionsModel.expires_at > self._clock.now(),
             )

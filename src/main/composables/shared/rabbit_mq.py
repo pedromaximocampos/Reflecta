@@ -10,7 +10,13 @@ _settings = get_settings()
 
 def get_email_verification_consumer_config() -> RabbitMQConsumerConfig:
     return RabbitMQConsumerConfig(
-        url=_settings.rabbitmq_url,
+        url=_settings.RABBITMQ_URL,
+
+        host=_settings.RABBITMQ_HOST,
+        port=_settings.RABBITMQ_PORT,
+        user=_settings.RABBITMQ_USER,
+        password=_settings.RABBITMQ_PASSWORD,
+        virtual_host=_settings.RABBITMQ_VIRTUAL_HOST,
 
         queue_name=_settings.RABBITMQ_EMAIL_VERIFICATION_QUEUE,
         exchange_name=_settings.RABBITMQ_EMAIL_EXCHANGE,
@@ -31,7 +37,13 @@ def get_email_verification_consumer_config() -> RabbitMQConsumerConfig:
 
 def get_password_reset_consumer_config() -> RabbitMQConsumerConfig:
     return RabbitMQConsumerConfig(
-        url=_settings.rabbitmq_url,
+        url=_settings.RABBITMQ_URL,
+
+        host=_settings.RABBITMQ_HOST,
+        port=_settings.RABBITMQ_PORT,
+        user=_settings.RABBITMQ_USER,
+        password=_settings.RABBITMQ_PASSWORD,
+        virtual_host=_settings.RABBITMQ_VIRTUAL_HOST,
 
         queue_name=_settings.RABBITMQ_PASSWORD_RESET_QUEUE,
         exchange_name=_settings.RABBITMQ_EMAIL_EXCHANGE,
@@ -56,7 +68,7 @@ def get_password_reset_consumer_config() -> RabbitMQConsumerConfig:
 
 def get_email_verification_publisher_config() -> RabbitMQPublisherConfig:
     return RabbitMQPublisherConfig(
-        url=_settings.rabbitmq_url,
+        url=_settings.RABBITMQ_URL,
 
         exchange_name=_settings.RABBITMQ_EMAIL_EXCHANGE,
         routing_key=_settings.RABBITMQ_EMAIL_VERIFICATION_ROUTING_KEY,
@@ -68,7 +80,7 @@ def get_email_verification_publisher_config() -> RabbitMQPublisherConfig:
 
 def get_password_reset_publisher_config() -> RabbitMQPublisherConfig:
     return RabbitMQPublisherConfig(
-        url=_settings.rabbitmq_url,
+        url=_settings.RABBITMQ_URL,
 
         exchange_name=_settings.RABBITMQ_EMAIL_EXCHANGE,
         routing_key=_settings.RABBITMQ_PASSWORD_RESET_ROUTING_KEY,

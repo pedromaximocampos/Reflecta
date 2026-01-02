@@ -14,7 +14,7 @@ class LoginController(IControllerInterface):
         self._system_clock = system_clock
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
-        authorization_header = request.headers.get("Authorization")
+        authorization_header = request.headers.get("authorization")
 
         username, password = self._decode_basic_auth(authorization_header)
 
@@ -43,7 +43,7 @@ class LoginController(IControllerInterface):
                 "access_token": login_output.access_token,
                 "user": {
                     "username": login_output.username,
-                    "email": login_output.email,
+                    "email": login_output.email.value,
                     "name": login_output.name,
                     "surname": login_output.surname,
                     "avatar_url": login_output.avatar_url,

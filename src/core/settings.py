@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int
     RABBITMQ_USER: str
     RABBITMQ_PASSWORD: str
+    RABBITMQ_VIRTUAL_HOST: str
     RABBITMQ_USE_SSL: bool = False
 
 
@@ -99,7 +100,7 @@ class Settings(BaseSettings):
 
     @property
     def rabbitmq_url(self) -> str:
-        return f"{self.RABBITMQ_URL}"
+        return self.RABBITMQ_URL
 
     def configure_logging(self) -> None:
         level = getattr(logging, self.LOG_LEVEL.upper(), logging.INFO)

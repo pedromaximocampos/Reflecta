@@ -26,7 +26,7 @@ class UserRepository(IUserRepository):
         query = (
             select(UserModel, AuthCredentialsModel)
             .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-            .where(UserModel.id == str(user_id.value))
+            .where(UserModel.id == user_id.value)
         )
 
         row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (await self.__session.execute(query)).first()

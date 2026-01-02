@@ -36,7 +36,7 @@ class AuthSessionServiceImpl(IAuthSessionService):
 
         access_token, refresh_token = self._generate_tokens_jwts(user, now)
 
-        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(str(refresh_token.jti))
+        hashed_jti_refresh = self._jti_hasher_generator.generate_hash(refresh_token.jti.value)
 
         auth_session: AuthSession = AuthSession(
             id=self._ulid_generator.generate_ulid(),

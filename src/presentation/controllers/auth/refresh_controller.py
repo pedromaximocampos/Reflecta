@@ -28,7 +28,7 @@ class RefreshController(IControllerInterface):
                 "access_token": refresh_result.access_token,
                 "user": {
                     "username": refresh_result.user.username,
-                    "email": refresh_result.user.email,
+                    "email": refresh_result.user.email.value,
                     "name": refresh_result.user.name,
                     "surname": refresh_result.user.surname,
                     "avatar_url": refresh_result.user.avatar_url,
@@ -39,7 +39,7 @@ class RefreshController(IControllerInterface):
                     value=refresh_result.refresh_token,
                     http_only=True,
                     secure=True,
-                    path="/auth/refresh",
+                    path="/",
                     max_age=self._system_clock.refresh_token_expiration_in_seconds()
                 )
 
@@ -67,6 +67,7 @@ class RefreshController(IControllerInterface):
             return response
 
         except Exception as e:
+            print(e)
 
             response = HttpResponse(status_code=500, body={"error": "Erro interno do servidor"})
 

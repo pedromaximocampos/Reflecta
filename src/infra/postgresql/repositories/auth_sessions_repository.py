@@ -102,7 +102,6 @@ class AuthSessionsRepository(IAuthSessionRepository):
             )
             .values(
                 refresh_jti_hash=auth_session.refresh_jti_hash.value,
-                issued_at=auth_session.issued_at,
                 expires_at=auth_session.expires_at,
                 updated_at=auth_session.updated_at,
             )

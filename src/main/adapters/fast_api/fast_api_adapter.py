@@ -1,3 +1,4 @@
+import json
 from typing import Callable, Optional,  Awaitable, Any
 from fastapi import requests as FastAPIRequests
 from fastapi.responses import JSONResponse, Response
@@ -6,15 +7,23 @@ from src.presentation.middlewares.exception_handler import ExceptionHandler
 
 ControllerHandle = Callable[[HttpRequest],  Awaitable[HttpResponse]]
 
+async def get_json_silent(request: FastAPIRequests):
+    try:
+        raw = await request.body()
+        if not raw:
+            return {}
+        return json.loads(raw)
+    except Exception:
+        return {}
+
 async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: ControllerHandle, body_override: Optional[Any] = None) -> Response:
     try:
         if body_override is not None:
             body = body_override
         else:
-            try:
-                body = await request.json()
-            except Exception:
-                body = None
+
+            body = await get_json_silent(request)
+
 
         cookies_dict = dict(request.cookies)
         refresh_token = cookies_dict.get("refresh_token")

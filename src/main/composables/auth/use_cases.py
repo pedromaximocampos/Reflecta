@@ -37,8 +37,8 @@ def get_refresh_use_case() -> RefreshUseCaseImpl:
 
     return RefreshUseCaseImpl(
         get_auth_session_service(),
-        get_clock(),
-        get_auth_unit_of_work()
+        get_auth_unit_of_work(),
+        get_clock()
     )
 
 

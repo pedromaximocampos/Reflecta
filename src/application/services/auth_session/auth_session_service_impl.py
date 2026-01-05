@@ -111,7 +111,6 @@ class AuthSessionServiceImpl(IAuthSessionService):
         hashed_jti_refresh = self._jti_hasher_generator.generate_hash(new_refresh_token.jti.value)
 
         session.refresh_jti_hash = TokenJti(hashed_jti_refresh)
-        session.issued_at = now
         session.expires_at = new_refresh_token.expires_at
         session.updated_at = now
 

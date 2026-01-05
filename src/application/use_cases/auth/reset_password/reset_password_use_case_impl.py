@@ -64,7 +64,7 @@ class ResetPasswordUseCaseImpl(IResetPasswordUseCase):
 
             reset_password_entity.mark_as_used(now)
 
-            await uow.reset_password_repository.update_as_used(reset_password_entity)
+            await uow.reset_password_repository.update_as_used(reset_password_entity, now)
 
             await self.__auth_sessions_service.invalidate_all_sessions_for_user(user.id, uow)
 

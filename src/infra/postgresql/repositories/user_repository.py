@@ -77,7 +77,7 @@ class UserRepository(IUserRepository):
 
         auth_query = (
             update(AuthCredentialsModel)
-            .where(AuthCredentialsModel.user_id == creds.user_id)
+            .where(AuthCredentialsModel.user_id == creds.user_id.value)
             .values(
                 password_hash=creds.password.hash,
                 password_algorithm=creds.password.algorithm,

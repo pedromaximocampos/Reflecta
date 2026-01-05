@@ -58,6 +58,8 @@ class BaseRabbitMQConsumerWorker(ABC):
 
             await message.ack()
 
+            logger.info(f"[*] Message processed successfully and acknowledged.")
+
         except TransientEmailError as exc:
             retries = self._get_retry_count(message)
 
@@ -71,10 +73,12 @@ class BaseRabbitMQConsumerWorker(ABC):
                 await message.nack(requeue=False)
 
         except PermanentEmailError as exc:
+            print(exc)
             await self._publish_to_dlq(payload or {}, message, reason=str(exc))
             await message.ack()
 
         except Exception as exc:
+            print(exc)
             await self._publish_to_dlq(payload or {}, message, reason=f"Unexpected error: {exc}")
             await message.ack()
 
@@ -88,7 +92,7 @@ class BaseRabbitMQConsumerWorker(ABC):
         deaths = headers.get("x-death")
         if not deaths:
             return 0
-
+        logger.info(msg=f"[*] Message with {deaths} deaths numbers.")
         # Normalmente é uma lista de dicts. Usamos o primeiro.
         first = deaths[0] if isinstance(deaths, list) and deaths else {}
         return int(first.get("count", 0))
@@ -100,6 +104,8 @@ class BaseRabbitMQConsumerWorker(ABC):
         headers = dict(message.headers or {})
         headers["x-error-reason"] = reason
         headers["x-original-queue"] = self.__config.queue_name
+
+        logger.info(msg=f"[*] Message published at dlq queue.")
 
         dlq_msg = aio_pika.Message(
             body=json.dumps(payload).encode(),

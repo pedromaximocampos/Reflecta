@@ -21,7 +21,7 @@ class EmailResetPasswordPublisher(IPasswordResetPublisher):
 
             message_body = {
                 "username": password_reset_event.username,
-                "user_email": str(password_reset_event.user_email),
+                "user_email": password_reset_event.user_email.value,
                 "raw_code": password_reset_event.raw_code,
                 "occurred_at": password_reset_event.occurred_at.isoformat(),
                 "reset_password_link": f"{self.__config.frontend_base_url}/reset-password?code={password_reset_event.raw_code}"

@@ -1,5 +1,6 @@
 from src.application.ports.emails.dto import EmailPasswordResetDTO
 from src.application.ports.emails.iemail_password_reset_notifier import IEmailPasswordResetNotifier
+from src.domain.value_objects.email import Email
 from src.infra.messaging.rabbitmq.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
@@ -12,15 +13,15 @@ class EmailPasswordResetConsumerWorker(BaseRabbitMQConsumerWorker):
 
 
     async def handle_message(self, payload: dict):
-        verification_dto  = self.__return_email_password_reset_dto(payload)
+        password_reset_dto  = self.__return_email_password_reset_dto(payload)
 
-        await self.__email_password_reset_notifier.send_email(verification_dto)
+        await self.__email_password_reset_notifier.send_email(password_reset_dto)
 
 
     @staticmethod
     def __return_email_password_reset_dto(payload: dict) -> EmailPasswordResetDTO:
         return EmailPasswordResetDTO(
-            email=payload.get("user_email"),
+            email=Email(payload.get("user_email")),
             raw_code=payload.get("raw_code"),
             expires_in_minutes=payload.get("expires_in"),
             username=payload.get("username"),

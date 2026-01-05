@@ -13,9 +13,10 @@ class RequestPasswordResetUseCaseImpl(IRequestPasswordResetUseCase):
         self.__system_clock = system_clock
 
 
-    async def execute(self, email: Email) -> None:
+    async def execute(self, email: str) -> None:
         async with self.__auth_unit_of_work as uow:
-            user = await uow.users_repository.find_by_email(email)
+            email_input = Email(email)
+            user = await uow.users_repository.find_by_email(email_input)
 
             if not user:
                 return  # Não revelar se o email existe ou não

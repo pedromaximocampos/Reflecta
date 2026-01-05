@@ -52,12 +52,12 @@ async def auth_verify_email(
 
 
 @auth_router.post("/reset-password")
-async def auth_reset_password(body: ResetPasswordValidator,  request: Request):
+async def auth_reset_password(request: Request):
     """ Auth User reset password endpoint"""
-    return await adapter_fastapi_request(request, _RESET_PASSWORD_CONTROLLER.handle_request, body)
+    return await adapter_fastapi_request(request, _RESET_PASSWORD_CONTROLLER.handle_request)
 
 
 @auth_router.post("/request-reset-password")
-async def auth_request_reset_password(body: RequestResetPasswordValidator, request: Request):
+async def auth_request_reset_password(request: Request):
     """ Auth User request reset password endpoint"""
-    return await adapter_fastapi_request(request, _REQUEST_PASSWORD_RESET_CONTROLLER.handle_request, body)
+    return await adapter_fastapi_request(request, _REQUEST_PASSWORD_RESET_CONTROLLER.handle_request)

@@ -122,7 +122,7 @@ class AuthSessionsRepository(IAuthSessionRepository):
         query = (
             update(AuthSessionsModel)
             .where(
-                AuthSessionsModel.user_id == str(user_id),
+                AuthSessionsModel.user_id == user_id.value,
                 AuthSessionsModel.revoked_at.is_(None),
             )
             .values(revoked_at=self._clock.now())

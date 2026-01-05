@@ -1,3 +1,4 @@
+import logging
 from email.message import EmailMessage
 from typing import Any
 
@@ -5,6 +6,7 @@ from src.application.ports.emails.dto import EmailPasswordResetDTO
 from src.application.ports.emails.iemail_password_reset_notifier import IEmailPasswordResetNotifier
 from src.infra.email.smtp.base_smtp_email_notifier import BaseSMTPEmailNotifier
 
+logger = logging.getLogger(__name__)
 
 class SmtpEmailPasswordResetNotifier(BaseSMTPEmailNotifier, IEmailPasswordResetNotifier):
 
@@ -80,4 +82,5 @@ class SmtpEmailPasswordResetNotifier(BaseSMTPEmailNotifier, IEmailPasswordResetN
             self.get_template(email_password_reset_dto),
             subtype="html"
         )
+        logger.info("Sending password reset email to %s", email_password_reset_dto.email.value)
         await self._send(message)

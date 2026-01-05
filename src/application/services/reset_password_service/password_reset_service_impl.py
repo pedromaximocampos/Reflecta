@@ -34,8 +34,8 @@ class PasswordResetServiceImpl(IPasswordResetService):
         return reset_password_entity, raw_code
 
     @staticmethod
-    def __create_password_reset_event(user: User, raw_code: str):
-        password_reset_event = PasswordResetRequested(user.id, user.username, user.email, raw_code)
+    def __create_password_reset_event(user: User, raw_code: str, now: datetime) -> PasswordResetRequested:
+        password_reset_event = PasswordResetRequested(user.id, user.username, user.email, raw_code, now)
         return password_reset_event
 
 
@@ -45,7 +45,7 @@ class PasswordResetServiceImpl(IPasswordResetService):
 
         created_reset_password_entity = await uow.reset_password_repository.create_new_password_reset(reset_password_entity)
 
-        password_reset_event = self.__create_password_reset_event(user, raw_code)
+        password_reset_event = self.__create_password_reset_event(user, raw_code, now)
 
         await self.__password_reset_publisher.publish_password_reset_requested(password_reset_event)
         

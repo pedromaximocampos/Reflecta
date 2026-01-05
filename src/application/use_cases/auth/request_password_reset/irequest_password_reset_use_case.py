@@ -5,5 +5,5 @@ from src.domain.value_objects.email import Email
 
 class IRequestPasswordResetUseCase(Protocol):
 
-    async def execute(self, email: Email) -> None:
+    async def execute(self, email: str) -> None:
         ...

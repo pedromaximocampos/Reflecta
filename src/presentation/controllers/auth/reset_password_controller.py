@@ -17,11 +17,16 @@ class ResetPasswordController(IControllerInterface):
 
         new_password = request.body.get('new_password', None)
 
+        repeated_password = request.body.get('repeated_password', None)
+
         if reset_raw_token is None:
             raise ResetPasswordTokenException("Reset token is required.")
 
         if new_password is None:
             raise ResetPasswordTokenException("New password is required.")
+
+        if new_password != repeated_password:
+            raise ResetPasswordTokenException("Passwords do not match.")
 
         await self.__reset_password_use_case.execute(reset_raw_token, new_password)
 

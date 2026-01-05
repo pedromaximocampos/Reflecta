@@ -10,8 +10,7 @@ from src.domain.value_objects.user_id import UserId
 
 class AuthenticateRequestServiceImpl(IAuthenticateRequestService):
 
-    def __init__(self, user_repository: IUserRepository, token_service: ITokenService, auth_unit_of_work: IAuthUnitOfWork) -> None:
-        self.__user_repository = user_repository
+    def __init__(self, token_service: ITokenService, auth_unit_of_work: IAuthUnitOfWork) -> None:
         self.__token_service = token_service
         self.__auth_unit_of_work = auth_unit_of_work
 

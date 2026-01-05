@@ -1,3 +1,4 @@
+from src.main.composables.auth.units_of_work import get_auth_unit_of_work
 from src.main.composables.shared.security import get_token_service
 from src.main.server.fast_api.fast_api_auth_service import FastAPIAuthService
 from src.application.services.http_request_auth.authenticate_request_service_impl import AuthenticateRequestServiceImpl
@@ -17,6 +18,6 @@ def get_authenticate_request_service() -> AuthenticateRequestServiceImpl:
 
 
     return AuthenticateRequestServiceImpl(
-        get_user_repository(),
-        get_token_service()
+        get_token_service(),
+        get_auth_unit_of_work()
     )

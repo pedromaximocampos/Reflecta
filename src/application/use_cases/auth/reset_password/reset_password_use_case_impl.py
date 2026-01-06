@@ -1,5 +1,5 @@
 from .ireset_password_use_case import IResetPasswordUseCase
-from src.application.services.auth_session import IAuthSessionService
+from src.application.services.auth.auth_session import IAuthSessionService
 from src.domain.entities.reset_password import ResetPassword
 from src.domain.entities.user import User
 from src.domain.exceptions.custom_exceptions.passwords_exceptions import ResetPasswordTokenException

@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, Mock
 from datetime import datetime, timezone
 
-from src.application.services.auth_session import IAuthSessionService
-from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
+from src.application.services.auth.auth_session import IAuthSessionService
+from src.application.services.auth.email_verification.iemail_verification_service import IEmailVerificationService
 from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from tests.support.utils.id_utils import new_id as gen_id

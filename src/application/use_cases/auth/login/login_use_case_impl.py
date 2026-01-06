@@ -1,4 +1,4 @@
-from src.application.services.email_verification.iemail_verification_service import IEmailVerificationService
+from src.application.services.auth.email_verification.iemail_verification_service import IEmailVerificationService
 from src.application.use_cases.auth.login import *
 from src.domain.entities.user import User, AuthCredentials
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
@@ -7,7 +7,7 @@ from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
 from src.domain.exceptions.api_types import AuthError
-from src.application.services.auth_session import *
+from src.application.services.auth.auth_session import *
 
 
 class LoginUseCaseImpl(ILoginUseCase):

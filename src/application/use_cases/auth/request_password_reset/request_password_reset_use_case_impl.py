@@ -1,5 +1,5 @@
 from .irequest_password_reset_use_case import IRequestPasswordResetUseCase
-from src.application.services.reset_password_service.ipassword_reset_service import IPasswordResetService
+from src.application.services.auth.reset_password_service.ipassword_reset_service import IPasswordResetService
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.email import Email

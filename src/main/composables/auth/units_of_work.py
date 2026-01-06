@@ -11,10 +11,10 @@ def get_auth_unit_of_work() -> AuthUnitOfWorkImpl:
 
 
     return AuthUnitOfWorkImpl(
-        individuum_mvp_provider,
-        get_clock(),
-        UserMapper(),
-        EmailVerificationMapper(),
-        AuthSessionsMapper(),
-        ResetPasswordMapper()
+        db=individuum_mvp_provider,
+        system_clock=get_clock(),
+        user_mapper=UserMapper(),
+        email_verification_mapper=EmailVerificationMapper(),
+        auth_session_mapper=AuthSessionsMapper(),
+        reset_password_mapper=ResetPasswordMapper()
     )

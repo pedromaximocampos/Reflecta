@@ -1,7 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
-from src.application.services.http_request_auth.iauthenticate_request_service import IAuthenticateRequestService
-from src.application.services.http_request_auth.dto import AuthenticatedUserDTO
+from src.application.services.auth.http_request_auth.iauthenticate_request_service import IAuthenticateRequestService
+from src.application.services.auth.http_request_auth.dto import AuthenticatedUserDTO
 
 class FastAPIAuthService:
 

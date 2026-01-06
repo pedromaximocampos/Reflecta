@@ -1,8 +1,8 @@
 # tests/support/doubles/auth_session_service_spy.py
 from typing import Dict, List, Optional
 
-from src.application.services.auth_session.iauth_session_service import IAuthSessionService
-from src.application.services.auth_session.dto import AuthSessionResultDTO
+from src.application.services.auth.auth_session import IAuthSessionService
+from src.application.services.auth.auth_session.dto import AuthSessionResultDTO
 from src.domain.entities.auth_session import AuthSession
 from src.domain.entities.user import User
 

@@ -3,11 +3,9 @@ from typing import Optional
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from .irefresh_use_case import IRefreshUseCase
 from .dto import RefreshResultDTO
-from src.application.services.auth_session import IAuthSessionService, AuthSessionResultDTO
-from src.application.services.token.itoken_service import ITokenService
+from src.application.services.auth.auth_session import IAuthSessionService, AuthSessionResultDTO
 from src.domain.entities.auth_session import AuthSession
 from src.domain.exceptions.api_types import AuthError
-from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.ports.system.iclock import IClock
 
 

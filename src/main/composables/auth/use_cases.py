@@ -15,11 +15,11 @@ def get_login_use_case() -> LoginUseCaseImpl:
     """ Retorna uma instância do caso de uso de login com todas as dependências injetadas."""
 
     return LoginUseCaseImpl(
-        get_password_hasher(),
-        get_clock(),
-        get_auth_session_service(),
-        get_email_verification_service(),
-        get_auth_unit_of_work()
+        password_hasher=get_password_hasher(),
+        system_clock=get_clock(),
+        auth_session_service=get_auth_session_service(),
+        email_verification_service=get_email_verification_service(),
+        auth_unit_of_work=get_auth_unit_of_work()
     )
 
 
@@ -29,38 +29,38 @@ def get_logoff_use_case() -> LogoffUseCaseImpl:
 
     return LogoffUseCaseImpl(
         get_auth_session_service(),
-        get_auth_unit_of_work()
+        auth_unit_of_work=get_auth_unit_of_work()
     )
 
 
 def get_refresh_use_case() -> RefreshUseCaseImpl:
 
     return RefreshUseCaseImpl(
-        get_auth_session_service(),
-        get_auth_unit_of_work(),
-        get_clock()
+        auth_session_service=get_auth_session_service(),
+        auth_unit_of_work=get_auth_unit_of_work(),
+        system_clock=get_clock()
     )
 
 
 def get_sign_up_use_case() -> SignupUseCaseImpl:
 
     return SignupUseCaseImpl(
-        get_auth_unit_of_work(),
-        get_password_hasher(),
-        get_clock(),
-        get_ulid_generator(),
-        get_jti_hasher(),
-        get_email_verification_service(),
+        auth_unit_of_work=get_auth_unit_of_work(),
+        password_hasher=get_password_hasher(),
+        system_clock=get_clock(),
+        ulid_generator=get_ulid_generator(),
+        hash_generator=get_jti_hasher(),
+        email_verification_service=get_email_verification_service(),
     )
 
 def get_verify_email_use_case() -> VerifyEmailVerificationUseCaseImpl:
 
 
     return VerifyEmailVerificationUseCaseImpl(
-        get_auth_unit_of_work(),
-        get_jti_hasher(),
-        get_email_verification_service(),
-        get_clock()
+        auth_unit_of_work=get_auth_unit_of_work(),
+        hasher_generator=get_jti_hasher(),
+        email_verification_service=get_email_verification_service(),
+        system_clock=get_clock()
     )
 
 
@@ -69,18 +69,18 @@ def get_reset_password_use_case() -> ResetPasswordUseCaseImpl:
 
 
     return ResetPasswordUseCaseImpl(
-        get_clock(),
-        get_auth_unit_of_work(),
-        get_jti_hasher(),
-        get_password_hasher(),
-        get_auth_session_service(),
+        system_clock=get_clock(),
+        auth_unit_of_work=get_auth_unit_of_work(),
+        hasher_generator=get_jti_hasher(),
+        password_hasher=get_password_hasher(),
+        auth_sessions_service=get_auth_session_service(),
     )
 
 def get_request_password_reset_use_case() -> RequestPasswordResetUseCaseImpl:
 
 
     return RequestPasswordResetUseCaseImpl (
-        get_auth_unit_of_work(),
-        get_password_reset_service(),
-        get_clock(),
+        auth_unit_of_work=get_auth_unit_of_work(),
+        password_reset_service=get_password_reset_service(),
+        system_clock=get_clock(),
     )

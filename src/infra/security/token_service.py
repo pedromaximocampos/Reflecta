@@ -3,10 +3,10 @@ import jwt
 
 from datetime import datetime, timedelta
 from typing import Any
-from src.application.services.token.dto import GeneratedTokenDTO
+from src.application.ports.auth.token.dto import GeneratedTokenDTO
 from src.domain.exceptions.api_types import AuthError
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
-from src.application.services.token.itoken_service import ITokenService
+from src.application.ports.auth.token.itoken_service import ITokenService
 from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 

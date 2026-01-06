@@ -1,8 +1,6 @@
-from src.application.services.token.dto import GeneratedTokenDTO
 from src.domain.entities.auth_session import AuthSession
 from src.domain.entities.user import User
-from src.application.services.auth_session.dto import AuthSessionResultDTO
-from datetime import datetime
+from src.application.services.auth.auth_session.dto import AuthSessionResultDTO
 from typing import Optional, Protocol
 
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork

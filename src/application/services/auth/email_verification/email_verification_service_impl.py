@@ -1,10 +1,8 @@
 from typing import Optional
-
 from src.domain.entities.email_verification import EmailVerification
 from src.domain.entities.user import User
 from src.domain.events.email_verification_requested import EmailVerificationRequested
 from src.domain.exceptions.custom_exceptions.email_verification_exceptions import EmailVerificationException
-from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
@@ -13,7 +11,7 @@ from .iemail_verification_service import  IEmailVerificationService
 import secrets
 from datetime import timedelta
 
-from ...ports.messaging.iemail_verification_publisher import IEmailVerificationPublisher
+from src.application.ports.messaging.iemail_verification_publisher import IEmailVerificationPublisher
 
 
 class EmailVerificationServiceImpl(IEmailVerificationService):

@@ -7,7 +7,7 @@ def get_email_password_reset_notifier() -> SmtpEmailPasswordResetNotifier:
     """ Retorna a implementação do notificador de verificação de email. """
 
     return SmtpEmailPasswordResetNotifier(
-        get_smtp_provider()
+        smtp_config=get_smtp_provider()
     )
 
 
@@ -15,5 +15,5 @@ def get_email_verification_notifier() -> SMTPEmailVerificationNotifier:
     """ Retorna a implementação do notificador de verificação de email. """
 
     return SMTPEmailVerificationNotifier(
-        get_smtp_provider()
+        smtp_config=get_smtp_provider()
     )

@@ -14,8 +14,8 @@ def get_login_controller() -> LoginController:
     """ Retorna uma instância do LoginController com suas dependências injetadas. """
 
     return LoginController(
-    get_login_use_case(),
-    get_clock()
+    login_use_case=get_login_use_case(),
+    system_clock=get_clock()
     )
 
 
@@ -23,29 +23,29 @@ def get_logoff_controller() -> LogoffController:
     """ Retorna uma instância do LogoffController com suas dependências injetadas. """
 
     return LogoffController(
-    get_logoff_use_case(),
+    logoff_use_case=get_logoff_use_case(),
     )
 
 def get_refresh_controller() -> RefreshController:
     """ Retorna uma instância do RefreshController com suas dependências injetadas. """
 
     return RefreshController(
-        get_refresh_use_case(),
-        get_clock()
+        refresh_use_case=get_refresh_use_case(),
+        system_clock=get_clock()
     )
 
 def get_signup_controller():
     """ Retorna uma instância do SignupController com suas dependências injetadas. """
 
     return SignUpController(
-        get_sign_up_use_case(),
+        sign_up_use_case=get_sign_up_use_case(),
     )
 
 def get_email_verification_controller():
     """ Retorna uma instância do EmailVerificationController com suas dependências injetadas. """
 
     return VerifyEmailController(
-        get_verify_email_use_case(),
+        verify_email_use_case=get_verify_email_use_case(),
     )
 
 
@@ -53,12 +53,12 @@ def get_reset_password_controller():
     """ Retorna uma instância do caso de uso de redefinição de senha com todas as dependências injetadas."""
 
     return ResetPasswordController(
-        get_reset_password_use_case()
+        reset_password_use_case=get_reset_password_use_case()
     )
 
 def get_request_reset_password_controller():
     """ Retorna uma instância do caso de uso de solicitação de redefinição de senha com todas as dependências injetadas."""
 
     return RequestResetPasswordController(
-        get_request_password_reset_use_case()
+        request_reset_password_use_case=get_request_password_reset_use_case()
     )

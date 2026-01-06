@@ -3,7 +3,7 @@ import json
 import aio_pika
 
 from src.application.ports.messaging.ipassword_reset_publisher import IPasswordResetPublisher
-from src.domain.events.password_reset_requested import PasswordResetRequested
+from src.domain.events.emails.password_reset_requested import PasswordResetRequested
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQPublisherConfig
 
 

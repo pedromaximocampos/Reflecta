@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import Optional, Mapping, Any
 
 from src.domain.exceptions.domain_error import DomainError
-from src.domain.value_objects.ContentTags import ContentTags
-from src.domain.value_objects.JournalEntryStatus import JournalEntryStatus
+from src.domain.value_objects.content_tags import ContentTags
+from src.domain.value_objects.journal_entry_status import JournalEntryStatus
 from src.domain.value_objects.user_id import UserId
 
 
@@ -12,11 +12,12 @@ from src.domain.value_objects.user_id import UserId
 class JournalEntry:
     id: str
     user_id: UserId
-    title: Optional[str]
+    title: str
     content_text: str  # should be encrypted at the boundaries (application/infra)
     status: JournalEntryStatus
     created_at: datetime
-    updated_at: datetime
+
+    updated_at:  Optional[datetime] = None
 
     # Derived / AI-related fields (optional)
     content_meta: Optional[dict[str, Any]] = None   # analysis output (summary, themes, practices...)

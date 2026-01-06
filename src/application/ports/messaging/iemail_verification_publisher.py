@@ -1,4 +1,4 @@
-from src.domain.events.email_verification_requested import EmailVerificationRequested
+from src.domain.events.emails.verification_requested import EmailVerificationRequested
 from typing import Protocol
 
 

@@ -2,7 +2,7 @@ import json
 
 import aio_pika
 from src.application.ports.messaging.iemail_verification_publisher import IEmailVerificationPublisher
-from src.domain.events.email_verification_requested import EmailVerificationRequested
+from src.domain.events.emails.verification_requested import EmailVerificationRequested
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQPublisherConfig
 
 

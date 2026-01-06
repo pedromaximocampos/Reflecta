@@ -25,7 +25,6 @@ def get_email_verification_service() -> EmailVerificationServiceImpl:
         hash_generator=get_jti_hasher(),
         system_clock=get_clock(),
         ulid_generator=get_ulid_generator(),
-        email_verification_publisher=get_email_verification_publisher()
     )
 
 

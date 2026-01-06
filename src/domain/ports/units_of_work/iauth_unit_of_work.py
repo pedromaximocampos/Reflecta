@@ -4,6 +4,7 @@ from typing import Protocol, TypeVar, Optional, Type
 from types import TracebackType
 
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
+from src.domain.ports.repositories.ioutbox_repository import IOutboxRepository
 from src.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.domain.ports.repositories.iuser_repository import IUserRepository
@@ -39,6 +40,8 @@ class IAuthUnitOfWork(Protocol):
     def auth_sessions_repository(self) -> IAuthSessionRepository: ...
     @property
     def user_email_verification_repository(self) -> IUserEmailVerificationRepository: ...
+    @property
+    def outbox_repository(self) -> IOutboxRepository: ...
 
     async def commit(self) -> None: ...
     async def rollback(self) -> None: ...

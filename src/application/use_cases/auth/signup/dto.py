@@ -18,6 +18,5 @@ class SignupInputDTO:
 @dataclass(slots=True)
 class SignupOutputDTO:
     user: User
-    raw_token_to_verify_email: str
 
 

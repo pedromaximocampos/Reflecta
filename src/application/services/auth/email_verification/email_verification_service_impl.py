@@ -3,6 +3,7 @@ from src.domain.entities.email_verification import EmailVerification
 from src.domain.entities.user import User
 from src.domain.events.emails.verification_requested import EmailVerificationRequested
 from src.domain.exceptions.custom_exceptions.email_verification_exceptions import EmailVerificationException
+from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
@@ -11,47 +12,44 @@ from .iemail_verification_service import  IEmailVerificationService
 import secrets
 from datetime import timedelta
 
-from src.application.ports.messaging.iemail_verification_publisher import IEmailVerificationPublisher
+
 
 
 class EmailVerificationServiceImpl(IEmailVerificationService):
 
 
-    def __init__(self, hash_generator: IHasherGenerator,system_clock: IClock, ulid_generator: IULIDGenerator,
-                 email_verification_publisher:  IEmailVerificationPublisher)  -> None :
+    def __init__(self, hash_generator: IHasherGenerator,system_clock: IClock, ulid_generator: IULIDGenerator)  -> None :
         self.__hash_generator = hash_generator
         self.__clock = system_clock
         self.__ulid_generator = ulid_generator
-        self.__email_verification_publisher = email_verification_publisher
 
 
-    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> tuple[EmailVerification, str]:
+    async def create_email_verification_event(self, user: User, user_email_repo: IUserEmailVerificationRepository) -> EmailVerificationRequested:
 
         verification, raw = self.__create_email_verification_entity(user)
 
-        created_verification = await uow.user_email_verification_repository.create_verification_code(verification)
+        created_verification = await user_email_repo.create_verification_code(verification)
 
         email_verification_event = self.__create_email_verification_event(user, raw)
 
-        await self.__email_verification_publisher.publish(email_verification_event)
 
-        return created_verification, raw
+        return email_verification_event
 
-    async def ensure_active_verification_for_user(self, user: User, uow: IAuthUnitOfWork) -> EmailVerification:
+    async def ensure_or_issue(self, user: User, repo: IUserEmailVerificationRepository) -> Optional[EmailVerificationRequested]:
         now = self.__clock.now()
-        verification: Optional[EmailVerification] = await uow.user_email_verification_repository.get_active_email_verification_by_user_id(user.id)
+        verification = await repo.get_active_email_verification_by_user_id(user.id)
 
-        if not verification:
-            await self.issue_for_user(user, uow)
-            raise EmailVerificationException()
+        if verification and not verification.is_expired:
+            return None
 
-        if verification.is_expired:
+        if verification and verification.is_expired:
             verification.revoke(now)
-            await uow.user_email_verification_repository.revoke(verification)
-            await self.issue_for_user(user, uow)
-            raise EmailVerificationException()
+            await repo.revoke(verification)
 
-        return verification
+        new_verification, raw = self.__create_email_verification_entity(user)
+        await repo.create_verification_code(new_verification)
+
+        return self.__create_email_verification_event(user, raw)
 
 
     def __create_email_verification_entity(self, user: User) -> tuple[EmailVerification, str]:

@@ -1,3 +1,4 @@
+from src.application.services.messaging.ioutbox_service import IOutboxService
 from src.domain.exceptions.custom_exceptions.user_custom_exceptions import EmailAlreadyExistsError
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.domain.value_objects.email import Email
@@ -23,6 +24,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
         ulid_generator: IULIDGenerator,
         hash_generator: IHasherGenerator,
         email_verification_service: IEmailVerificationService,
+        outbox_service: IOutboxService
     ) -> None:
         self.__auth_unit_of_work = auth_unit_of_work
         self.__password_hasher = password_hasher
@@ -30,6 +32,7 @@ class SignupUseCaseImpl(ISignUpUseCase):
         self.__ulid_generator = ulid_generator
         self.__hash_generator = hash_generator
         self.__email_verification_service = email_verification_service
+        self.__outbox_service = outbox_service
 
     async def execute(self, dto: SignupInputDTO) -> SignupOutputDTO:
 
@@ -37,13 +40,14 @@ class SignupUseCaseImpl(ISignUpUseCase):
 
             created_user = await self.__create_new_user_(dto, uow)
 
-            email_verification, raw_token = await self.__email_verification_service.issue_for_user(created_user, uow)
+            email_verification_event = await self.__email_verification_service.create_email_verification_event(created_user, uow.user_email_verification_repository)
+
+            await self.__outbox_service.persist_event(email_verification_event, uow.outbox_repository)
 
             await uow.commit()
 
             return SignupOutputDTO(
                 user=created_user,
-                raw_token_to_verify_email=raw_token
             )
 
     @staticmethod

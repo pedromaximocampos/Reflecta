@@ -1,6 +1,8 @@
 from src.application.services.auth.email_verification.iemail_verification_service import IEmailVerificationService
+from src.application.services.messaging.ioutbox_service import IOutboxService
 from src.application.use_cases.auth.login import *
 from src.domain.entities.user import User, AuthCredentials
+from src.domain.exceptions.custom_exceptions.email_verification_exceptions import EmailVerificationException
 from src.domain.ports.security.ipassword_hasher import IPasswordHasher
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
@@ -14,12 +16,13 @@ class LoginUseCaseImpl(ILoginUseCase):
 
     def __init__(self,password_hasher: IPasswordHasher, system_clock: IClock,
                  auth_session_service: IAuthSessionService, email_verification_service: IEmailVerificationService,
-                 auth_unit_of_work: IAuthUnitOfWork) -> None:
+                 auth_unit_of_work: IAuthUnitOfWork, outbox_service: IOutboxService) -> None:
         self.__password_hasher = password_hasher
         self.__system_clock = system_clock
         self.__auth_session_service = auth_session_service
         self.__email_verification_service = email_verification_service
         self.__auth_unit_of_work = auth_unit_of_work
+        self.__outbox_service = outbox_service
 
 
     async def execute(self, login_input: LoginInput) -> LoginOutput:
@@ -32,8 +35,7 @@ class LoginUseCaseImpl(ILoginUseCase):
 
             self.__verify_password(login_input.password, password_hash)
 
-            if not user.is_email_verified:
-                await self.__email_verification_service.ensure_active_verification_for_user(user, uow)
+            await self.__verify_user_email_is_verified(user, uow)
 
             needs_rehash = self.__password_hasher.needs_rehash(password_hash)
 
@@ -57,6 +59,16 @@ class LoginUseCaseImpl(ILoginUseCase):
 
             return login_output
 
+
+    async def __verify_user_email_is_verified(self, user: User, uow: IAuthUnitOfWork) -> None:
+        if not user.is_email_verified:
+            event = await self.__email_verification_service.ensure_or_issue(user, uow.user_email_verification_repository)
+
+            if event is not None:
+                await self.__outbox_service.persist_event(event, uow.outbox_repository)
+                raise EmailVerificationException()
+
+            raise EmailVerificationException("Existing verification is still active. Please verify your email.")
 
     @staticmethod
     def __create_password_hash_v_o(credentials: AuthCredentials) -> PasswordHash:

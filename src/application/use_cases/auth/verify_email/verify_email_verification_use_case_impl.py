@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+from src.application.services.messaging.ioutbox_service import IOutboxService
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from .dto import VerifyEmailOutputDTO
 from src.domain.entities.email_verification import EmailVerification
@@ -17,11 +18,12 @@ class VerifyEmailVerificationUseCaseImpl(IVerifyEmailVerification):
 
 
     def __init__(self, auth_unit_of_work: IAuthUnitOfWork, hasher_generator: IHasherGenerator,
-                 email_verification_service: IEmailVerificationService, system_clock: IClock) -> None:
+                 email_verification_service: IEmailVerificationService, system_clock: IClock, outbox_service: IOutboxService) -> None:
         self.__auth_unit_of_worker = auth_unit_of_work
         self.__hasher_generator = hasher_generator
         self.__email_verification_service = email_verification_service
         self.__system_clock = system_clock
+        self.__outbox_service = outbox_service
 
     async def execute(self, raw_code: str) -> VerifyEmailOutputDTO:
 
@@ -42,7 +44,11 @@ class VerifyEmailVerificationUseCaseImpl(IVerifyEmailVerification):
 
             if email_verification.is_expired(now):
                 await self.__revoke_email_verification(email_verification, now, uow)
-                await self.__email_verification_service.issue_for_user(user, uow)
+
+                email_verification_event = await self.__email_verification_service.create_email_verification_event(user, uow.user_email_verification_repository)
+
+                await self.__outbox_service.persist_event(email_verification_event, uow.outbox_repository)
+
                 await uow.commit()
 
                 return VerifyEmailOutputDTO(success=False, message="Verification code expired. We sent you a new verification email.")

@@ -5,6 +5,7 @@ from src.application.use_cases.auth.signup.signup_use_case_impl import SignupUse
 from src.main.composables.auth.services import get_auth_session_service, get_password_reset_service
 from src.main.composables.auth.units_of_work import get_auth_unit_of_work
 from src.main.composables.shared.security import get_password_hasher
+from src.main.composables.shared.services import get_outbox_service
 from src.main.composables.shared.system import get_clock, get_ulid_generator, get_jti_hasher
 from src.main.composables.auth.services import get_email_verification_service
 from src.application.use_cases.auth.verify_email.verify_email_verification_use_case_impl import VerifyEmailVerificationUseCaseImpl
@@ -19,7 +20,8 @@ def get_login_use_case() -> LoginUseCaseImpl:
         system_clock=get_clock(),
         auth_session_service=get_auth_session_service(),
         email_verification_service=get_email_verification_service(),
-        auth_unit_of_work=get_auth_unit_of_work()
+        auth_unit_of_work=get_auth_unit_of_work(),
+        outbox_service=get_outbox_service()
     )
 
 
@@ -51,6 +53,7 @@ def get_sign_up_use_case() -> SignupUseCaseImpl:
         ulid_generator=get_ulid_generator(),
         hash_generator=get_jti_hasher(),
         email_verification_service=get_email_verification_service(),
+        outbox_service=get_outbox_service()
     )
 
 def get_verify_email_use_case() -> VerifyEmailVerificationUseCaseImpl:
@@ -60,7 +63,8 @@ def get_verify_email_use_case() -> VerifyEmailVerificationUseCaseImpl:
         auth_unit_of_work=get_auth_unit_of_work(),
         hasher_generator=get_jti_hasher(),
         email_verification_service=get_email_verification_service(),
-        system_clock=get_clock()
+        system_clock=get_clock(),
+        outbox_service=get_outbox_service()
     )
 
 

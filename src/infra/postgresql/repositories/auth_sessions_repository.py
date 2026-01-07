@@ -10,6 +10,7 @@ from src.domain.ports.system.iclock import IClock
 from src.domain.value_objects.token_jti import TokenJti
 from src.domain.value_objects.user_id import UserId
 from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.models.auth_sessions_model import AuthSessionsModel
 
 
@@ -17,7 +18,7 @@ class AuthSessionsRepository(IAuthSessionRepository):
     def __init__(
         self,
         session: AsyncSession,
-        auth_session_mapper: AuthSessionsMapper,
+        auth_session_mapper: IMapper[AuthSessionsModel, AuthSession],
         clock: IClock,
     ) -> None:
         self._session = session

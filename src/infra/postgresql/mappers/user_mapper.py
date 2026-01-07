@@ -1,16 +1,19 @@
-from src.domain.entities.user import User
+from src.domain.entities.user import User, AuthCredentials
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.user_id import UserId
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.models.users_model import UserModel
 from src.infra.postgresql.models.auth_credentials_model import AuthCredentialsModel
-from src.infra.postgresql.mappers.auth_credentials_mapper import AuthCredentialsMapper
 
 
-class UserMapper:
-    @staticmethod
-    def to_entity(user_model: UserModel, auth_credentials_model: AuthCredentialsModel) -> User:
+class UserMapper(IMapper[UserModel, User]):
+    def __init__(self, auth_credentials_mapper: IMapper[AuthCredentialsModel, AuthCredentials]):
+        self.__auth_credentials_mapper = auth_credentials_mapper
 
-        auth_credentials_entity = AuthCredentialsMapper.to_entity(auth_credentials_model)
+
+    def to_entity(self, user_model: UserModel) -> User:
+
+        auth_credentials_entity = self.__auth_credentials_mapper.to_entity(user_model.credentials)
 
         return User(
             id=UserId(user_model.id),
@@ -28,8 +31,7 @@ class UserMapper:
         )
 
 
-    @staticmethod
-    def to_model(user_entity: User) -> tuple[UserModel, AuthCredentialsModel]:
+    def to_model(self, user_entity: User) -> UserModel:
 
         user_model = UserModel(
             id=user_entity.id.value,
@@ -45,7 +47,10 @@ class UserMapper:
             email_verified_at=user_entity.email_verified_at,
         )
 
-        auth_credentials_model = AuthCredentialsMapper.to_model(user_entity.auth_credentials)
+        auth_credentials_model = self.__auth_credentials_mapper.to_model(user_entity.auth_credentials)
         auth_credentials_model.user_id = user_model.id
 
-        return user_model, auth_credentials_model
+        user_model.credentials = auth_credentials_model
+
+
+        return user_model

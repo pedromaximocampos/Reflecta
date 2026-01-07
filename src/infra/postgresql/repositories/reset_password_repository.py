@@ -7,13 +7,14 @@ from typing import Optional
 from src.domain.exceptions.api_types import NotFoundError
 from src.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.domain.entities.reset_password import ResetPassword
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.mappers.reset_password_mapper import ResetPasswordMapper
 from src.infra.postgresql.models.reset_password_model import ResetPasswordModel
 
 
 class ResetPasswordRepository(IResetPasswordRepository):
 
-    def __init__(self, session: AsyncSession, reset_password_mapper: ResetPasswordMapper) -> None:
+    def __init__(self, session: AsyncSession, reset_password_mapper: IMapper[ResetPasswordModel, ResetPassword]) -> None:
         self._session = session
         self._mapper = reset_password_mapper
 

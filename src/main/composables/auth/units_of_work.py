@@ -1,3 +1,4 @@
+from src.infra.postgresql.mappers.auth_credentials_mapper import AuthCredentialsMapper
 from src.infra.postgresql.provider import individuum_mvp_provider
 from src.infra.postgresql.mappers.reset_password_mapper import ResetPasswordMapper
 from src.infra.postgresql.mappers.user_mapper import UserMapper
@@ -13,7 +14,7 @@ def get_auth_unit_of_work() -> AuthUnitOfWorkImpl:
     return AuthUnitOfWorkImpl(
         db=individuum_mvp_provider,
         system_clock=get_clock(),
-        user_mapper=UserMapper(),
+        user_mapper=UserMapper(AuthCredentialsMapper()),
         email_verification_mapper=EmailVerificationMapper(),
         auth_session_mapper=AuthSessionsMapper(),
         reset_password_mapper=ResetPasswordMapper()

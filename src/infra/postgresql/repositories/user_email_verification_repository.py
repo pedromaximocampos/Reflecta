@@ -5,6 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.value_objects.user_id import UserId
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.models import UserEmailVerificationModel
 from src.domain.entities.email_verification import EmailVerification
 from src.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
@@ -12,7 +13,7 @@ from src.infra.postgresql.mappers.email_verification_mapper import EmailVerifica
 
 
 class UserEmailVerificationRepository(IUserEmailVerificationRepository):
-    def __init__(self, session: AsyncSession, mapper: EmailVerificationMapper) -> None:
+    def __init__(self, session: AsyncSession, mapper: IMapper[UserEmailVerificationModel, EmailVerification]) -> None:
         self._session = session
         self._mapper = mapper
 

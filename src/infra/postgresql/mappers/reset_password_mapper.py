@@ -1,28 +1,29 @@
 from src.domain.entities.reset_password import ResetPassword
 from src.domain.value_objects.user_id import UserId
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.models.reset_password_model import ResetPasswordModel
 
 
-class ResetPasswordMapper:
+class ResetPasswordMapper(IMapper[ResetPasswordModel, ResetPassword]):
 
-    @staticmethod
-    def to_entity(reset_password_model: ResetPasswordModel) -> ResetPassword:
+
+    def to_entity(self, model: ResetPasswordModel) -> ResetPassword:
         return ResetPassword(
-            id=reset_password_model.id,
-            user_id=UserId(reset_password_model.user_id),
-            token_hash=reset_password_model.token_hash,
-            expires_at=reset_password_model.expires_at,
-            created_at=reset_password_model.created_at,
-            used_at=reset_password_model.used_at,
+            id=model.id,
+            user_id=UserId(model.user_id),
+            token_hash=model.token_hash,
+            expires_at=model.expires_at,
+            created_at=model.created_at,
+            used_at=model.used_at,
         )
 
-    @staticmethod
-    def to_model(reset_password: ResetPassword) -> ResetPasswordModel:
+
+    def to_model(self, entity: ResetPassword) -> ResetPasswordModel:
         return ResetPasswordModel(
-            id=reset_password.id,
-            user_id=reset_password.user_id.value,
-            token_hash=reset_password.token_hash,
-            expires_at=reset_password.expires_at,
-            created_at=reset_password.created_at,
-            used_at=reset_password.used_at,
+            id=entity.id,
+            user_id=entity.user_id.value,
+            token_hash=entity.token_hash,
+            expires_at=entity.expires_at,
+            created_at=entity.created_at,
+            used_at=entity.used_at,
         )

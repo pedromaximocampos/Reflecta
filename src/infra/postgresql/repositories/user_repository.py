@@ -13,12 +13,13 @@ from src.domain.exceptions.custom_exceptions.user_custom_exceptions import (
 from src.domain.ports.repositories.iuser_repository import IUserRepository
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.user_id import UserId
+from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.mappers.user_mapper import UserMapper
 from src.infra.postgresql.models import UserModel, AuthCredentialsModel
 
 
 class UserRepository(IUserRepository):
-    def __init__(self, session: AsyncSession, user_mapper: UserMapper) -> None:
+    def __init__(self, session: AsyncSession, user_mapper: IMapper[UserModel, User]) -> None:
         self.__session = session
         self.__user_mapper = user_mapper
 
@@ -35,8 +36,7 @@ class UserRepository(IUserRepository):
 
         user_model, credentials_model = row
         return self.__user_mapper.to_entity(
-            user_model=user_model,
-            auth_credentials_model=credentials_model,
+            model=user_model,
         )
 
     async def find_by_email(self, email: Email) -> Optional[User]:
@@ -52,8 +52,7 @@ class UserRepository(IUserRepository):
 
         user_model, credentials_model = row
         return self.__user_mapper.to_entity(
-            user_model=user_model,
-            auth_credentials_model=credentials_model,
+            model=user_model,
         )
 
     async def update(self, user: User) -> None:
@@ -110,8 +109,7 @@ class UserRepository(IUserRepository):
             # await self.__session.refresh(creds_model)
 
             return self.__user_mapper.to_entity(
-                user_model=user_model,
-                auth_credentials_model=creds_model,
+                model=user_model,
             )
 
         except IntegrityError as e:

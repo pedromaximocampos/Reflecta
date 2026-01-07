@@ -4,7 +4,7 @@ from src.core.settings import get_settings
 
 _settings = get_settings()
 
-# Criados uma vez — usados por todo o sistema
+# Criados uma vez — usados pelo o sistema
 _password_hasher = Argon2IdPasswordHasher()
 _token_service = TokenServiceImpl(_settings.JWT_SECRET)
 

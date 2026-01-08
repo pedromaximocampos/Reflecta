@@ -5,6 +5,7 @@ from typing import Any
 from src.domain.entities.outbox_event import OutboxEvent
 from src.domain.events.idomain_event import IDomainEvent
 from src.domain.value_objects.email import Email
+from src.domain.value_objects.event_type import EventType
 from src.domain.value_objects.user_id import UserId
 
 
@@ -30,7 +31,7 @@ class PasswordResetRequested(IDomainEvent):
         return OutboxEvent(
             id=event_id,
             created_at=created_at,
-            event_type=self.__event_type__,
+            event_type=EventType(self.__event_type__),
             event_occurred_at=self.occurred_at,
             payload=message_body
         )

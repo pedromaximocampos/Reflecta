@@ -5,7 +5,7 @@ from logging.config import dictConfig
 
 from pydantic_settings import BaseSettings
 from src.domain.value_objects.password_algorithm import PasswordAlgorithm
-from typing import Final
+from typing import Final, Optional
 import os
 
 class Settings(BaseSettings):
@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
 
     MAX_SESSIONS_PER_USER: Final[int] = 5
+
+    # AWS
+    AWS_PROFILE: Optional[str] = None
+
+    # AWS-SQS
+    AWS_SQS_REGION: Final[str]
+    AWS_SQS_EMAILS_QUEUE_URL: Final[str]
+
 
     # Segurança / JWT
     JWT_SECRET: str

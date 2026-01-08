@@ -20,6 +20,10 @@ from src.domain.value_objects.outbox_status import OutboxStatus
 class OutboxModel(Base):
     __tablename__ = "outbox"
 
+    __table_args__ = (
+        Index("ix_outbox_status_created_at", "status", "created_at"),
+    )
+
     id: Mapped[str] = mapped_column(
         String(26),
         primary_key=True,
@@ -75,6 +79,4 @@ class OutboxModel(Base):
         nullable=True
     )
 
-    __table_args__ = (
-        Index("ix_outbox_status_created_at", "status", "created_at"),
-    )
+

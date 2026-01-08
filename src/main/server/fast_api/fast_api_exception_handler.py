@@ -10,7 +10,7 @@ from src.domain.exceptions.domain_error import DomainError
 
 def add_exception_handlers(app: FastAPI) -> None:
     """
-    Conecta erros do FastAPI/Pydantic ao seu protocolo de erros de domínio.
+    Conecta erros do FastAPI/Pydantic ao protocolo de erros de domínio.
     """
 
     # --------------------------

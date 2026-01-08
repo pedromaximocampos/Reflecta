@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import select, update
 
+
 from src.domain.entities.outbox_event import OutboxEvent
 from src.domain.ports.repositories.ioutbox_repository import IOutboxRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +19,10 @@ class OutboxRepository(IOutboxRepository):
         self._mapper = outbox_mapper
 
     async def add_event(self, event: OutboxEvent) -> None:
-        return await super().add_event(event)
+        outbox_model  =  self._mapper.to_model(event)
+
+        self._session.add(outbox_model)
+        await self._session.flush()
 
     async def list_pending(self, limit: int) -> list[OutboxEvent]:
         query = (

@@ -95,11 +95,11 @@ class UserRepository(IUserRepository):
         await self.__session.execute(user_query)
 
     async def create(self, user: User) -> User:
-        user_model, creds_model = self.__user_mapper.to_model(user)
+        user_model = self.__user_mapper.to_model(user)
 
         try:
             self.__session.add(user_model)
-            self.__session.add(creds_model)
+            self.__session.add(user_model.credentials)
 
 
             await self.__session.flush()
@@ -108,16 +108,14 @@ class UserRepository(IUserRepository):
             # await self.__session.refresh(user_model)
             # await self.__session.refresh(creds_model)
 
-            return self.__user_mapper.to_entity(
-                model=user_model,
-            )
+            return self.__user_mapper.to_entity(user_model)
 
         except IntegrityError as e:
             constraint = str(getattr(e, "orig", e)).lower()
 
-            if "users_email_key" in constraint:
+            if "ix_users_email" in constraint:
                 raise EmailAlreadyExistsError()
-            if "users_username_key" in constraint:
+            if "ix_users_username" in constraint:
                 raise UsernameAlreadyExistsError()
 
             raise

@@ -3,6 +3,12 @@ from __future__ import annotations
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.entities.auth_session import AuthSession
+from src.domain.entities.email_verification import EmailVerification
+from src.domain.entities.outbox_event import OutboxEvent
+from src.domain.entities.reset_password import ResetPassword
+from src.domain.entities.user import User
+from src.domain.ports.repositories.ioutbox_repository import IOutboxRepository
 from .base_unit_of_work import SQLAlchemyUnitOfWork
 from src.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
@@ -12,14 +18,17 @@ from src.domain.ports.system.iclock import IClock
 
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.infra.postgresql.connection import DBConnectionHandler
-from src.infra.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
-from src.infra.postgresql.mappers.email_verification_mapper import EmailVerificationMapper
-from src.infra.postgresql.mappers.reset_password_mapper import ResetPasswordMapper
-from src.infra.postgresql.mappers.user_mapper import UserMapper
+
 from src.infra.postgresql.repositories.auth_sessions_repository import AuthSessionsRepository
 from src.infra.postgresql.repositories.reset_password_repository import ResetPasswordRepository
 from src.infra.postgresql.repositories.user_email_verification_repository import UserEmailVerificationRepository
 from src.infra.postgresql.repositories.user_repository import UserRepository
+
+from ..mappers.interface.imapper import IMapper
+from ..models import UserModel, UserEmailVerificationModel, AuthSessionsModel
+from ..models.outbox_model import OutboxModel
+from ..models.reset_password_model import ResetPasswordModel
+from ..repositories.outbox_repository import OutboxRepository
 
 
 class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
@@ -44,22 +53,31 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         assert self.__user_email_verification_repository is not None
         return self.__user_email_verification_repository
 
+    @property
+    def outbox_repository(self) -> IOutboxRepository:
+        assert self.__outbox_repository is not None
+        return self.__outbox_repository
 
-    def __init__(self, db: DBConnectionHandler, system_clock: IClock, user_mapper: UserMapper,
-                 email_verification_mapper: EmailVerificationMapper,  auth_session_mapper: AuthSessionsMapper, reset_password_mapper:
-                 ResetPasswordMapper) -> None:
+
+
+    def __init__(self, db: DBConnectionHandler, system_clock: IClock, user_mapper: IMapper[UserModel, User],
+                 email_verification_mapper: IMapper[UserEmailVerificationModel, EmailVerification],  auth_session_mapper: IMapper[AuthSessionsModel, AuthSession],
+                 reset_password_mapper: IMapper[ResetPasswordModel, ResetPassword], outbox_mapper: IMapper[OutboxModel, OutboxEvent]) -> None:
 
         super().__init__(db)
         self.__user_mapper = user_mapper
         self.__email_verification_mapper = email_verification_mapper
         self.__auth_session_mapper = auth_session_mapper
         self.__reset_password_mapper = reset_password_mapper
+        self.__outbox_mapper = outbox_mapper
+
         self._system_clock = system_clock
 
         self.__user_repository: Optional[IUserRepository] = None
         self.__user_email_verification_repository: Optional[IUserEmailVerificationRepository] = None
         self.__auth_sessions_repository: Optional[IAuthSessionRepository] = None
         self.__reset_password_repository: Optional[IResetPasswordRepository] = None
+        self.__outbox_repository: Optional[IOutboxRepository] = None
 
 
     async def _init_repositories(self, session: AsyncSession) -> None:
@@ -75,6 +93,8 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         self.__auth_sessions_repository = AuthSessionsRepository(session, self.__auth_session_mapper, self._system_clock)
 
         self.__reset_password_repository = ResetPasswordRepository(session, self.__reset_password_mapper)
+
+        self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper)
 
 
     def _clear_repositories(self) -> None:

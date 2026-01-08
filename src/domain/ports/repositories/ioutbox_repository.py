@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 
 from src.domain.entities.outbox_event import OutboxEvent
@@ -5,6 +6,10 @@ from src.domain.entities.outbox_event import OutboxEvent
 
 class IOutboxRepository(Protocol):
 
-
     async def add_event(self, event: OutboxEvent) -> None: ...
-    # TODO: Implementar métodos para buscar e remover eventos, se necessário
+
+    async def list_pending(self, limit: int) -> list[OutboxEvent]: ...
+
+    async def mark_sent(self, event_id: int, now: datetime) -> None: ...
+
+    async def mark_failed(self, event_id: int, error: str) -> None: ...

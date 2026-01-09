@@ -2,12 +2,12 @@ from src.application.use_cases.auth.login.login_use_case_impl import LoginUseCas
 from src.application.use_cases.auth.logoff.logoff_use_case_impl import LogoffUseCaseImpl
 from src.application.use_cases.auth.refresh.refresh_use_case_impl import RefreshUseCaseImpl
 from src.application.use_cases.auth.signup.signup_use_case_impl import SignupUseCaseImpl
-from src.main.composables.auth.services import get_auth_session_service, get_password_reset_service
-from src.main.composables.auth.units_of_work import get_auth_unit_of_work
+from src.main.composables.use_cases.auth.services import get_auth_session_service, get_password_reset_service
+from src.main.composables.use_cases.auth.units_of_work import get_auth_unit_of_work
 from src.main.composables.shared.security import get_password_hasher
 from src.main.composables.shared.services import get_outbox_service
 from src.main.composables.shared.system import get_clock, get_ulid_generator, get_jti_hasher
-from src.main.composables.auth.services import get_email_verification_service
+from src.main.composables.use_cases.auth.services import get_email_verification_service
 from src.application.use_cases.auth.verify_email.verify_email_verification_use_case_impl import VerifyEmailVerificationUseCaseImpl
 from src.application.use_cases.auth.reset_password.reset_password_use_case_impl import ResetPasswordUseCaseImpl
 from src.application.use_cases.auth.request_password_reset.request_password_reset_use_case_impl import RequestPasswordResetUseCaseImpl

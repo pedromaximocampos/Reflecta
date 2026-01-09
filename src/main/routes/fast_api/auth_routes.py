@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Request, Query
 from src.main.adapters.fast_api.fast_api_adapter import adapter_fastapi_request
-from src.main.composables.auth.controllers import get_login_controller, get_logoff_controller, get_refresh_controller, \
+from src.main.composables.use_cases.auth.controllers import get_login_controller, get_logoff_controller, get_refresh_controller, \
     get_signup_controller, get_email_verification_controller, get_reset_password_controller, \
     get_request_reset_password_controller
-from src.main.validators.fast_api.auth.login import LoginRequestValidator, LoginResponseValidator
-from src.main.validators.fast_api.auth.reset_password import ResetPasswordValidator, RequestResetPasswordValidator
+from src.main.validators.fast_api.auth.login import LoginResponseValidator
 from src.main.validators.fast_api.auth.sign_up import SignUpValidator
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     AWS_SQS_REGION: Final[str]
     AWS_SQS_EMAILS_QUEUE_URL: Final[str]
 
+    # WORKERS
+    BATCH_LIMIT: Final[int]
+
 
     # Segurança / JWT
     JWT_SECRET: str

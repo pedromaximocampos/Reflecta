@@ -2,13 +2,13 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from src.application.ports.messaging.ievent_publisher import IEventPublisher
+from src.application.ports.messaging.ievent_publisher import IEventPublisherWorker
 from src.domain.entities.outbox_event import OutboxEvent
 from src.infra.messaging.aws_sqs.clients.sqs_clients import make_sqs_client
 from src.infra.messaging.aws_sqs.configs.sqs_settings import SQSSettings
 
 
-class BaseSQSPublisher(IEventPublisher, ABC):   # ABC a classe nao pode ser instanciada, ou mostra que um metodo tem que
+class BaseSQSPublisherWorker(IEventPublisherWorker, ABC):   # ABC a classe nao pode ser instanciada, ou mostra que um metodo tem que
                                                 # ser implementado ou isso define um contrato claro"
 
     def __init__(self, sqs_settings: SQSSettings):

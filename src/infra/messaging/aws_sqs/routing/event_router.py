@@ -1,13 +1,13 @@
 from typing import Mapping, Optional
-from src.application.ports.messaging.ievent_publisher import IEventPublisher
+from src.application.ports.messaging.ievent_publisher import IEventPublisherWorker
 
 class EventRouter:
-    def __init__(self, routes: Mapping[str, IEventPublisher], *, default: Optional[IEventPublisher] = None) -> None:
+    def __init__(self, routes: Mapping[str, IEventPublisherWorker], *, default: Optional[IEventPublisherWorker] = None) -> None:
         self.__routes = dict(routes)
         self.__default = default
 
 
-    def resolve(self, event_type: str) -> IEventPublisher:
+    def resolve(self, event_type: str) -> IEventPublisherWorker:
 
         domain, _, _ =  event_type.partition('.')
 

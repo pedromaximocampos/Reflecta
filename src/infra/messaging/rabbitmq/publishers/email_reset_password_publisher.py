@@ -1,33 +1,13 @@
-import json
+from typing import Tuple, Optional
 
-import aio_pika
-
-from src.application.ports.messaging.ipassword_reset_publisher import IPasswordResetPublisher
-from src.domain.events.emails.password_reset_requested import PasswordResetRequested
-from src.infra.messaging.rabbitmq.configs.settings import RabbitMQPublisherConfig
+from src.domain.entities.outbox_event import OutboxEvent
+from src.infra.messaging.rabbitmq.publishers.base_rabbitmq_publisher import BaseRabbitMQPublisherWorker
 
 
-class EmailResetPasswordPublisher(IPasswordResetPublisher):
+class EmailResetPasswordPublisher(BaseRabbitMQPublisherWorker):
 
 
-    def __init__(self, publisher_config: RabbitMQPublisherConfig) -> None:
-        self.__config = publisher_config
-
-    async def publish_password_reset_requested(self, password_reset_event: PasswordResetRequested) -> None:
-        connection = await aio_pika.connect_robust(self.__config.url)
-        async with connection:
-            channel = await connection.channel()
-            exchange  = await channel.get_exchange(self.__config.exchange_name, ensure=True)
-
-            message_body = {
-                "username": password_reset_event.username,
-                "user_email": password_reset_event.user_email.value,
-                "raw_code": password_reset_event.raw_code,
-                "occurred_at": password_reset_event.occurred_at.isoformat(),
-                "reset_password_link": f"{self.__config.frontend_base_url}/reset-password?code={password_reset_event.raw_code}"
-            }
-
-            message = aio_pika.Message( body=json.dumps(message_body).encode(),
-                                        content_type="application/json",
-                                        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,)
-            await exchange.publish(message, routing_key=self.__config.routing_key)
+    def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:
+        payload = dict(event.payload)
+        payload["reset_password_link"] =  f"{self.__config.frontend_base_url}/reset-password?code={event.payload.get("raw_code")}"
+        return payload, event.attributes

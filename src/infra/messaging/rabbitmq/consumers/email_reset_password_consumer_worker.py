@@ -1,7 +1,7 @@
 from src.application.ports.emails.dto import EmailPasswordResetDTO
 from src.application.ports.emails.iemail_password_reset_notifier import IEmailPasswordResetNotifier
 from src.domain.value_objects.email import Email
-from src.infra.messaging.rabbitmq.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
+from src.infra.messaging.rabbitmq.consumers.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
 

@@ -34,4 +34,4 @@ class OutboxEvent:
 
     @property
     def payload_json(self) -> str:
-        return json.dumps(self.attributes, ensure_ascii=False)
+        return json.dumps(self.payload, ensure_ascii=False)

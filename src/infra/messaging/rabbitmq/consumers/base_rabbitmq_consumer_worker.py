@@ -8,12 +8,13 @@ import logging
 
 from aio_pika.abc import AbstractRobustConnection, AbstractChannel, AbstractIncomingMessage, AbstractExchange
 
+from src.application.ports.messaging.ievent_consumer_worker import IEventConsumerWorker
 from src.domain.exceptions.custom_exceptions.emails_notification_erros import TransientEmailError, PermanentEmailError
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
 logger = logging.getLogger(__name__)
 
-class BaseRabbitMQConsumerWorker(ABC):
+class BaseRabbitMQConsumerWorker(ABC, IEventConsumerWorker):
 
     def __init__(self, consumer_config: RabbitMQConsumerConfig):
         self.__config = consumer_config

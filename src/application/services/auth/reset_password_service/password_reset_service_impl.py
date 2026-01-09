@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta, datetime
 
 from .ipassword_reset_service import IPasswordResetService
-from src.application.ports.messaging.ipassword_reset_publisher import IPasswordResetPublisher
+
 from src.domain.entities.reset_password import ResetPassword
 from src.domain.entities.user import User
 from src.domain.events.emails.password_reset_requested import PasswordResetRequested
@@ -10,17 +10,19 @@ from src.domain.ports.system.iclock import IClock
 from src.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.domain.ports.system.iulid_generator import IULIDGenerator
 from src.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
+from ...messaging.ioutbox_service import IOutboxService
 
 
 class PasswordResetServiceImpl(IPasswordResetService):
 
 
-    def __init__(self, password_reset_publisher: IPasswordResetPublisher, system_clock: IClock,
-                 ulid_generator: IULIDGenerator, hasher_generator: IHasherGenerator) -> None:
-        self.__password_reset_publisher = password_reset_publisher
+    def __init__(self, system_clock: IClock,
+                 ulid_generator: IULIDGenerator, hasher_generator: IHasherGenerator,
+                 outbox_service: IOutboxService) -> None:
         self.__system_clock = system_clock
         self.__ulid_generator = ulid_generator
         self.__hashing_generator = hasher_generator
+        self.__outbox_service = outbox_service
 
     def __create_reset_password_entity(self, user: User, now: datetime) -> tuple[ResetPassword, str]:
         raw_code  = secrets.token_urlsafe(32)
@@ -47,6 +49,6 @@ class PasswordResetServiceImpl(IPasswordResetService):
 
         password_reset_event = self.__create_password_reset_event(user, raw_code, now)
 
-        await self.__password_reset_publisher.publish_password_reset_requested(password_reset_event)
+        await self.__outbox_service.persist_event(password_reset_event, uow.outbox_repository)
         
         return created_reset_password_entity

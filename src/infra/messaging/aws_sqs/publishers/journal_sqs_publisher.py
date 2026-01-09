@@ -1,6 +1,6 @@
-from src.infra.messaging.aws_sqs.publishers.base_sqs_publisher import BaseSQSPublisherWorker
+from src.infra.messaging.aws_sqs.publishers.base_sqs_publisher import BaseSQSPublisher
 
 
-class JournalSQSPublisher(BaseSQSPublisherWorker):
+class JournalSQSPublisher(BaseSQSPublisher):
     pass
 

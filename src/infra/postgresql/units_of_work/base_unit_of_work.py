@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.postgresql.connection import DBConnectionHandler
 
 
-class SQLAlchemyUnitOfWork(AbstractAsyncContextManager):
+class SQLAlchemyUnitOfWork(AbstractAsyncContextManager, ABC):
     """
     Base Unit of Work para SQLAlchemy (AsyncSession).
 
@@ -49,8 +49,17 @@ class SQLAlchemyUnitOfWork(AbstractAsyncContextManager):
 
     @abstractmethod
     async def _init_repositories(self, session: AsyncSession) -> None:
+        """
+            Inicializa os repositórios com a sessão fornecida.
+            :param session: session criada pelo Unit of Work ao entrar no contexto
+            :return: None
+        """
         ...
 
     @abstractmethod
     def _clear_repositories(self) -> None:
+        """
+            Limpa as referências dos repositórios ao sair do contexto.
+            :return: None
+        """
         ...

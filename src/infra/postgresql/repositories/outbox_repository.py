@@ -37,11 +37,11 @@ class OutboxRepository(IOutboxRepository):
 
         return [self._mapper.to_entity(event) for event in result]
 
-    async def mark_sent(self, event_id: int, now: datetime) -> None:
+    async def mark_sent(self, event: OutboxEvent) -> None:
         query = (
             update(OutboxModel)
-            .where(OutboxModel.id == event_id)
-            .values(status=OutboxStatus.SENT, sent_at=now)
+            .where(OutboxModel.id == event.id)
+            .values(status=OutboxStatus.SENT, sent_at=event.sent_at)
         )
         await self._session.execute(query)
 

@@ -3,7 +3,7 @@ from typing import Protocol
 from src.domain.entities.outbox_event import OutboxEvent
 
 
-class IEventPublisherWorker(Protocol):
+class IEventPublisher(Protocol):
 
     async def publish(self, event: OutboxEvent) -> None: ...
 

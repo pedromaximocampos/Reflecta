@@ -6,12 +6,12 @@ import aio_pika
 from aio_pika import Exchange, Channel
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel, AbstractExchange
 
-from src.application.ports.messaging.ievent_publisher import IEventPublisherWorker
+from src.application.ports.messaging.ievent_publisher import IEventPublisher
 from src.domain.entities.outbox_event import OutboxEvent
 from src.infra.messaging.rabbitmq.configs.settings import RabbitMQPublisherConfig
 
 
-class BaseRabbitMQPublisherWorker(IEventPublisherWorker, ABC):
+class BaseRabbitMQPublisher(IEventPublisher, ABC):
 
 
     def __init__(self, publisher_config: RabbitMQPublisherConfig) -> None:

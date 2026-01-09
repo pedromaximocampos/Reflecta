@@ -1,10 +1,10 @@
 from typing import Tuple, Optional
 
 from src.domain.entities.outbox_event import OutboxEvent
-from src.infra.messaging.rabbitmq.publishers.base_rabbitmq_publisher import BaseRabbitMQPublisherWorker
+from src.infra.messaging.rabbitmq.publishers.base_rabbitmq_publisher import BaseRabbitMQPublisher
 
 
-class EmailResetPasswordPublisher(BaseRabbitMQPublisherWorker):
+class EmailResetPasswordPublisher(BaseRabbitMQPublisher):
 
 
     def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:

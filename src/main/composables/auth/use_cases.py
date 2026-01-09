@@ -87,4 +87,5 @@ def get_request_password_reset_use_case() -> RequestPasswordResetUseCaseImpl:
         auth_unit_of_work=get_auth_unit_of_work(),
         password_reset_service=get_password_reset_service(),
         system_clock=get_clock(),
+        outbox_service=get_outbox_service()
     )

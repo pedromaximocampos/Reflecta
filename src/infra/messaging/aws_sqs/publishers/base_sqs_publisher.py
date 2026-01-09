@@ -1,5 +1,5 @@
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional
 
 from src.application.ports.messaging.ievent_publisher import IEventPublisherWorker

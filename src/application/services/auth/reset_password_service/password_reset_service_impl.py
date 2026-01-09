@@ -18,11 +18,10 @@ class PasswordResetServiceImpl(IPasswordResetService):
 
     def __init__(self, system_clock: IClock,
                  ulid_generator: IULIDGenerator, hasher_generator: IHasherGenerator,
-                 outbox_service: IOutboxService) -> None:
+                 ) -> None:
         self.__system_clock = system_clock
         self.__ulid_generator = ulid_generator
         self.__hashing_generator = hasher_generator
-        self.__outbox_service = outbox_service
 
     def __create_reset_password_entity(self, user: User, now: datetime) -> tuple[ResetPassword, str]:
         raw_code  = secrets.token_urlsafe(32)
@@ -41,7 +40,7 @@ class PasswordResetServiceImpl(IPasswordResetService):
         return password_reset_event
 
 
-    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> ResetPassword:
+    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> PasswordResetRequested:
         now = self.__system_clock.now()
         reset_password_entity, raw_code = self.__create_reset_password_entity(user, now)
 
@@ -49,6 +48,5 @@ class PasswordResetServiceImpl(IPasswordResetService):
 
         password_reset_event = self.__create_password_reset_event(user, raw_code, now)
 
-        await self.__outbox_service.persist_event(password_reset_event, uow.outbox_repository)
-        
-        return created_reset_password_entity
+
+        return password_reset_event

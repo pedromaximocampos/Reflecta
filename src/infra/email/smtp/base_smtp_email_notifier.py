@@ -10,7 +10,6 @@ from aiosmtplib.errors import (
     SMTPTimeoutError,
     SMTPRecipientsRefused,
     SMTPResponseException,
-    SMTPAuthenticationError,
 )
 
 from src.infra.email.smtp.configs.settings import SMTPSettings

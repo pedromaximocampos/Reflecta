@@ -1,3 +1,4 @@
+from src.application.services.messaging.ioutbox_service import IOutboxService
 from .irequest_password_reset_use_case import IRequestPasswordResetUseCase
 from src.application.services.auth.reset_password_service.ipassword_reset_service import IPasswordResetService
 from src.domain.ports.system.iclock import IClock
@@ -7,10 +8,12 @@ from src.domain.value_objects.email import Email
 
 class RequestPasswordResetUseCaseImpl(IRequestPasswordResetUseCase):
 
-    def __init__(self, auth_unit_of_work: IAuthUnitOfWork, password_reset_service: IPasswordResetService, system_clock: IClock) -> None:
+    def __init__(self, auth_unit_of_work: IAuthUnitOfWork, password_reset_service: IPasswordResetService, system_clock: IClock,
+                 outbox_service: IOutboxService) -> None:
         self.__auth_unit_of_work = auth_unit_of_work
         self.__password_reset_service = password_reset_service
         self.__system_clock = system_clock
+        self.__outbox_service = outbox_service
 
 
     async def execute(self, email: str) -> None:
@@ -21,6 +24,8 @@ class RequestPasswordResetUseCaseImpl(IRequestPasswordResetUseCase):
             if not user:
                 return  # Não revelar se o email existe ou não
 
-            await self.__password_reset_service.issue_for_user(user, uow)
+            password_reset_event = await self.__password_reset_service.issue_for_user(user, uow.reset_password_repository)
+
+            await self.__outbox_service.persist_event(password_reset_event, uow.outbox_repository)
 
             await uow.commit()

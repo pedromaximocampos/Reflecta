@@ -1,5 +1,5 @@
 import asyncio
-from src.main.composables.workers.consumers import get_password_reset_consumer_worker
+from src.main.composables.messaging.rabbitmq.workers.consumers import get_password_reset_consumer_worker
 
 
 

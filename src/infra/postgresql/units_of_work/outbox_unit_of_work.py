@@ -29,7 +29,7 @@ class OutboxUnitOfWork(SQLAlchemyUnitOfWork, IOutboxUnitOfWork):
 
 
     async def _init_repositories(self, session: AsyncSession) -> None:
-        self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper)
+        self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper, self.__clock)
 
     def _clear_repositories(self) -> None:
         self.__outbox_repository = None

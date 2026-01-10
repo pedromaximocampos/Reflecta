@@ -74,6 +74,16 @@ class OutboxModel(Base):
         nullable=True
     )
 
+    failed_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+
+    next_attempt_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+
     last_error: Mapped[Optional[str]] = mapped_column(
         String(1024),
         nullable=True

@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import select, update
-
+from sqlalchemy import select, update, or_
 
 from src.domain.entities.outbox_event import OutboxEvent
 from src.domain.ports.repositories.ioutbox_repository import IOutboxRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.ports.system.iclock import IClock
 from src.domain.value_objects.outbox_status import OutboxStatus
 from src.infra.postgresql.mappers.interface.imapper import IMapper
 from src.infra.postgresql.models.outbox_model import OutboxModel
@@ -14,9 +14,10 @@ from src.infra.postgresql.models.outbox_model import OutboxModel
 
 class OutboxRepository(IOutboxRepository):
 
-    def __init__(self, session: AsyncSession, outbox_mapper: IMapper[OutboxModel, OutboxEvent]) -> None:
+    def __init__(self, session: AsyncSession, outbox_mapper: IMapper[OutboxModel, OutboxEvent], system_clock: IClock) -> None:
         self._session = session
         self._mapper = outbox_mapper
+        self.__clock = system_clock
 
     async def add_event(self, event: OutboxEvent) -> None:
         outbox_model  =  self._mapper.to_model(event)
@@ -24,18 +25,32 @@ class OutboxRepository(IOutboxRepository):
         self._session.add(outbox_model)
         await self._session.flush()
 
-    async def list_pending(self, limit: int) -> list[OutboxEvent]:
+    async def claim_pending(self, batch_limit: int, attempts_limit: int) -> list[OutboxEvent]:
         query = (
             select(OutboxModel)
-            .where(OutboxModel.status == OutboxStatus.PENDING)
-            .order_by(OutboxEvent.created_at)
-            .limit(limit)
+            .where(OutboxModel.status == OutboxStatus.PENDING,
+                   OutboxModel.attempts < attempts_limit,
+                   or_(
+                       OutboxModel.next_attempt_at.is_(None),
+                       OutboxModel.next_attempt_at < self.__clock.now()
+                   ))
+            .order_by(OutboxModel.created_at)
+            .limit(batch_limit)
             .with_for_update(skip_locked=True)
         )
 
-        result = (await self._session.execute(query)).scalars().all()
+        rows = (await self._session.execute(query)).scalars().all()
 
-        return [self._mapper.to_entity(event) for event in result]
+        if not rows:
+            return []
+
+        for row in rows:
+            row.status = OutboxStatus.PROCESSING
+            row.attempts += 1
+
+        await self._session.flush()
+
+        return [self._mapper.to_entity(event) for event in rows]
 
     async def mark_sent(self, event: OutboxEvent) -> None:
         query = (
@@ -45,11 +60,11 @@ class OutboxRepository(IOutboxRepository):
         )
         await self._session.execute(query)
 
-    async def mark_failed(self, event_id: int, error: str) -> None:
+    async def mark_failed(self, event: OutboxEvent) -> None:
         query = (
             update(OutboxModel)
-            .where(OutboxModel.id == event_id)
-            .values(status=OutboxStatus.FAILED, last_error=error)
+            .where(OutboxModel.id == event.id)
+            .values(status=OutboxStatus.FAILED, last_error=event.last_error, failed_at=event.failed_at, next_attempt_at=event.next_attempt_at)
         )
 
         await self._session.execute(query)

@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # WORKERS
     BATCH_LIMIT: Final[int]
+    ATTEMPTS_LIMIT: Final[int]
 
 
     # Segurança / JWT

@@ -17,6 +17,8 @@ class OutboxEvent:
     status: OutboxStatus = OutboxStatus.PENDING
     attempts: int = 0
     sent_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    next_attempt_at: Optional[datetime] = None
     last_error: Optional[str] = None
 
     @property
@@ -28,7 +30,9 @@ class OutboxEvent:
             "created_at": self.created_at.isoformat(),
             "attempts": self.attempts,
             "status": self.status.value,
-            "sent_at": self.sent_at.isoformat(),
+            "failed_at": self.failed_at.isoformat() if self.failed_at else None ,
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
+            "next_attempt_at": self.next_attempt_at.isoformat() if self.next_attempt_at else None,
             "last_error": self.last_error,
         }
 

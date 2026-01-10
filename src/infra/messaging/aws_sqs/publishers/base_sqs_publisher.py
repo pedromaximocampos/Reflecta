@@ -27,10 +27,20 @@ class BaseSQSPublisher(IEventPublisher, ABC):   # ABC a classe nao pode ser inst
         }
 
         if attributes:
-            kwargs["MessageAttributes"] = attributes
+            kwargs["MessageAttributes"] = self._to_sqs_attributes(attributes)
 
         self.__client.send_message(**kwargs)
 
+    def _to_sqs_attributes(self, attrs: dict) -> dict:
+        out = {}
+        for k, v in attrs.items():
+            if v is None:
+                continue
+            if isinstance(v, (int, float)):
+                out[k] = {"DataType": "Number", "StringValue": str(v)}
+            else:
+                 out[k] = {"DataType": "String", "StringValue": str(v)}
+        return out
 
     async def publish(self, event: OutboxEvent) -> None:
         await asyncio.to_thread(self.sync_publish, event)

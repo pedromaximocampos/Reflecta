@@ -5,6 +5,7 @@ from src.application.ports.messaging.ioutbox_dispatcher_worker import IOutboxDis
 from src.application.ports.strategies.ibackoff_strategies import IBackoffStrategy
 from src.domain.ports.system.iclock import IClock
 from src.domain.ports.units_of_work.ioutbox_unit_of_work import IOutboxUnitOfWork
+from src.domain.value_objects.outbox_status import OutboxStatus
 from src.infra.messaging.routing.event_router import EventRouter
 
 
@@ -40,14 +41,15 @@ class BaseSqsPublisher(IOutboxDispatcherWorker):
 
                     await publisher.publish(event)
                     async with self.__uow as uow:
-
+                        event.status = OutboxStatus.SENT
                         event.sent_at = self.__clock.now()
                         await uow.outbox_repository.mark_sent(event)
                         await uow.commit()
 
                 except Exception as e:
                     async with self.__uow as uow:
-                        event.last_error = str(e)
+                        event.status = OutboxStatus.FAILED
+                        event.last_error = str(e)[:500]
                         event.failed_at = self.__clock.now()
                         event.next_attempt_at  = self.__clock.now() + self.__backoff_strategy.next_delay_in_seconds(event.attempts)
                         await uow.outbox_repository.mark_failed(event)

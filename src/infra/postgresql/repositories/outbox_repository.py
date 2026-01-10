@@ -26,13 +26,14 @@ class OutboxRepository(IOutboxRepository):
         await self._session.flush()
 
     async def claim_pending(self, batch_limit: int, attempts_limit: int) -> list[OutboxEvent]:
+        now = self.__clock.now()
         query = (
             select(OutboxModel)
-            .where(OutboxModel.status == OutboxStatus.PENDING,
+            .where(OutboxModel.status.in_([OutboxStatus.PENDING, OutboxStatus.FAILED]),
                    OutboxModel.attempts < attempts_limit,
                    or_(
                        OutboxModel.next_attempt_at.is_(None),
-                       OutboxModel.next_attempt_at < self.__clock.now()
+                       OutboxModel.next_attempt_at < now
                    ))
             .order_by(OutboxModel.created_at)
             .limit(batch_limit)

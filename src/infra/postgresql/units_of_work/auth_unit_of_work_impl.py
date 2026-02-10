@@ -94,7 +94,7 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
 
         self.__reset_password_repository = ResetPasswordRepository(session, self.__reset_password_mapper)
 
-        self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper)
+        self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper, self._system_clock)
 
 
     def _clear_repositories(self) -> None:

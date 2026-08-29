@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 from tests.support.contexts import LogoffTestContext
-from src.application.use_cases.auth.logoff.logoff_use_case_impl import LogoffUseCaseImpl
+from src.modules.auth.application.use_cases.logoff.logoff_use_case_impl import LogoffUseCaseImpl
 
 
 @pytest.fixture

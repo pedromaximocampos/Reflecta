@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 
 from tests.support.contexts import LoginTestContext
 
-from src.application.use_cases.auth.login import LoginUseCaseImpl
-from src.application.use_cases.auth.login import LoginInput
+from src.modules.auth.application.use_cases.login import LoginUseCaseImpl
+from src.modules.auth.application.use_cases.login import LoginInput
 
 
 @pytest.fixture

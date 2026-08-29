@@ -5,7 +5,8 @@ from src.infra.postgresql.configs.base import Base
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from sqlalchemy.engine import make_url
-from src.infra.postgresql.models import *
+from src.modules.auth.infrastructure.persistence.postgresql.models import *
+from src.modules.internal_events.infrastructure.persistence.postgresql.models import *
 from alembic import context
 import os
 

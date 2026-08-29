@@ -5,7 +5,6 @@ from src.presentation.http_types.http_response import HttpResponse
 from src.core.settings import get_settings
 
 import traceback, sys
-from src.domain.exceptions.api_types import *
 
 _settings = get_settings()
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.main.routes.fast_api.auth_routes import auth_router
+from src.modules.auth.presentation.routes import auth_router
 from src.core.constants import API_VERSION
 from src.main.server.fast_api.fast_api_exception_handler import add_exception_handlers
 

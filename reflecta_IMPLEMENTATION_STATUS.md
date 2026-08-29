@@ -21,15 +21,19 @@
 Verificações realizadas:
 
 - leitura integral, nesta ordem, de `reflecta_AGENTS.md`, `reflecta_PROJECT_CONTEXT.md` e deste arquivo;
-- inventário de 372 arquivos do projeto, excluindo `.git`;
+- inventário inicial de 372 arquivos do projeto, excluindo `.git`;
 - leitura do código, configurações, dependências, migrations, testes, Docker/Compose, documentação,
   seis diagramas `.puml`, sete diagramas `.mmd`, glossário e as 116 páginas do TCC;
-- parsing/compilação estática dos 334 arquivos Python: **sem erro de sintaxe**;
-- inspeção do grafo de imports: **dois ciclos concretos** encontrados;
+- parsing estático dos arquivos Python atuais: **sem erro de sintaxe**;
+- inspeção do grafo de imports: **um ciclo interno em Auth** e nenhum ciclo entre os quatro módulos físicos;
+- comparação AST de 215 arquivos Python rastreados afetados pela reorganização: **nenhuma mudança de
+  corpo executável além de imports**;
 - inspeção Alembic: histórico linear e uma única head `ca9163c93ce6`;
 - importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -p no:cacheprovider -q`: **falha na coleta**, com dois `ImportError`; zero testes executados;
-- Docker/Compose não executado: o comando `docker` não está instalado/disponível neste host;
+- execução de `pytest -p no:cacheprovider --collect-only -q`: **sete testes coletados com sucesso**;
+- execução de `pytest -p no:cacheprovider -q`: **sete erros de setup** causados por fixtures incompatíveis
+  com os construtores atuais; nenhum corpo de teste foi executado;
+- Docker CLI/Compose foi instalado durante a preparação local; daemon, containers e banco continuam `NOT_VERIFIED` nesta auditoria;
 - nenhum serviço externo e nenhum banco real foram acionados.
 
 ## 2. Resumo executivo
@@ -37,12 +41,12 @@ Verificações realizadas:
 | Área | Status | Estado real |
 |---|---|---|
 | Backend/API | PARTIAL | FastAPI sobe e expõe sete rotas Auth; os demais módulos não possuem API funcional. |
-| Monólito modular | PARTIAL | Um único backend existe, mas a estrutura física é por camada global, não por bounded module. |
+| Monólito modular | PARTIAL | Auth, Journal, Internal Events e Notification possuem raízes verticais em `src/modules/`; somente infraestrutura realmente compartilhada permanece horizontal. |
 | Clean Architecture / DDD | PARTIAL | Há entidades, portas, casos de uso e adapters, com violações e ciclos de dependência. |
-| Auth Module | PARTIAL | É o único módulo substancial; contém falhas que quebram fluxos principais e não tem teste executável. |
+| Auth Module | PARTIAL | É o único módulo substancial; contém falhas que quebram fluxos principais e nenhum teste chega ao corpo de execução. |
 | Journal Module | PARTIAL | Entidade e caso de uso embrionário; não há persistência, endpoint nem processamento. |
 | AI Processing | NOT_STARTED | Nenhum port, provider, schema, worker ou persistência de IA. |
-| Recommendation | NOT_STARTED | Apenas arquivo vazio com nome incorreto; não constitui implementação. |
+| Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
 | Catalog / Knowledge | NOT_STARTED | Nenhuma entidade, adapter Neo4j, caso de uso ou API. |
 | Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
 | Notification | PARTIAL | SMTP, templates e consumidores de e-mail existem, mas a cadeia está desconectada e não usa SES. |
@@ -51,7 +55,7 @@ Verificações realizadas:
 | pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
 | Neo4j | NOT_STARTED | Ausente das dependências, Compose e código. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | Há sete testes unitários Auth desatualizados; a suíte falha na coleta. |
+| Testes automatizados | PARTIAL | Há sete testes unitários Auth desatualizados; a coleta funciona, mas todos falham no setup. |
 
 ## 3. Stack real encontrada
 
@@ -59,23 +63,23 @@ Verificações realizadas:
 |---|---|---|---|
 | Python 3.12+ | IMPLEMENTED | `pyproject.toml`, `Dockerfile` | Linguagem efetiva do backend. |
 | FastAPI / Uvicorn | IMPLEMENTED | `pyproject.toml`, `src/main/server/fast_api/server.py`, `src/main/server/fast_api/run.py` | Aplicação importada com sucesso durante a auditoria. |
-| Pydantic / pydantic-settings | IMPLEMENTED | `pyproject.toml`, `src/core/settings.py`, `src/main/validators/fast_api/auth/` | Há warnings de configuração Pydantic legada. |
-| SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | `pyproject.toml`, `src/infra/postgresql/connection.py`, `src/infra/postgresql/models/` | Stack de persistência efetiva. |
+| Pydantic / pydantic-settings | IMPLEMENTED | `pyproject.toml`, `src/core/settings.py`, `src/modules/auth/presentation/validators/` | Há warnings de configuração Pydantic legada. |
+| SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | `pyproject.toml`, `src/infra/postgresql/connection.py`, `src/modules/auth/infrastructure/persistence/postgresql/models/`, `src/modules/internal_events/infrastructure/persistence/postgresql/models/` | Stack de persistência efetiva. |
 | Alembic | IMPLEMENTED | `alembic.ini`, `alembic/env.py`, `alembic/versions/` | Cadeia estática válida, uma head. Aplicação contra banco: `NOT_VERIFIED`. |
 | PostgreSQL 16 | PARTIAL | `docker-compose.infra.yml`, `src/infra/postgresql/` | Imagem `pgvector/pgvector:pg16`; banco real não executado. |
 | pgvector | PARTIAL | `pyproject.toml`, `docker-compose.infra.yml` | Somente pacote/imagem; sem uso persistente. |
-| Argon2 | IMPLEMENTED | `src/infra/security/argon2id_password_hasher.py`, `src/infra/security/configs/argon2/` | Adapter concreto de hash e verificação. |
-| JWT / PyJWT | PARTIAL | `src/infra/security/token_service.py`, `src/application/services/auth/auth_session/` | Tokens existem, mas access e refresh não têm tipo/audience distintos. |
-| RabbitMQ / aio-pika | PARTIAL | `docker-compose.infra.yml`, `src/infra/messaging/rabbitmq/` | Publicadores/consumidores existem, mas não formam a cadeia efetiva do outbox. |
-| AWS SQS / boto3 | PARTIAL | `src/infra/messaging/aws_sqs/`, `src/main/workers/publishers/sqs/sqs_outbox_dispatcher.py` | O dispatcher publica em SQS; não há consumer SQS implementado. |
-| SMTP / aiosmtplib | PARTIAL | `src/infra/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
+| Argon2 | IMPLEMENTED | `src/modules/auth/infrastructure/security/argon2id_password_hasher.py`, `src/modules/auth/infrastructure/security/configs/argon2/` | Adapter concreto de hash e verificação. |
+| JWT / PyJWT | PARTIAL | `src/modules/auth/infrastructure/security/token_service.py`, `src/modules/auth/application/services/auth_session/` | Tokens existem, mas access e refresh não têm tipo/audience distintos. |
+| RabbitMQ / aio-pika | PARTIAL | `docker-compose.infra.yml`, publishers/config em `src/modules/internal_events/infrastructure/messaging/rabbitmq/`, consumers em `src/modules/notification/infrastructure/messaging/rabbitmq/` | Publicadores/consumidores existem, mas não formam a cadeia efetiva do outbox. |
+| AWS SQS / boto3 | PARTIAL | `src/modules/internal_events/infrastructure/messaging/aws_sqs/`, `src/modules/internal_events/bootstrap/workers/publishers/sqs/sqs_outbox_dispatcher.py` | O dispatcher publica em SQS; não há consumer SQS implementado. |
+| SMTP / aiosmtplib | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
 | SES | NOT_STARTED | Repositório inteiro inspecionado | Não há adapter/configuração SES. |
 | S3 | NOT_STARTED | Repositório inteiro inspecionado | `boto3` é usado apenas para SQS. |
 | Neo4j | NOT_STARTED | `pyproject.toml`, Compose e `src/` | Sem driver, serviço ou adapter. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | Suite presente, mas não coletável. |
-| Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Análise estática concluída; runtime `NOT_VERIFIED`. |
+| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | Sete testes coletam, mas fixtures desatualizadas causam erro no setup. |
+| Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | CLI/Compose disponível e entrypoints realinhados; daemon/containers `NOT_VERIFIED`. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
 | Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria | Logging básico; sem métricas, tracing, alertas ou health/readiness. |
 
@@ -89,83 +93,79 @@ Não existe `.env.example` ou equivalente. `src/core/settings.py` declara `.env.
 | Capacidade | Status | Evidência | Diagnóstico |
 |---|---|---|---|
 | Um único backend implantável | IMPLEMENTED | `Dockerfile`, `src/main/server/fast_api/run.py` | É um monólito no sentido de um processo/API principal. |
-| Modularidade por bounded context | PARTIAL | `src/application/use_cases/auth/`, `src/application/use_cases/journal/` | Auth/Journal aparecem como nomes em subpastas, mas não há módulos verticais autônomos nem interfaces públicas por módulo. |
-| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/domain/`, `src/application/`, `src/infra/`, `src/presentation/`, `src/main/` | Separação física existe; fronteiras não são integralmente respeitadas. |
-| Clean Architecture | PARTIAL | portas em `src/domain/ports/` e `src/application/ports/`; adapters em `src/infra/` | Há inversão em vários pontos, mas Domain depende de configuração e semântica HTTP. |
-| DDD | PARTIAL | `src/domain/entities/`, `src/domain/value_objects/`, eventos e ports | Há entidades/VOs, mas não há bounded contexts físicos, agregados/contratos intermodulares formalizados ou isolamento de persistência. |
-| Composition root / DI | PARTIAL | `src/main/composables/` | Composição é manual e cria instâncias globais reutilizadas entre requests. |
-| API/BFF | PARTIAL | `src/main/routes/fast_api/auth_routes.py`, `src/main/server/fast_api/server.py` | Apenas Auth é exposto; não existe frontend nem BFF para os outros módulos. |
-| Dependências acíclicas | PARTIAL | `src/application/use_cases/auth/login/__init__.py`, `src/application/use_cases/auth/login/ilogin_use_case.py`, `src/infra/postgresql/models/__init__.py` e models Auth | Dois ciclos de import detectados. |
+| Modularidade por bounded context | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/internal_events/`, `src/modules/notification/`, contratos `public/` | Quatro módulos possuem fronteira física; componentes técnicos compartilhados ainda usam raízes horizontais. |
+| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth possui as quatro camadas; Journal só possui Domain/Application porque as demais ainda não foram implementadas. |
+| Clean Architecture | PARTIAL | ports/use cases em `src/modules/*/application/` e `domain/`; adapters em `infrastructure/` | Há inversão em vários pontos, mas Domain ainda depende de configuração e semântica HTTP compartilhada. |
+| DDD | PARTIAL | entidades/VOs/eventos em `src/modules/auth/domain/` e `src/modules/internal_events/domain/` | Bounded modules físicos foram iniciados, mas agregados, contratos e isolamento de persistência ainda são incompletos. |
+| Composition root / DI | PARTIAL | `src/modules/auth/bootstrap/`, `src/modules/internal_events/bootstrap/`, `src/modules/notification/bootstrap/` | Composição é manual e ainda cria instâncias globais reutilizadas entre requests. |
+| API/BFF | PARTIAL | `src/modules/auth/presentation/routes.py`, `src/main/server/fast_api/server.py` | Apenas Auth é exposto; não existe frontend nem BFF para os outros módulos. |
+| Dependências acíclicas | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/` | Não há ciclo entre os quatro módulos físicos; persiste um ciclo interno nos models de Auth. |
 
-Dependências entre camadas observadas pelo AST:
+Dependências entre módulos observadas pelo AST após a separação física:
 
-- `domain -> core, domain`;
-- `application -> application, core, domain`;
-- `infra -> application, core, domain, infra`;
-- `presentation -> application, core, domain, presentation`;
-- `main -> application, core, domain, infra, main, presentation`;
-- `core -> domain`.
+- `notification -> auth.public, internal_events`;
+- `journal -> auth.public` apenas para o tipo público `UserId`;
+- `auth -> internal_events.public` e, na composição transacional existente, implementação de Outbox;
+- `internal_events` não importa Auth nem Notification.
 
-Isso cria acoplamento bidirecional `domain <-> core`. Não foram encontrados imports concretos entre
-módulos de negócio maduros porque, além de Auth, eles ainda não existem.
+Não há ciclo entre módulos. Ainda existe acoplamento do Domain de Auth com `src/core/settings.py` e
+infraestrutura compartilhada continua fora de `src/modules/`.
 
 ### 4.2 Violações arquiteturais comprovadas
 
-1. **Domain depende de configuração:** `src/domain/value_objects/password_plain.py` importa
+1. **Domain depende de configuração:** `src/modules/auth/domain/value_objects/password_plain.py` importa
    `src/core/settings.py`; regras do domínio ficam acopladas ao ambiente.
 2. **Domain contém transporte HTTP:** `src/domain/exceptions/domain_error.py` e
    `src/domain/exceptions/api_types/` carregam status/tipos de API dentro do domínio.
-3. **Ciclo Application:** `src/application/use_cases/auth/login/__init__.py` e
-   `src/application/use_cases/auth/login/ilogin_use_case.py` importam-se mutuamente.
-4. **Ciclo Infrastructure:** `src/infra/postgresql/models/__init__.py` reexporta models que, por
-   sua vez, importam do pacote `models`, formando ciclo entre o `__init__` e os models Auth.
-5. **Unit of Work global e mutável:** `src/main/composables/use_cases/auth/units_of_work.py`,
-   `src/main/composables/use_cases/auth/use_cases.py` e `src/main/routes/fast_api/auth_routes.py`
+3. **Ciclo Infrastructure:** `src/modules/auth/infrastructure/persistence/postgresql/models/__init__.py`
+   reexporta models que importam o próprio pacote, formando ciclo interno entre o `__init__` e os models Auth.
+4. **Unit of Work global e mutável:** `src/modules/auth/bootstrap/units_of_work.py`,
+   `src/modules/auth/bootstrap/use_cases.py` e `src/modules/auth/presentation/routes.py`
    instanciam e reutilizam UoWs/use cases/controllers. `src/infra/postgresql/units_of_work/base_unit_of_work.py`
    mantém sessão mutável; requests concorrentes podem compartilhar estado.
-6. **Middleware de autenticação desconectado:** `src/main/adapters/fast_api/fast_api_auth.py` não é
-   instalado na aplicação. `src/application/services/auth/http_request_auth/authenticate_request_service_impl.py`
-   e `iauthenticate_request_service.py` ainda possuem imports locais absolutos inválidos.
-7. **Exceção expõe internals em debug:** `src/main/server/fast_api/fast_api_exception_handler.py`
+5. **Middleware de autenticação desconectado:** `src/modules/auth/presentation/adapters/fast_api_auth.py` não é
+   instalado na aplicação. Os imports locais inválidos desse serviço foram corrigidos apenas para refletir
+   a nova estrutura; o middleware continua sem uso nas rotas.
+6. **Exceção expõe internals em debug:** `src/main/server/fast_api/fast_api_exception_handler.py`
    pode devolver arquivo, linha e erro bruto; `DEBUG` tem default ativo em `src/core/settings.py`.
 
 ## 5. Auth Module
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| User/AuthCredentials model | PARTIAL | `src/domain/entities/user.py`, `src/infra/postgresql/models/users_model.py`, `auth_credentials_model.py`, migration `1ce1f1cd457b_bancos_agora_em_docker.py` | Existe, mas diverge do modelo planejado e possui mapeamento quebrado. |
-| Cadastro | PARTIAL | `src/application/use_cases/auth/signup/`, `src/presentation/controllers/auth/sign_up_controller.py`, `src/main/routes/fast_api/auth_routes.py` | Fluxo substancial; não há teste executável nem E2E e a cadeia de verificação por e-mail não fecha. |
-| Login | PARTIAL | `src/application/use_cases/auth/login/`, `src/presentation/controllers/auth/login_controller.py` | Quebra ao buscar usuário por uso incorreto do mapper. |
-| Password hashing | IMPLEMENTED | `src/domain/ports/security/ipassword_hasher.py`, `src/infra/security/argon2id_password_hasher.py` | Argon2id concreto com verify/rehash. |
-| Geração/validação JWT | PARTIAL | `src/application/ports/auth/token/`, `src/infra/security/token_service.py` | Primitiva existe; access/refresh são indistinguíveis por claim/tipo. |
-| Sessões e refresh | PARTIAL | `src/domain/entities/auth_session.py`, `src/application/services/auth/auth_session/`, `src/infra/postgresql/repositories/auth_sessions_repository.py` | Persistência existe; refresh usa atributo inexistente `_clock`. |
-| Logoff | PARTIAL | `src/application/use_cases/auth/logoff/`, `src/presentation/controllers/auth/logoff_controller.py` | Estrutura existe; cobertura prevista não pode ser coletada. |
-| Solicitar reset de senha | PARTIAL | `src/application/use_cases/auth/request_password_reset/`, `src/application/services/auth/reset_password_service/` | Implementação passa repository onde o service espera UoW e falha em runtime. |
-| Efetivar reset de senha | PARTIAL | `src/application/use_cases/auth/reset_password/`, `src/infra/postgresql/repositories/reset_password_repository.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Estrutura/persistência existem; depende de consultas de usuário quebradas. |
-| Verificação de e-mail | PARTIAL | `src/domain/entities/email_verification.py`, `src/application/use_cases/auth/verify_email/`, `src/infra/postgresql/repositories/user_email_verification_repository.py` | Repositório e service contêm erros funcionais; envio é desconectado. |
+| User/AuthCredentials model | PARTIAL | `src/modules/auth/domain/entities/user.py`, `src/modules/auth/infrastructure/persistence/postgresql/models/users_model.py`, `auth_credentials_model.py`, migration `1ce1f1cd457b_bancos_agora_em_docker.py` | Existe, mas diverge do modelo planejado e possui mapeamento quebrado. |
+| Cadastro | PARTIAL | `src/modules/auth/application/use_cases/signup/`, `src/modules/auth/presentation/controllers/sign_up_controller.py`, `src/modules/auth/presentation/routes.py` | Fluxo substancial; não há teste de cadastro nem E2E e a cadeia de verificação por e-mail não fecha. |
+| Login | PARTIAL | `src/modules/auth/application/use_cases/login/`, `src/modules/auth/presentation/controllers/login_controller.py` | Quebra ao buscar usuário por uso incorreto do mapper. |
+| Password hashing | IMPLEMENTED | `src/modules/auth/domain/ports/security/ipassword_hasher.py`, `src/modules/auth/infrastructure/security/argon2id_password_hasher.py` | Argon2id concreto com verify/rehash. |
+| Geração/validação JWT | PARTIAL | `src/modules/auth/application/ports/token/`, `src/modules/auth/infrastructure/security/token_service.py` | Primitiva existe; access/refresh são indistinguíveis por claim/tipo. |
+| Sessões e refresh | PARTIAL | `src/modules/auth/domain/entities/auth_session.py`, `src/modules/auth/application/services/auth_session/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/auth_sessions_repository.py` | Persistência existe; refresh usa atributo inexistente `_clock`. |
+| Logoff | PARTIAL | `src/modules/auth/application/use_cases/logoff/`, `src/modules/auth/presentation/controllers/logoff_controller.py` | Estrutura existe; os dois testes coletam, mas falham no setup por ausência do UoW na fixture. |
+| Solicitar reset de senha | PARTIAL | `src/modules/auth/application/use_cases/request_password_reset/`, `src/modules/auth/application/services/reset_password_service/` | Implementação passa repository onde o service espera UoW e falha em runtime. |
+| Efetivar reset de senha | PARTIAL | `src/modules/auth/application/use_cases/reset_password/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/reset_password_repository.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Estrutura/persistência existem; depende de consultas de usuário quebradas. |
+| Verificação de e-mail | PARTIAL | `src/modules/auth/domain/entities/email_verification.py`, `src/modules/auth/application/use_cases/verify_email/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_email_verification_repository.py` | Repositório e service contêm erros funcionais; envio é desconectado. |
 | Perfil | NOT_STARTED | `src/` e rotas inspecionados | Nenhum caso de uso/endpoint. |
 | Avatar/S3 | NOT_STARTED | `src/` inspecionado | Nenhuma implementação S3. |
 | Exclusão/anonimização | NOT_STARTED | `src/` inspecionado | Nenhum caso de uso/endpoint. |
 | Exportação geral da conta | NOT_STARTED | `src/` inspecionado | Nenhum job/caso de uso/endpoint. |
-| Admin authorization | BLOCKED | `src/domain/entities/user.py`, `src/application/services/auth/http_request_auth/dto.py` | DTO tem `is_admin/roles`, mas não existe modelo persistido, claim ou decisão RBAC. |
+| Admin authorization | BLOCKED | `src/modules/auth/domain/entities/user.py`, `src/modules/auth/application/services/http_request_auth/dto.py` | DTO tem `is_admin/roles`, mas não existe modelo persistido, claim ou decisão RBAC. |
 | MFA | NOT_STARTED | `src/` inspecionado | Nenhuma implementação. |
 
 Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 
-- `src/infra/postgresql/repositories/user_repository.py` chama
-  `UserMapper.to_entity(model=...)`, mas `src/infra/postgresql/mappers/user_mapper.py` não aceita esse keyword;
+- `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_repository.py` chama
+  `UserMapper.to_entity(model=...)`, mas `src/modules/auth/infrastructure/persistence/postgresql/mappers/user_mapper.py` não aceita esse keyword;
 - o mesmo repository tenta desempacotar dois valores retornados por `UserMapper.to_model()`, que retorna um;
-- `src/application/services/auth/auth_session/auth_session_service_impl.py` usa `self._clock`, mas o
+- `src/modules/auth/application/services/auth_session/auth_session_service_impl.py` usa `self._clock`, mas o
   atributo criado é `self.__system_clock`;
-- `src/application/services/auth/email_verification/email_verification_service_impl.py` testa
+- `src/modules/auth/application/services/email_verification/email_verification_service_impl.py` testa
   `verification.is_expired` sem chamar o método;
-- `src/infra/postgresql/repositories/user_email_verification_repository.py` compara o id com
+- `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_email_verification_repository.py` compara o id com
   `str(UserId)` em vez do valor persistido;
 - o login de usuário ainda não verificado emite evento e depois lança exceção antes do commit,
   levando o UoW a rollback;
-- `src/application/services/auth/reset_password_service/password_reset_service_impl.py` trata um
+- `src/modules/auth/application/services/reset_password_service/password_reset_service_impl.py` trata um
   repository recebido como se fosse um UoW;
-- `src/domain/value_objects/password_plain.py` referencia `PASSWORD_MIN_LENGTH`, nome inexistente
+- `src/modules/auth/domain/value_objects/password_plain.py` referencia `PASSWORD_MIN_LENGTH`, nome inexistente
   em settings, no caminho de erro de senha curta;
 - o validator HTTP aceita senha de 8 caracteres, enquanto o domínio exige 12;
 - não há autenticação/autorização instalada nas rotas.
@@ -174,11 +174,11 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| Entidade JournalEntry | PARTIAL | `src/domain/entities/journal_entry.py`, `src/domain/value_objects/journal_entry_status.py`, `content_tags.py` | Entidade rica existe, sem model/repository concreto/migration. |
-| Criar entrada | PARTIAL | `src/application/use_cases/journal/create_entry/` | Cria entidade `DRAFT`, mas nunca chama repository; apenas faz commit. |
-| Port de repository/UoW | PARTIAL | `src/domain/ports/repositories/ijournal_entry_repository.py`, `src/domain/ports/units_of_work/ijournal_unit_of_work.py` | Interfaces sem implementação. |
-| Endpoint Journal | NOT_STARTED | `src/main/routes/fast_api/journal_routes.py`, `src/main/server/fast_api/server.py` | Router vazio e não incluído no servidor. |
-| Persistência Journal | NOT_STARTED | `src/infra/postgresql/models/`, `alembic/versions/` | Nenhum model, repository, UoW concreto ou tabela. |
+| Entidade JournalEntry | PARTIAL | `src/modules/journal/domain/entities/journal_entry.py`, `src/modules/journal/domain/value_objects/` | Entidade rica existe, sem model/repository concreto/migration. |
+| Criar entrada | PARTIAL | `src/modules/journal/application/use_cases/create_entry/` | Cria entidade `DRAFT`, mas nunca chama repository; apenas faz commit. |
+| Port de repository/UoW | PARTIAL | `src/modules/journal/domain/ports/repositories/`, `src/modules/journal/domain/ports/units_of_work/` | Interfaces sem implementação. |
+| Endpoint Journal | NOT_STARTED | `src/modules/journal/`, `src/main/server/fast_api/server.py` | Não existe camada Presentation/router Journal e nada é incluído no servidor. |
+| Persistência Journal | NOT_STARTED | models em `src/modules/auth/`, `src/modules/internal_events/` e `alembic/versions/` | Nenhum model, repository, UoW concreto ou tabela Journal. |
 | Listar histórico | NOT_STARTED | `src/` inspecionado | Ausente. |
 | Detalhar entrada | NOT_STARTED | `src/` inspecionado | Ausente. |
 | Editar/reanalisar | NOT_STARTED | `src/` inspecionado | Ausente. |
@@ -186,8 +186,8 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 | Ownership/authorization | NOT_STARTED | caso de uso `create_entry`, rotas | DTO recebe `user_id` do cliente; não há identidade autenticada. |
 | Analysis persistida | NOT_STARTED | `src/` e migrations inspecionados | Campos parciais estão embutidos na entidade; não existe entidade/tabela Analysis. |
 | JournalSentence / SentenceTheme / SentencePassage | NOT_STARTED | `src/` inspecionado | Ausentes. |
-| EntryEmbedding / SentenceEmbedding | NOT_STARTED | `src/domain/entities/entry_embedding.py` | Arquivo `entry_embedding.py` tem zero bytes; não é implementação. |
-| DRAFT | PARTIAL | `src/domain/value_objects/journal_entry_status.py`, caso de uso create | Existe no código, mas o contrato do fluxo e a passagem a `PENDING_ANALYSIS` não existem. |
+| EntryEmbedding / SentenceEmbedding | NOT_STARTED | `src/` inspecionado | O antigo placeholder vazio foi removido; não existe implementação. |
+| DRAFT | PARTIAL | `src/modules/journal/domain/value_objects/journal_entry_status.py`, caso de uso create | Existe no código, mas o contrato do fluxo e a passagem a `PENDING_ANALYSIS` não existem. |
 | Versionamento de Analysis | BLOCKED | documentação e ausência em `src/` | Não há decisão sobre histórico/análise vigente. |
 
 ## 7. Demais módulos de negócio
@@ -221,7 +221,7 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 
 | Capacidade | Status | Evidência |
 |---|---|---|
-| Entidade Recommendation | NOT_STARTED | `src/domain/entities/recomendation.py` tem zero bytes e nome incorreto |
+| Entidade Recommendation | NOT_STARTED | `src/` inspecionado; o antigo placeholder vazio foi removido |
 | Engine/geração assíncrona | NOT_STARTED | `src/` inspecionado |
 | Consulta Journal/Catalog por contrato | NOT_STARTED | `src/` inspecionado |
 | Explainability/reason | NOT_STARTED | `src/` inspecionado |
@@ -245,17 +245,17 @@ A aplicação importada expõe exatamente estas rotas de negócio:
 
 | Método e rota | Status | Evidência | Observação |
 |---|---|---|---|
-| `POST /auth/signup` | PARTIAL | `src/main/routes/fast_api/auth_routes.py`, `src/presentation/controllers/auth/sign_up_controller.py` | Única rota com request body documentado no OpenAPI; resposta real 201, spec gerada anuncia 200/422. |
+| `POST /auth/signup` | PARTIAL | `src/modules/auth/presentation/routes.py`, `src/modules/auth/presentation/controllers/sign_up_controller.py` | Única rota com request body documentado no OpenAPI; resposta real 201, spec gerada anuncia 200/422. |
 | `POST /auth/login` | PARTIAL | mesmos paths, `login_controller.py` | Usa Basic Auth fora do contrato OpenAPI e falha na consulta via mapper. |
 | `POST /auth/logoff` | PARTIAL | `logoff_controller.py` | Sem security scheme no OpenAPI. |
 | `POST /auth/refresh` | PARTIAL | `refresh_controller.py` | Depende de cookie; service contém erro `_clock`. |
 | `POST /auth/request-reset-password` | PARTIAL | `request_reset_password_controller.py` | Não declara body no OpenAPI e o service recebe dependência incompatível. |
 | `POST /auth/reset-password` | PARTIAL | `reset_password_controller.py` | Não declara body no OpenAPI. |
 | `GET /auth/verify-email` | PARTIAL | `verify_email_controller.py` | Declara `code` em query; repository/service possuem erros. |
-| Demais endpoints planejados | NOT_STARTED | `src/main/server/fast_api/server.py`, `src/main/routes/fast_api/` | Journal não é montado; não há Profile, AI, Recommendation, Sharing, Catalog/Admin ou Notification API. |
+| Demais endpoints planejados | NOT_STARTED | `src/main/server/fast_api/server.py`, módulos inspecionados | Journal não possui Presentation; não há Profile, AI, Recommendation, Sharing, Catalog/Admin ou Notification API. |
 
-DTOs e validators existem principalmente em `src/application/use_cases/auth/*/dto.py` e
-`src/main/validators/fast_api/auth/`, mas login/reset não estão integrados ao schema FastAPI de modo a
+DTOs e validators existem principalmente em `src/modules/auth/application/use_cases/*/dto.py` e
+`src/modules/auth/presentation/validators/`, mas login/reset não estão integrados ao schema FastAPI de modo a
 gerar contrato OpenAPI. Todas as rotas têm `security: []` na spec gerada.
 
 ## 9. Persistência e migrations
@@ -264,7 +264,7 @@ gerar contrato OpenAPI. Todas as rotas têm `security: []` na spec gerada.
 
 | Item | Status | Evidência | Estado real |
 |---|---|---|---|
-| Metadata SQLAlchemy | IMPLEMENTED | `src/infra/postgresql/configs/base.py`, `src/infra/postgresql/models/` | Seis tabelas são registradas. |
+| Metadata SQLAlchemy | IMPLEMENTED | `src/infra/postgresql/configs/base.py`, models em `src/modules/auth/` e `src/modules/internal_events/` | Seis tabelas são registradas. |
 | Tabela `users` | PARTIAL | `users_model.py`, migration `1ce1f1cd457b_bancos_agora_em_docker.py` | Auth parcial; campos divergentes do planejado. |
 | Tabela `auth_credentials` | PARTIAL | `auth_credentials_model.py`, mesma migration | Sem MFA/credential_type documentados. |
 | Tabela `auth_sessions` | PARTIAL | `auth_sessions_model.py`, mesma migration | Sem IP/user-agent; refresh token hash existe. |
@@ -272,7 +272,7 @@ gerar contrato OpenAPI. Todas as rotas têm `security: []` na spec gerada.
 | Tabela `passwords_reset` | PARTIAL | `reset_password_model.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Nome e modelo divergem da documentação. |
 | Tabela `outbox` | PARTIAL | `outbox_model.py`, migrations `631fd4384bca_criando_tabela_do_pattern_outbox_nao_.py` e `ca9163c93ce6_01_09_2026_atualizando_a_tabela_de_.py` | Suporta estados/retry, sem contrato documentado completo. |
 | Cadeia Alembic | IMPLEMENTED | `alembic/versions/` | Uma head; `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py` é migration vazia. |
-| Execução em PostgreSQL real | NOT_VERIFIED | `docker-compose.infra.yml` | Docker indisponível no host; nenhuma conexão externa foi feita. |
+| Execução em PostgreSQL real | NOT_VERIFIED | `docker-compose.infra.yml` | Docker CLI/Compose está disponível, mas daemon, container e conexão com o banco não foram verificados nesta análise. |
 | `auth_schema` | NOT_STARTED | models/migrations | Todas as tabelas usam o schema padrão (`schema=None`). |
 | `journal_schema` | NOT_STARTED | models/migrations | Ausente. |
 | `recommendation_schema` | NOT_STARTED | models/migrations | Ausente. |
@@ -292,15 +292,15 @@ que adiciona o valor `PROCESSING` ao enum do outbox não remove esse valor.
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| Entidade/model/tabela Outbox | PARTIAL | `src/domain/entities/outbox_event.py`, `src/infra/postgresql/models/outbox_model.py`, migrations Outbox | Estrutura real existe e diverge do contrato documentado. |
-| Escrita transacional Auth + Outbox | PARTIAL | `src/application/services/messaging/outbox_service_impl.py`, `src/infra/postgresql/units_of_work/auth_unit_of_work_impl.py`, casos signup/reset | Usa o mesmo UoW, mas os fluxos possuem erros e não foram integrados. |
-| Claim concorrente | IMPLEMENTED | `src/infra/postgresql/repositories/outbox_repository.py` | Usa `FOR UPDATE SKIP LOCKED`, marca `PROCESSING` e incrementa tentativas. |
-| Retry/backoff | PARTIAL | `src/infra/strategies/exponential_retry.py`, `src/infra/messaging/workers/publishers/base_sqs_publisher_worker.py` | Backoff existe; evento abandonado em `PROCESSING` não é recuperado após crash. |
-| Dispatcher | PARTIAL | `src/main/composables/messaging/aws/workers/outbox_dispatcher.py`, `src/main/workers/publishers/sqs/sqs_outbox_dispatcher.py` | Publica em SQS, mas Compose não inicia esse worker. |
-| Event Router | PARTIAL | `src/infra/messaging/routing/event_router.py`, `src/main/composables/messaging/event_router.py` | Roteia apenas os dois eventos de e-mail para publisher SQS. |
-| RabbitMQ publishers | PARTIAL | `src/infra/messaging/rabbitmq/publishers/` | Existem, mas não são usados pelo dispatcher efetivo. |
-| RabbitMQ e-mail consumers | PARTIAL | `src/infra/messaging/rabbitmq/consumers/`, `src/main/workers/consumers/emails/rabbitmq/` | Consomem RabbitMQ, enquanto o outbox publica SQS; payloads esperados também divergem. |
-| Consumers SQS | NOT_STARTED | `src/infra/messaging/aws_sqs/consumers/` | Apenas `__init__.py`. |
+| Entidade/model/tabela Outbox | PARTIAL | `src/modules/internal_events/domain/entities/outbox_event.py`, `src/modules/internal_events/infrastructure/persistence/postgresql/models/outbox_model.py`, migrations Outbox | Estrutura real existe e diverge do contrato documentado. |
+| Escrita transacional Auth + Outbox | PARTIAL | `src/modules/internal_events/application/services/outbox_service_impl.py`, `src/modules/auth/infrastructure/persistence/postgresql/units_of_work/auth_unit_of_work_impl.py`, casos signup/reset | Usa o mesmo UoW, mas os fluxos possuem erros e não foram integrados. |
+| Claim concorrente | IMPLEMENTED | `src/modules/internal_events/infrastructure/persistence/postgresql/repositories/outbox_repository.py` | Usa `FOR UPDATE SKIP LOCKED`, marca `PROCESSING` e incrementa tentativas. |
+| Retry/backoff | PARTIAL | `src/modules/internal_events/infrastructure/strategies/exponential_retry.py`, `src/modules/internal_events/infrastructure/messaging/workers/publishers/base_sqs_publisher_worker.py` | Backoff existe; evento abandonado em `PROCESSING` não é recuperado após crash. |
+| Dispatcher | PARTIAL | `src/modules/internal_events/bootstrap/aws/workers/outbox_dispatcher.py`, `src/modules/internal_events/bootstrap/workers/publishers/sqs/sqs_outbox_dispatcher.py` | Publica em SQS, mas Compose não inicia esse worker. |
+| Event Router | PARTIAL | `src/modules/internal_events/infrastructure/messaging/routing/event_router.py`, `src/modules/internal_events/bootstrap/event_router.py` | Roteia apenas os dois eventos de e-mail para publisher SQS. |
+| RabbitMQ publishers | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/publishers/` | Existem, mas não são usados pelo dispatcher efetivo. |
+| RabbitMQ e-mail consumers | PARTIAL | `src/modules/notification/infrastructure/messaging/rabbitmq/consumers/`, `src/modules/notification/bootstrap/workers/rabbitmq/` | Consomem RabbitMQ, enquanto o outbox publica SQS; payloads esperados também divergem. |
+| Consumers SQS | NOT_STARTED | `src/modules/internal_events/infrastructure/messaging/aws_sqs/consumers/` | Apenas `__init__.py`. |
 | Processed Events | NOT_STARTED | models/migrations/repositories | Nenhuma tabela ou repository. |
 | Idempotência por consumer | NOT_STARTED | workers/repositories | Nenhum registro/deduplicação. |
 | Visibilidade operacional de falhas | NOT_STARTED | rotas/observabilidade | Falhas só ficam consultáveis diretamente no banco. |
@@ -312,24 +312,23 @@ que adiciona o valor `PROCESSING` ao enum do outbox não remove esse valor.
 
 Eventos concretos encontrados:
 
-- `emails.verification.requested` — `src/domain/events/emails/verification_requested.py`;
-- `emails.password_reset.requested` — `src/domain/events/emails/password_reset_requested.py`.
+- `emails.verification.requested` — `src/modules/auth/domain/events/emails/verification_requested.py`;
+- `emails.password_reset.requested` — `src/modules/auth/domain/events/emails/password_reset_requested.py`.
 
 Não há eventos Journal. Os códigos brutos de verificação/reset são colocados no payload do Outbox; o
 consumer RabbitMQ registra o corpo integral da mensagem, criando risco de exposição de dados sensíveis.
 
-`docker-compose.api_workers.yml` aponta para módulos inexistentes
-`src.main.workers.auth.email_verification` e `src.main.workers.auth.email_password_reset`; os entrypoints
-reais estão sob `src/main/workers/consumers/emails/rabbitmq/`.
+`docker-compose.api_workers.yml` foi alinhado aos entrypoints movidos para
+`src/modules/notification/bootstrap/workers/rabbitmq/`; o Compose ainda não inicia o dispatcher SQS do Outbox.
 
 ## 11. Notification e integrações externas
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| Email ports | IMPLEMENTED | `src/application/ports/emails/` | Contratos de verificação/reset existem. |
-| SMTP adapters/templates | PARTIAL | `src/infra/email/smtp/` | HTML e envio assíncrono existem; remetente Gmail está hardcoded e entrega não foi verificada. |
-| NotificationWorker | PARTIAL | consumers RabbitMQ de e-mail | Não é módulo isolado; caminho de publicação não chega a esses consumers. |
-| TemplateRenderer independente | NOT_STARTED | `src/infra/email/smtp/` | Templates estão embutidos nos adapters. |
+| Email ports | IMPLEMENTED | `src/modules/notification/application/ports/` | Contratos de verificação/reset existem. |
+| SMTP adapters/templates | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | HTML e envio assíncrono existem; remetente Gmail está hardcoded e entrega não foi verificada. |
+| NotificationWorker | PARTIAL | `src/modules/notification/bootstrap/workers/`, consumers RabbitMQ | O módulo físico existe, mas o caminho de publicação não chega a esses consumers. |
+| TemplateRenderer independente | NOT_STARTED | `src/modules/notification/infrastructure/email/smtp/` | Templates estão embutidos nos adapters. |
 | NotificationLog | NOT_STARTED | models/migrations/repositories | Ausente. |
 | SES | NOT_STARTED | projeto inteiro | Ausente. |
 | S3 | NOT_STARTED | projeto inteiro | Ausente. |
@@ -357,23 +356,23 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 
 | Suite/verificação | Status | Evidência | Resultado |
 |---|---|---|---|
-| Sintaxe Python | IMPLEMENTED | 334 arquivos sob `src/` e `tests/` | Parsing/compilação estática sem falhas. |
+| Sintaxe Python | IMPLEMENTED | 346 arquivos sob `src/`, `tests/` e `alembic/` | Parsing estático sem falhas após a limpeza modular. |
 | Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | PARTIAL | `tests/`, packages Auth | Dois `ImportError` na coleta; zero testes executados. |
+| Coleta pytest | IMPLEMENTED | `tests/`, `src/modules/auth/application/use_cases/login/__init__.py` | Sete testes coletados com sucesso. |
 | Testes Domain | NOT_STARTED | `tests/` inspecionado | Ausentes. |
-| Integração repository/PostgreSQL | NOT_STARTED | `tests/integration/__init__.py` | Diretório vazio de testes. |
+| Integração repository/PostgreSQL | NOT_STARTED | `tests/` inspecionado | Nenhum teste de integração; o antigo diretório vazio foi removido. |
 | API/HTTP | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Outbox/idempotência | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Neo4j | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | LLM contract | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Frontend | NOT_STARTED | repositório | Frontend ausente. |
-| E2E | NOT_STARTED | `tests/e2e/__init__.py` | Diretório vazio de testes. |
+| E2E | NOT_STARTED | `tests/` inspecionado | Nenhum teste E2E; o antigo diretório vazio foi removido. |
 | API import/OpenAPI | IMPLEMENTED | `src/main/server/fast_api/run.py` | Importação e enumeração de rotas tiveram sucesso com env temporário. |
-| Docker/PostgreSQL/brokers | NOT_VERIFIED | Compose | `docker` indisponível neste host. |
+| Docker/PostgreSQL/brokers | NOT_VERIFIED | Compose | CLI disponível; daemon, containers e conexões não foram verificados nesta análise. |
 
-Os testes não coletam porque importam `LoginUseCaseImpl` de um `__init__.py` que não o exporta. Fixtures e
-doubles também refletem assinaturas antigas: ausência de UoW/Outbox, `AuthSessionResultDTO` sem
-`session_id` e construtores incompatíveis com os casos de uso atuais.
+O pacote de login agora exporta `LoginUseCaseImpl` sem o ciclo Application anterior. Fixtures e doubles
+continuam refletindo assinaturas antigas: ausência de UoW/Outbox, `AuthSessionResultDTO` sem `session_id`
+e construtores incompatíveis com os casos de uso atuais. Por isso os sete testes falham no setup.
 
 ## 14. Divergências entre código e documentação
 
@@ -382,8 +381,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 
 1. **Identidade do sistema:** documentação consolidada usa Reflecta; `pyproject.toml`, settings, título
    FastAPI, Compose e remetente SMTP ainda usam Individuum.
-2. **Arquitetura modular:** o planejado descreve módulos coesos; o código está organizado por camadas
-   globais e somente Auth é substancial.
+2. **Arquitetura modular:** Auth, Journal, Internal Events e Notification possuem raízes verticais;
+   infraestrutura compartilhada permanece horizontal e somente Auth é substancial.
 3. **Mensageria:** o contexto atual prevê Outbox + dispatcher interno sem novo broker; o código publica
    em SQS, consome RabbitMQ e o Compose sobe RabbitMQ. A cadeia não se conecta.
 4. **PostgreSQL:** os diagramas/glossário planejam cinco schemas; o código cria seis tabelas no schema
@@ -404,9 +403,9 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 13. **Neo4j, S3 e IA:** aparecem na arquitetura planejada, mas estão ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
 15. **Testes:** TCC descreve cenários e uma matriz de testes; o repositório tem sete testes Auth
-    desatualizados e a suite não coleta.
-16. **Deploy/workers:** Compose anuncia workers de e-mail em módulos que não existem e não inicia o
-    dispatcher SQS existente; o Neo4j planejado também não aparece na infra.
+    desatualizados, coletados com sucesso, mas todos falham no setup.
+16. **Deploy/workers:** os entrypoints dos workers de e-mail acompanham o módulo Notification, mas o
+    Compose não inicia o dispatcher SQS existente; o Neo4j planejado também não aparece na infra.
 17. **OpenAPI/Auth:** documentação sugere contratos HTTP usuais; cinco rotas Auth não expõem
     body/parâmetros/security na spec, e login usa Basic Auth sem registrá-lo.
 
@@ -454,7 +453,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - **Entrega impossível:** outbox SQS e consumers RabbitMQ usam transportes/payloads diferentes.
 - **Exposição de segredos/PII:** código bruto de verificação/reset no Outbox e log integral do consumer;
   erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
-- **Configuração não reproduzível:** sem `.env.example`, URL de banco malformada e entrypoints Compose inválidos.
+- **Configuração não reproduzível:** sem `.env.example`, URL de banco malformada e dispatcher ausente do Compose.
 - **Ausência de rede de segurança:** zero teste executado, sem integração/API/E2E/CI.
 - **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
   baseline definido no contexto.
@@ -468,14 +467,13 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - migration vazia `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py`;
 - downgrade incompleto do enum Outbox;
 - imports por `__init__` e wildcard gerando ciclos;
-- `src/domain/entities/entry_embedding.py` e `recomendation.py` vazios;
-- typo `recomendation.py` e tabela `passwords_reset`;
+- tabela `passwords_reset` mantém nomenclatura divergente;
 - settings Pydantic com configuração depreciada e defaults inseguros;
 - CORS `*` combinado com credentials;
 - objetos de composição criados no import da rota;
 - contratos OpenAPI incompletos e status documentado diferente do retorno;
 - remetente SMTP hardcoded;
-- Docker Compose não corresponde aos módulos executáveis;
+- Docker Compose ainda não inicia o dispatcher do Outbox e depende de `.env.dev` ausente;
 - não há health checks da aplicação, CI, métricas ou tracing.
 
 ## 18. Menor próximo incremento vertical coerente

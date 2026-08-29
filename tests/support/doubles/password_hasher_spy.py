@@ -1,9 +1,9 @@
 # tests/support/doubles/password_hasher_spy.py
 from typing import List, Tuple
 
-from src.domain.ports.security.ipassword_hasher import IPasswordHasher
-from src.domain.value_objects.password_algorithm import PasswordAlgorithm
-from src.domain.value_objects.password_hash import PasswordHash
+from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
+from src.modules.auth.public.password_algorithm import PasswordAlgorithm
+from src.modules.auth.domain.value_objects.password_hash import PasswordHash
 
 
 class PasswordHasherSpy(IPasswordHasher):

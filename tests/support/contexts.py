@@ -2,8 +2,8 @@
 from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, Mock
 
-from src.application.use_cases.auth.login import LoginUseCaseImpl
-from src.application.use_cases.auth.logoff.logoff_use_case_impl import LogoffUseCaseImpl
+from src.modules.auth.application.use_cases.login import LoginUseCaseImpl
+from src.modules.auth.application.use_cases.logoff.logoff_use_case_impl import LogoffUseCaseImpl
 
 
 @dataclass

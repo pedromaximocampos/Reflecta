@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: individuum-worker-email-verification
-    command: uv run python -m src.main.workers.auth.email_verification
+    command: uv run python -m src.modules.notification.bootstrap.workers.rabbitmq.email_verification
     environment:
       ENV: dev
       DEBUG: "1"
@@ -57,7 +57,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: individuum-worker-email-password-reset
-    command: uv run python -m src.main.workers.auth.email_password_reset
+    command: uv run python -m src.modules.notification.bootstrap.workers.rabbitmq.email_password_reset
     environment:
       ENV: dev
       DEBUG: "1"

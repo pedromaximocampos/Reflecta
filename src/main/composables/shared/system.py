@@ -2,7 +2,7 @@
 
 from src.infra.system.system_clock import SystemClock
 from src.infra.system.ulid_generator import UlidGenerator
-from src.infra.system.jti_hasher import JTIHasher
+from src.modules.auth.infrastructure.security.jti_hasher import JTIHasher
 
 # Criados uma única vez – Singleton no nível de módulo
 _clock = SystemClock()

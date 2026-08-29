@@ -465,10 +465,55 @@ modules/
   recommendation/
   sharing/
   notification/
-  events/
+  internal_events/
 ```
 
 Não reorganizar todo um repositório existente apenas para reproduzir exatamente essa árvore. Preservar o que já existe quando a mesma separação de responsabilidades puder ser obtida sem refatoração destrutiva.
+
+### 6.7.1 Convenção física adotada no código atual
+
+Para os módulos já iniciados, a raiz física adotada é `src/modules/`:
+
+```text
+src/modules/
+  journal/
+    domain/
+    application/
+
+  auth/
+    domain/
+    application/
+    infrastructure/
+    presentation/
+    bootstrap/
+    public/
+
+  internal_events/
+    domain/
+    application/
+    infrastructure/
+    bootstrap/
+    public/
+
+  notification/
+    domain/
+    application/
+    infrastructure/
+    bootstrap/
+```
+
+- `auth.public` contém somente contratos que outros módulos podem referenciar;
+- `journal` contém o domínio e o caso de uso embrionário já existentes; persistência, presentation e
+  bootstrap só devem ser criados quando houver implementação real nessas camadas;
+- `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;
+- `notification` reage a eventos e contém adapters/consumers de entrega de e-mail;
+- `main` continua responsável pela aplicação FastAPI e pela composição final;
+- conexão/base SQLAlchemy, tipos HTTP e utilidades ainda compartilhados permanecem temporariamente nas
+  pastas horizontais legadas até uma refatoração própria;
+- migrations continuam centralizadas em `alembic/`, registrando explicitamente os models dos módulos.
+
+Essa organização física não implica que os casos de uso estejam concluídos; o estado funcional deve ser
+registrado somente em `reflecta_IMPLEMENTATION_STATUS.md`.
 
 ---
 

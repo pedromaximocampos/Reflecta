@@ -1,8 +1,8 @@
-from src.domain.entities.user import User, AuthCredentials
-from src.domain.value_objects.email import Email
-from src.domain.value_objects.password_algorithm import PasswordAlgorithm
-from src.domain.value_objects.password_hash import PasswordHash
-from src.domain.value_objects.user_id import UserId
+from src.modules.auth.domain.entities.user import User, AuthCredentials
+from src.modules.auth.public.email import Email
+from src.modules.auth.public.password_algorithm import PasswordAlgorithm
+from src.modules.auth.domain.value_objects.password_hash import PasswordHash
+from src.modules.auth.public.user_id import UserId
 from datetime import datetime, timezone
 from tests.support.utils.id_utils import new_id
 

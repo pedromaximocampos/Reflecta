@@ -2,17 +2,17 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, Mock
 from datetime import datetime, timezone
 
-from src.application.services.auth.auth_session import IAuthSessionService
-from src.application.services.auth.email_verification.iemail_verification_service import IEmailVerificationService
-from src.domain.ports.repositories.iuser_repository import IUserRepository
-from src.domain.ports.security.ipassword_hasher import IPasswordHasher
+from src.modules.auth.application.services.auth_session import IAuthSessionService
+from src.modules.auth.application.services.email_verification.iemail_verification_service import IEmailVerificationService
+from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
+from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
 from tests.support.utils.id_utils import new_id as gen_id
 
-from src.domain.entities.user import User, AuthCredentials
-from src.domain.entities.auth_session import AuthSession
-from src.domain.value_objects.email import Email
-from src.domain.value_objects.password_hash import PasswordHash
-from src.domain.value_objects.user_id import UserId
+from src.modules.auth.domain.entities.user import User, AuthCredentials
+from src.modules.auth.domain.entities.auth_session import AuthSession
+from src.modules.auth.public.email import Email
+from src.modules.auth.domain.value_objects.password_hash import PasswordHash
+from src.modules.auth.public.user_id import UserId
 
 
 # ---------- helpers simples ---------- #

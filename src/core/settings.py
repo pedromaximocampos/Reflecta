@@ -4,7 +4,7 @@ from functools import lru_cache
 from logging.config import dictConfig
 
 from pydantic_settings import BaseSettings
-from src.domain.value_objects.password_algorithm import PasswordAlgorithm
+from src.modules.auth.public.password_algorithm import PasswordAlgorithm
 from typing import Final, Optional
 import os
 

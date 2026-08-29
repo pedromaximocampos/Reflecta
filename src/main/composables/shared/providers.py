@@ -1,5 +1,5 @@
 from src.core.settings import get_settings
-from src.infra.email.smtp.configs.settings import SMTPSettings
+from src.modules.notification.infrastructure.email.smtp.configs.settings import SMTPSettings
 from src.infra.postgresql.configs.settings import PostgresqlSettings
 from src.infra.postgresql.connection import DBConnectionHandler
 

@@ -1,10 +1,10 @@
 # tests/support/doubles/user_repository_fake.py
 from typing import Iterable, Optional, Dict
 
-from src.domain.ports.repositories.iuser_repository import IUserRepository
-from src.domain.entities.user import User
-from src.domain.value_objects.email import Email
-from src.domain.value_objects.user_id import UserId
+from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
+from src.modules.auth.domain.entities.user import User
+from src.modules.auth.public.email import Email
+from src.modules.auth.public.user_id import UserId
 
 
 class UserRepositoryFake(IUserRepository):

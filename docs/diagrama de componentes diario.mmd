@@ -1,0 +1,50 @@
+---
+title: Componentes — Journal Module
+---
+
+flowchart TB
+
+subgraph Journal["Journal Module"]
+
+    JournalController["Journal Controller"]
+    ThemeConfirmationController["Theme Confirmation Controller"]
+
+    JournalApplicationService["Journal Application Service"]
+    AnalysisService["Analysis Service"]
+    ThemeConfirmationService["Theme Confirmation Service"]
+
+    JournalRepository["Journal Repository"]
+    AnalysisRepository["Analysis Repository"]
+    SentenceRepository["Sentence Repository"]
+    SentenceThemeRepository["Sentence Theme Repository"]
+    SentencePassageRepository["Sentence Passage Repository"]
+    EmbeddingRepository["Embedding Repository"]
+
+    JournalController --> JournalApplicationService
+    ThemeConfirmationController --> ThemeConfirmationService
+
+    JournalApplicationService --> JournalRepository
+    JournalApplicationService --> AnalysisRepository
+
+    AnalysisService --> AnalysisRepository
+    AnalysisService --> SentenceRepository
+    AnalysisService --> SentenceThemeRepository
+    AnalysisService --> SentencePassageRepository
+
+    ThemeConfirmationService --> SentenceThemeRepository
+
+    JournalApplicationService --> Outbox["Outbox Repository"]
+    ThemeConfirmationService --> Outbox
+end
+
+subgraph Infra["Infraestrutura"]
+    Postgres[("PostgreSQL<br/>journal_schema")]
+end
+
+JournalRepository --> Postgres
+AnalysisRepository --> Postgres
+SentenceRepository --> Postgres
+SentenceThemeRepository --> Postgres
+SentencePassageRepository --> Postgres
+EmbeddingRepository --> Postgres
+Outbox --> Postgres

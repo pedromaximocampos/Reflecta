@@ -1,0 +1,40 @@
+@startuml Profissional
+title Reflecta - Casos de Uso do Profissional de Saúde
+
+left to right direction
+
+actor "Profissional de Saúde" as Professional
+
+rectangle "Reflecta" {
+
+  usecase "UC16\nAcessar conteúdo\ncompartilhado" as UC16
+  usecase "Validar link/token\nde acesso" as ValidateToken
+
+  usecase "UC15\nVisualizar síntese\ndo usuário" as UC15
+
+  usecase "UC17\nCadastrar atividades\ne reflexões guiadas" as UC17
+  usecase "Vincular atividade\nao usuário" as LinkActivity
+}
+
+Professional --> UC16
+Professional --> UC15
+Professional --> UC17
+
+UC16 ..> ValidateToken : <<include>>
+
+UC15 ..> UC16 : <<include>>
+UC17 ..> UC16 : <<include>>
+UC17 ..> LinkActivity : <<include>>
+
+note right of UC16
+O profissional acessa a página de exportação
+por meio de um link ou token seguro.
+end note
+
+note right of UC15
+A síntese exibida contém apenas
+os dados autorizados pelo usuário.
+end note
+
+
+@enduml

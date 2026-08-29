@@ -1,0 +1,60 @@
+@startuml UsuarioFinal
+title Reflecta - Casos de Uso do Usuário Final
+
+left to right direction
+
+actor "Usuário Final" as User
+
+rectangle "Reflecta" {
+
+  usecase "UC08\nCriar conta" as UC08
+  usecase "UC09\nEntrar no sistema" as UC09
+  usecase "UC10\nGerenciar perfil" as UC10
+  usecase "UC11\nExcluir conta" as UC11
+  usecase "UC07\nExportar conta/dados" as UC07
+
+  usecase "UC01\nCriar entrada de diário" as UC01
+  usecase "UC12\nEditar entrada de diário" as UC12
+  usecase "UC13\nExcluir entrada de diário" as UC13
+  usecase "UC14\nVisualizar histórico de reflexões" as UC14
+
+  usecase "UC02\nVisualizar análise da IA" as UC02
+  usecase "UC03\nGerenciar temas sugeridos pela IA" as UC03
+
+  usecase "UC04\nReceber recomendações culturais" as UC04
+  usecase "UC05\nVisualizar referências literárias e filosóficas" as UC05
+
+  usecase "UC06\nCompartilhar síntese com profissional" as UC06
+}
+
+User --> UC08
+User --> UC09
+User --> UC10
+User --> UC11
+User --> UC07
+
+User --> UC01
+User --> UC12
+User --> UC13
+User --> UC14
+
+User --> UC02
+User --> UC03
+
+User --> UC04
+User --> UC05
+
+User --> UC06
+
+UC11 ..> UC07 : <<extend>>\nopcional antes de excluir
+UC02 ..> UC03 : <<extend>>\napós análise concluída
+UC04 ..> UC05 : <<include>>
+UC06 ..> UC14 : <<include>>\nseleciona entradas
+
+note right of UC01
+A entrada de diário será textual.
+Entradas por áudio e imagem foram removidas
+do escopo atual.
+end note
+
+@enduml

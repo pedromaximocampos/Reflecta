@@ -1,0 +1,50 @@
+---
+title: Componentes — Catalog / Knowledge Module
+---
+
+flowchart TB
+
+subgraph Catalog["Catalog / Knowledge Module"]
+
+    CatalogController["Catalog Controller"]
+
+    ThemeService["Theme Service"]
+    WorkService["Work Service"]
+    AuthorService["Author Service"]
+    PassageService["Passage Service"]
+    AdminReviewService["Admin Review Service"]
+
+    KnowledgeGraphRepository["Knowledge Graph Repository"]
+
+    CatalogController --> ThemeService
+    CatalogController --> WorkService
+    CatalogController --> PassageService
+    CatalogController --> AdminReviewService
+
+    WorkService --> AuthorService
+    WorkService --> KnowledgeGraphRepository
+
+    ThemeService --> KnowledgeGraphRepository
+    AuthorService --> KnowledgeGraphRepository
+
+    PassageService --> ThemeService
+    PassageService --> WorkService
+    PassageService --> KnowledgeGraphRepository
+
+    AdminReviewService --> PassageService
+    AdminReviewService --> KnowledgeGraphRepository
+
+    ThemeService --> Outbox["Outbox Repository"]
+    WorkService --> Outbox
+    PassageService --> Outbox
+    AdminReviewService --> Outbox
+end
+
+subgraph Infra["Infraestrutura"]
+    Neo4j[("Neo4j<br/>Theme • Passage • Work • Author")]
+    S3[("S3<br/>PDFs e capas das obras")]
+end
+
+KnowledgeGraphRepository --> Neo4j
+WorkService -->|"salva PDF/capa"| S3
+Outbox --> Postgres[("PostgreSQL<br/>outbox_events")]

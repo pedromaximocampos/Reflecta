@@ -1,0 +1,61 @@
+@startuml Admin
+title Reflecta - Casos de Uso do Administrador
+
+left to right direction
+
+actor "Administrador" as Admin
+
+rectangle "Reflecta" {
+
+  usecase "UC26\nAcessar área\nadministrativa" as UC26
+
+  usecase "UC27\nGerenciar catálogo\nde temas" as UC27
+
+  usecase "UC28\nGerenciar referências\nfilosóficas e literárias" as UC28
+  usecase "Gerenciar obras" as ManageWorks
+  usecase "Gerenciar autores" as ManageAuthors
+  usecase "Gerenciar passagens" as ManagePassages
+
+  usecase "UC29\nGerenciar recomendações\nculturais" as UC29
+
+  usecase "UC30\nRevisar passagens\nsugeridas pela IA" as UC30
+  usecase "Aprovar passagem" as ApprovePassage
+  usecase "Rejeitar passagem" as RejectPassage
+  usecase "Ajustar temas\nda passagem" as AdjustPassageThemes
+
+  usecase "UC31\nAjustar conteúdos\nassociados aos temas" as UC31
+
+  usecase "UC32\nVisualizar falhas\noperacionais" as UC32
+
+  usecase "UC33\nReprocessar análise\nfalha" as UC33
+  usecase "Solicitar novo\nprocessamento" as RequestRetry
+}
+
+Admin --> UC26
+Admin --> UC27
+Admin --> UC28
+Admin --> UC29
+Admin --> UC30
+Admin --> UC31
+Admin --> UC32
+Admin --> UC33
+
+UC28 ..> ManageWorks : <<include>>
+UC28 ..> ManageAuthors : <<include>>
+UC28 ..> ManagePassages : <<include>>
+
+UC30 ..> ApprovePassage : <<include>>
+UC30 ..> RejectPassage : <<include>>
+UC30 ..> AdjustPassageThemes : <<include>>
+
+UC33 ..> UC32 : <<include>>
+UC33 ..> RequestRetry : <<include>>
+
+note top of UC27
+Todos os casos de uso administrativos
+pressupõem que o ator já esteja autenticado
+e possua permissão administrativa válida.
+end note
+
+
+@enduml

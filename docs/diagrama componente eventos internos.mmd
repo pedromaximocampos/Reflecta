@@ -1,0 +1,40 @@
+---
+title: Componentes — Internal Events Module
+---
+
+flowchart TB
+
+subgraph Events["Internal Events Module"]
+
+    OutboxRepository["Outbox Repository"]
+    EventDispatcher["Event Dispatcher"]
+    EventRouter["Event Router"]
+    ProcessedEventRepository["Processed Event Repository"]
+
+    OutboxRepository --> EventDispatcher
+    EventDispatcher --> EventRouter
+    EventRouter --> ProcessedEventRepository
+end
+
+subgraph Workers["Handlers / Workers"]
+    JournalAnalysisWorker["Journal Analysis Worker"]
+    EmbeddingWorker["Embedding Worker"]
+    WorkIngestionWorker["Work Ingestion Worker"]
+    ReferenceMatchingWorker["Reference Matching Worker"]
+    RecommendationWorker["Recommendation Worker"]
+    NotificationWorker["Notification Worker"]
+end
+
+subgraph Infra["Infraestrutura"]
+    Postgres[("PostgreSQL<br/>outbox_events + processed_events")]
+end
+
+OutboxRepository --> Postgres
+ProcessedEventRepository --> Postgres
+
+EventRouter --> JournalAnalysisWorker
+EventRouter --> EmbeddingWorker
+EventRouter --> WorkIngestionWorker
+EventRouter --> ReferenceMatchingWorker
+EventRouter --> RecommendationWorker
+EventRouter --> NotificationWorker

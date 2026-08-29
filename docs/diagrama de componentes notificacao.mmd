@@ -1,0 +1,25 @@
+---
+title: Componentes — Notification Module
+---
+
+flowchart TB
+
+subgraph Notification["Notification Module"]
+
+    NotificationWorker["Notification Worker"]
+    TemplateRenderer["Template Renderer"]
+    EmailAdapter["Email Adapter"]
+    NotificationLogRepository["Notification Log Repository"]
+
+    NotificationWorker --> TemplateRenderer
+    NotificationWorker --> EmailAdapter
+    NotificationWorker --> NotificationLogRepository
+end
+
+subgraph Infra["Infraestrutura"]
+    SES["Amazon SES / E-mail"]
+    Postgres[("PostgreSQL<br/>notification_log opcional")]
+end
+
+EmailAdapter --> SES
+NotificationLogRepository --> Postgres

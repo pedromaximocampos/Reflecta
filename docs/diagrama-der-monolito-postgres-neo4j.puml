@@ -1,0 +1,359 @@
+@startuml
+title Reflecta - Modelo de Dados\nMonólito Modular com PostgreSQL + Neo4j
+
+!theme plain
+skinparam linetype ortho
+hide circle
+
+' =========================
+' POSTGRESQL
+' =========================
+package "PostgreSQL\nBanco transacional do monólito modular" as PG {
+
+  package "auth_schema" as AUTH {
+    entity "USERS" as users {
+      * id : UUID <<PK>>
+      --
+      email : VARCHAR <<UNIQUE>>
+      name : VARCHAR
+      avatar_url : VARCHAR
+      status : VARCHAR
+      created_at : TIMESTAMPTZ
+      updated_at : TIMESTAMPTZ
+      last_login_at : TIMESTAMPTZ
+    }
+
+    entity "AUTH_CREDENTIALS" as auth_credentials {
+      * user_id : UUID <<PK, FK>>
+      --
+      credential_type : VARCHAR
+      password_hash : VARCHAR
+      password_salt : VARCHAR
+      mfa_enabled : BOOLEAN
+      created_at : TIMESTAMPTZ
+      updated_at : TIMESTAMPTZ
+    }
+
+    entity "AUTH_SESSIONS" as auth_sessions {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK>>
+      issued_at : TIMESTAMPTZ
+      expires_at : TIMESTAMPTZ
+      revoked_at : TIMESTAMPTZ
+      ip : VARCHAR
+      user_agent : TEXT
+    }
+
+    entity "PASSWORD_RESETS" as password_resets {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK>>
+      token_hash : VARCHAR
+      expires_at : TIMESTAMPTZ
+      used_at : TIMESTAMPTZ
+      created_at : TIMESTAMPTZ
+    }
+  }
+
+  package "journal_schema" as JOURNAL {
+    entity "JOURNAL_ENTRIES" as journal_entries {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK>>
+      title : VARCHAR
+      content_text : TEXT
+      context_tags : JSONB
+      status : VARCHAR
+      created_at : TIMESTAMPTZ
+      updated_at : TIMESTAMPTZ
+      deleted_at : TIMESTAMPTZ
+    }
+
+    entity "ANALYSIS" as analysis {
+      * id : UUID <<PK>>
+      --
+      journal_entry_id : UUID <<FK>>
+      summary : TEXT
+      main_message : TEXT
+      content_meta : JSONB
+      status : VARCHAR
+      analyzed_at : TIMESTAMPTZ
+      analysis_error : TEXT
+      created_at : TIMESTAMPTZ
+      updated_at : TIMESTAMPTZ
+    }
+
+    entity "JOURNAL_SENTENCES" as journal_sentences {
+      * id : UUID <<PK>>
+      --
+      journal_entry_id : UUID <<FK>>
+      analysis_id : UUID <<FK>>
+      sentence_index : INT
+      sentence_text : TEXT
+      start_offset : INT
+      end_offset : INT
+      created_at : TIMESTAMPTZ
+    }
+
+    entity "SENTENCE_THEMES" as sentence_themes {
+      * sentence_id : UUID <<PK, FK>>
+      * theme_id : UUID <<PK, Ref Neo4j>>
+      --
+      theme_slug : VARCHAR
+      confidence : DECIMAL
+      source : VARCHAR
+      confirmed_by_user : BOOLEAN
+      created_at : TIMESTAMPTZ
+    }
+
+    entity "SENTENCE_PASSAGES" as sentence_passages {
+      * id : UUID <<PK>>
+      --
+      sentence_id : UUID <<FK>>
+      passage_id : UUID <<Ref Neo4j>>
+      confidence : DECIMAL
+      reason : TEXT
+      payload_snapshot : JSONB
+      created_at : TIMESTAMPTZ
+    }
+
+    entity "ENTRY_EMBEDDINGS" as entry_embeddings {
+      * entry_id : UUID <<PK, FK>>
+      --
+      embedding : VECTOR
+      model_name : VARCHAR
+      created_at : TIMESTAMPTZ
+    }
+
+    entity "SENTENCE_EMBEDDINGS" as sentence_embeddings {
+      * sentence_id : UUID <<PK, FK>>
+      --
+      embedding : VECTOR
+      model_name : VARCHAR
+      created_at : TIMESTAMPTZ
+    }
+  }
+
+  package "recommendation_schema" as REC {
+    entity "RECOMMENDATION_ITEMS" as recommendation_items {
+      * id : UUID <<PK>>
+      --
+      title : VARCHAR
+      type : VARCHAR
+      description : TEXT
+      image_url : VARCHAR
+      external_url : VARCHAR
+      status : VARCHAR
+      metadata : JSONB
+      created_at : TIMESTAMPTZ
+      updated_at : TIMESTAMPTZ
+    }
+
+    entity "RECOMMENDATIONS" as recommendations {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK>>
+      journal_entry_id : UUID <<FK, nullable>>
+      recommendation_item_id : UUID <<FK>>
+      reason : TEXT
+      source_themes : JSONB
+      status : VARCHAR
+      created_at : TIMESTAMPTZ
+      viewed_at : TIMESTAMPTZ
+      saved_at : TIMESTAMPTZ
+    }
+  }
+
+  package "sharing_schema" as SHARING {
+    entity "SHARED_EXPORTS" as shared_exports {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK>>
+      token_hash : VARCHAR
+      s3_url : VARCHAR
+      period_start : DATE
+      period_end : DATE
+      permissions : JSONB
+      status : VARCHAR
+      expires_at : TIMESTAMPTZ
+      created_at : TIMESTAMPTZ
+      revoked_at : TIMESTAMPTZ
+    }
+
+    entity "PROFESSIONAL_ACTIVITIES" as professional_activities {
+      * id : UUID <<PK>>
+      --
+      shared_export_id : UUID <<FK>>
+      user_id : UUID <<FK>>
+      title : VARCHAR
+      description : TEXT
+      status : VARCHAR
+      created_at : TIMESTAMPTZ
+      completed_at : TIMESTAMPTZ
+    }
+  }
+
+  package "event_schema" as EVENTS {
+    entity "OUTBOX_EVENTS" as outbox_events {
+      * id : UUID <<PK>>
+      --
+      event_type : VARCHAR
+      aggregate_type : VARCHAR
+      aggregate_id : UUID
+      payload : JSONB
+      status : VARCHAR
+      attempts : INT
+      next_attempt_at : TIMESTAMPTZ
+      last_error : TEXT
+      created_at : TIMESTAMPTZ
+      processed_at : TIMESTAMPTZ
+    }
+
+    entity "PROCESSED_EVENTS" as processed_events {
+      * event_id : UUID <<PK>>
+      --
+      consumer_name : VARCHAR
+      processed_at : TIMESTAMPTZ
+    }
+
+    entity "NOTIFICATION_LOGS" as notification_logs {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK, nullable>>
+      event_id : UUID
+      channel : VARCHAR
+      recipient : VARCHAR
+      template : VARCHAR
+      status : VARCHAR
+      error : TEXT
+      sent_at : TIMESTAMPTZ
+      created_at : TIMESTAMPTZ
+    }
+
+    entity "AUDIT_LOGS" as audit_logs {
+      * id : UUID <<PK>>
+      --
+      user_id : UUID <<FK, nullable>>
+      action : VARCHAR
+      entity_type : VARCHAR
+      entity_id : UUID
+      details : JSONB
+      created_at : TIMESTAMPTZ
+    }
+  }
+}
+
+' =========================
+' NEO4J
+' =========================
+package "Neo4j\nGrafo de Conhecimento" as GRAPH {
+
+  class "Theme" as theme <<Node>> {
+    + theme_id : UUID
+    + slug : VARCHAR <<UNIQUE>>
+    + label : VARCHAR
+    + description : TEXT
+    + is_active : BOOLEAN
+    + created_at : DATETIME
+    + updated_at : DATETIME
+  }
+
+  class "Passage" as passage <<Node>> {
+    + passage_id : UUID
+    + locator : VARCHAR
+    + short_text : TEXT
+    + paraphrase : TEXT
+    + interpretation_note : TEXT
+    + status : VARCHAR
+    + priority : INT
+    + created_at : DATETIME
+    + updated_at : DATETIME
+  }
+
+  class "Work" as work <<Node>> {
+    + work_id : UUID
+    + slug : VARCHAR <<UNIQUE>>
+    + title : VARCHAR
+    + synopsis : TEXT
+    + type : VARCHAR
+    + language : VARCHAR
+    + cover_image_url : VARCHAR
+    + source_file_url : VARCHAR
+    + status : VARCHAR
+    + created_at : DATETIME
+    + updated_at : DATETIME
+  }
+
+  class "Author" as author <<Node>> {
+    + author_id : UUID
+    + name : VARCHAR
+    + normalized_name : VARCHAR <<UNIQUE>>
+    + description : TEXT
+    + created_at : DATETIME
+    + updated_at : DATETIME
+  }
+}
+
+' =========================
+' RELAÇÕES POSTGRESQL
+' =========================
+users ||--|| auth_credentials
+users ||--o{ auth_sessions
+users ||--o{ password_resets
+
+users ||--o{ journal_entries
+journal_entries ||--o{ analysis
+journal_entries ||--o{ journal_sentences
+analysis ||--o{ journal_sentences
+
+journal_sentences ||--o{ sentence_themes
+journal_sentences ||--o{ sentence_passages
+journal_entries ||--|| entry_embeddings
+journal_sentences ||--|| sentence_embeddings
+
+users ||--o{ recommendations
+journal_entries ||--o{ recommendations
+recommendation_items ||--o{ recommendations
+
+users ||--o{ shared_exports
+shared_exports ||--o{ professional_activities
+users ||--o{ professional_activities
+
+users ||--o{ notification_logs
+users ||--o{ audit_logs
+
+' =========================
+' RELAÇÕES NEO4J
+' =========================
+passage "0..*" --> "0..*" theme : RELATES_TO
+passage "0..*" --> "1" work : BELONGS_TO
+work "0..*" --> "1" author : WRITTEN_BY
+
+' =========================
+' REFERÊNCIAS LÓGICAS ENTRE POSTGRESQL E NEO4J
+' =========================
+sentence_themes ..> theme : theme_id / theme_slug\nreferência lógica
+sentence_passages ..> passage : passage_id\nreferência lógica
+recommendation_items ..> work : work_id opcional\nem metadata
+recommendation_items ..> theme : themes opcionais\nem metadata
+
+note right of PG
+O PostgreSQL concentra os dados transacionais
+do monólito modular, separados por schemas
+lógicos de módulo.
+end note
+
+note right of GRAPH
+O Neo4j armazena o conhecimento curado:
+temas, passagens, obras e autores.
+Não armazena entradas privadas do diário.
+end note
+
+note bottom of sentence_passages
+A passagem contextual fica associada
+à frase/análise da entrada no Journal.
+O conteúdo canônico da passagem fica no Neo4j.
+end note
+
+@enduml

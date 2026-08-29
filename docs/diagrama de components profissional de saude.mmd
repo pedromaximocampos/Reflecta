@@ -1,0 +1,54 @@
+---
+title: Componentes — Sharing / Professional Module
+---
+
+flowchart TB
+
+subgraph Sharing["Sharing / Professional Module"]
+
+    SharingController["Sharing Controller"]
+    ProfessionalAccessController["Professional Access Controller"]
+
+    ConsentService["Consent Service"]
+    ShareTokenService["Share Token Service"]
+    ExportSummaryService["Export Summary Service"]
+    ProfessionalAccessService["Professional Access Service"]
+    ActivityAssignmentService["Activity Assignment Service"]
+
+    SharingRepository["Sharing Repository"]
+    ActivityRepository["Activity Repository"]
+    ConsentRepository["Consent Repository"]
+
+    SharingController --> ConsentService
+    SharingController --> ShareTokenService
+    SharingController --> ExportSummaryService
+
+    ProfessionalAccessController --> ProfessionalAccessService
+    ProfessionalAccessController --> ActivityAssignmentService
+
+    ConsentService --> ConsentRepository
+    ShareTokenService --> SharingRepository
+    ExportSummaryService --> SharingRepository
+    ProfessionalAccessService --> SharingRepository
+    ActivityAssignmentService --> ActivityRepository
+
+    ActivityAssignmentService --> Outbox["Outbox Repository"]
+    ShareTokenService --> Outbox
+end
+
+subgraph InternalModules["Módulos Internos Consultados"]
+    JournalModule["Journal Module<br/>dados autorizados"]
+end
+
+subgraph Infra["Infraestrutura"]
+    Postgres[("PostgreSQL<br/>sharing_schema")]
+    S3[("S3<br/>exportações/sínteses")]
+end
+
+SharingRepository --> Postgres
+ActivityRepository --> Postgres
+ConsentRepository --> Postgres
+Outbox --> Postgres
+
+ExportSummaryService -->|"consulta entradas autorizadas"| JournalModule
+ExportSummaryService -->|"salva exportação"| S3

@@ -1,0 +1,35 @@
+---
+title: Componentes — Recommendation Module
+---
+
+flowchart TB
+
+subgraph Recommendation["Recommendation Module"]
+
+    RecommendationController["Recommendation Controller"]
+    RecommendationWorker["Recommendation Worker"]
+    RecommendationEngine["Recommendation Engine"]
+    RecommendationRepository["Recommendation Repository"]
+
+    RecommendationController --> RecommendationRepository
+    RecommendationController --> RecommendationEngine
+
+    RecommendationWorker --> RecommendationEngine
+    RecommendationEngine --> RecommendationRepository
+    RecommendationEngine --> Outbox["Outbox Repository"]
+end
+
+subgraph InternalModules["Módulos Internos Consultados"]
+    JournalModule["Journal Module<br/>temas recorrentes"]
+    CatalogModule["Catalog / Knowledge Module<br/>obras relacionadas"]
+end
+
+subgraph Infra["Infraestrutura"]
+    Postgres[("PostgreSQL<br/>recommendation_schema")]
+end
+
+RecommendationRepository --> Postgres
+Outbox --> Postgres
+
+RecommendationEngine --> JournalModule
+RecommendationEngine --> CatalogModule

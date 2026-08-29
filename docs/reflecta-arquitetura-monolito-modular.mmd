@@ -1,0 +1,102 @@
+---
+title: Reflecta — Arquitetura em Monólito Modular
+---
+
+flowchart TB
+
+%% =========================
+%% ATORES
+%% =========================
+User["Usuário Final"]
+Professional["Profissional de Saúde"]
+Admin["Administrador"]
+
+%% =========================
+%% INTERFACE
+%% =========================
+Frontend["Frontend Web"]
+APIGateway["API Gateway / BFF"]
+
+%% =========================
+%% BACKEND MODULAR
+%% =========================
+subgraph App["Reflecta Backend<br/>Monólito Modular"]
+    AuthModule["Auth Module"]
+    JournalModule["Journal Module"]
+    AIProcessingModule["AI Processing Module"]
+    CatalogModule["Catalog / Knowledge Module"]
+    RecommendationModule["Recommendation Module"]
+    SharingModule["Sharing / Professional Module"]
+    NotificationModule["Notification Module"]
+    EventModule["Internal Event Dispatcher<br/>Outbox + Workers"]
+end
+
+%% =========================
+%% DADOS E INFRAESTRUTURA
+%% =========================
+subgraph Data["Dados e Infraestrutura"]
+    Postgres[("PostgreSQL<br/>Schemas por módulo")]
+    Neo4j[("Neo4j<br/>Temas • Passagens • Obras • Autores")]
+    S3[("S3<br/>PDFs • Capas • Avatares • Exportações")]
+    ProcessedEvents[("Processed Events<br/>Idempotência interna")]
+end
+
+%% =========================
+%% SERVIÇOS EXTERNOS
+%% =========================
+subgraph External["Serviços Externos"]
+    LLM["Provedor de IA<br/>LLM / Vetores semânticos"]
+    SES["Amazon SES / E-mail"]
+end
+
+%% =========================
+%% FLUXO DE ACESSO
+%% =========================
+User --> Frontend
+Professional --> Frontend
+Admin --> Frontend
+
+Frontend --> APIGateway
+APIGateway --> App
+
+%% =========================
+%% MÓDULOS → DADOS
+%% =========================
+AuthModule --> Postgres
+JournalModule --> Postgres
+RecommendationModule --> Postgres
+SharingModule --> Postgres
+EventModule --> Postgres
+
+CatalogModule --> Neo4j
+
+%% =========================
+%% S3
+%% =========================
+AuthModule -->|"avatar do usuário"| S3
+CatalogModule -->|"PDFs e capas de obras"| S3
+SharingModule -->|"exportações e sínteses"| S3
+AIProcessingModule -->|"lê PDFs de obras para processamento"| S3
+
+%% =========================
+%% SERVIÇOS EXTERNOS
+%% =========================
+AIProcessingModule --> LLM
+NotificationModule --> SES
+
+%% =========================
+%% EVENTOS INTERNOS
+%% =========================
+AuthModule --> EventModule
+JournalModule --> EventModule
+CatalogModule --> EventModule
+SharingModule --> EventModule
+RecommendationModule --> EventModule
+
+EventModule --> AIProcessingModule
+EventModule --> JournalModule
+EventModule --> CatalogModule
+EventModule --> RecommendationModule
+EventModule --> NotificationModule
+
+EventModule --> ProcessedEvents

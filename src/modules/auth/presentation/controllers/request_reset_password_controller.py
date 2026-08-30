@@ -1,6 +1,6 @@
 from src.modules.auth.application.use_cases.request_password_reset.irequest_password_reset_use_case import IRequestPasswordResetUseCase
-from src.presentation.http_types import HttpRequest, HttpResponse
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.presentation.http_types import HttpRequest, HttpResponse
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 class RequestResetPasswordController(IControllerInterface):

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from src.modules.journal.domain.entities.journal_entry import JournalEntry
 from src.modules.journal.domain.ports.units_of_work.ijournal_unit_of_work import IJournalUnitOfWork
 from src.modules.journal.domain.value_objects.journal_entry_status import JournalEntryStatus

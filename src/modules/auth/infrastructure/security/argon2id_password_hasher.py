@@ -3,7 +3,7 @@ from argon2 import PasswordHasher
 from src.modules.auth.domain.value_objects.password_hash import PasswordHash
 from src.modules.auth.infrastructure.security.configs.argon2.config import Argon2Config
 from src.modules.auth.infrastructure.security.configs.argon2.versions import  get_argon2_v1_config
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 
 
 CURRENT_ARGON2_VERSION = get_argon2_v1_config()

@@ -4,8 +4,8 @@ from src.modules.auth.domain.entities.reset_password import ResetPassword
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.exceptions.passwords_exceptions import ResetPasswordTokenException
 from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.domain.value_objects.password_plain import PasswordPlain
 from src.modules.auth.public.user_id import UserId

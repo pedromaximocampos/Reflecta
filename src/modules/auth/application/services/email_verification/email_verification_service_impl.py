@@ -3,9 +3,9 @@ from src.modules.auth.domain.entities.email_verification import EmailVerificatio
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.events.emails.verification_requested import EmailVerificationRequested
 from src.modules.auth.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from .iemail_verification_service import  IEmailVerificationService
 import secrets
 from datetime import timedelta

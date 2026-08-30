@@ -3,9 +3,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-from src.presentation.middlewares.exception_handler import ExceptionHandler
-from src.domain.exceptions.api_types.validation_error import ValidationFailed
-from src.domain.exceptions.domain_error import DomainError
+from src.shared.presentation.middlewares.exception_handler import ExceptionHandler
+from src.shared.domain.errors.api_types.validation_error import ValidationFailed
+from src.shared.domain.errors.domain_error import DomainError
 
 
 def add_exception_handlers(app: FastAPI) -> None:

@@ -1,7 +1,7 @@
 from src.modules.internal_events.public import IOutboxService
 from .irequest_password_reset_use_case import IRequestPasswordResetUseCase
 from src.modules.auth.application.services.reset_password_service.ipassword_reset_service import IPasswordResetService
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.public.email import Email
 

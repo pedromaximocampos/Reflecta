@@ -1,7 +1,7 @@
 from src.modules.auth.domain.entities.user import AuthCredentials
 from src.modules.auth.domain.value_objects.password_hash import PasswordHash
 from src.modules.auth.public.user_id import UserId
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.auth_credentials_model import AuthCredentialsModel
 from src.modules.auth.public.password_algorithm import PasswordAlgorithm
 

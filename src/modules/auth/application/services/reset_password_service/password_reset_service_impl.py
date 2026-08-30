@@ -6,9 +6,9 @@ from .ipassword_reset_service import IPasswordResetService
 from src.modules.auth.domain.entities.reset_password import ResetPassword
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.events.emails.password_reset_requested import PasswordResetRequested
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.internal_events.public import IOutboxService
 

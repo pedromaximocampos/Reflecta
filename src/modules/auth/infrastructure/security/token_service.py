@@ -4,7 +4,7 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Any
 from src.modules.auth.application.ports.token.dto import GeneratedTokenDTO
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.public.password_algorithm import PasswordAlgorithm
 from src.modules.auth.application.ports.token.itoken_service import ITokenService
 from src.modules.auth.domain.value_objects.token_jti import TokenJti

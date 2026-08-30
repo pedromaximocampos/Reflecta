@@ -8,8 +8,8 @@ from src.modules.auth.domain.entities.email_verification import EmailVerificatio
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.exceptions.email_verification_exceptions import EmailVerificationException
 from src.modules.auth.domain.exceptions.user_custom_exceptions import UserNotFoundError
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
 from .iverify_email_verification import IVerifyEmailVerification
 from src.modules.auth.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 

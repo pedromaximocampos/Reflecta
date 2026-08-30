@@ -1,8 +1,8 @@
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.domain.events.idomain_event import IDomainEvent
 from src.modules.internal_events.domain.ports.repositories.ioutbox_repository import IOutboxRepository
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from .ioutbox_service import IOutboxService
 
 

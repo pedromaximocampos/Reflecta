@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from src.core.settings import get_settings
+from src.shared.config.settings import get_settings
 
 
 @pytest.fixture(scope="session")

@@ -1,7 +1,7 @@
 from src.modules.auth.application.use_cases.logoff.ilogoff_use_case import ILogoffUseCase
-from src.domain.exceptions.api_types import AuthError
-from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.domain.errors.api_types import AuthError
+from src.shared.presentation.http_types import HttpRequest, HttpResponse, Cookie
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 class LogoffController(IControllerInterface):

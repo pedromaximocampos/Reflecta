@@ -6,9 +6,9 @@ from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.domain.ports.repositories.ioutbox_repository import IOutboxRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.internal_events.domain.value_objects.outbox_status import OutboxStatus
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel
 
 

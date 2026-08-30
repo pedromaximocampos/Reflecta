@@ -13,7 +13,7 @@ from src.modules.auth.domain.exceptions.user_custom_exceptions import (
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
 from src.modules.auth.public.email import Email
 from src.modules.auth.public.user_id import UserId
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_mapper import UserMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models import UserModel, AuthCredentialsModel
 

@@ -8,9 +8,9 @@ from src.modules.auth.application.services.email_verification.iemail_verificatio
 from src.modules.auth.application.use_cases.signup.dto import SignupInputDTO, SignupOutputDTO
 from src.modules.auth.domain.entities.user import User, AuthCredentials
 from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
-from src.domain.ports.system.iclock import IClock
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from src.modules.auth.public.user_id import UserId
 
 

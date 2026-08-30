@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 
-from src.core.settings import get_settings
+from src.shared.config.settings import get_settings
 from src.modules.auth.domain.exceptions.passwords_exceptions import WeekPasswordException
 from src.modules.auth.domain.value_objects.password_hash import PasswordHash
 from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher

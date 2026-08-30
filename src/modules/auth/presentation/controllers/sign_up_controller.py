@@ -1,6 +1,6 @@
 from src.modules.auth.application.use_cases.signup.isignup_use_case import ISignUpUseCase
-from src.presentation.http_types import HttpRequest, HttpResponse
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.presentation.http_types import HttpRequest, HttpResponse
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 class SignUpController(IControllerInterface):

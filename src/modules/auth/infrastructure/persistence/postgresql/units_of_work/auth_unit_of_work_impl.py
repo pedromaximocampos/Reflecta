@@ -9,22 +9,22 @@ from src.modules.internal_events.public import OutboxEvent
 from src.modules.auth.domain.entities.reset_password import ResetPassword
 from src.modules.auth.domain.entities.user import User
 from src.modules.internal_events.public import IOutboxRepository
-from src.infra.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork
+from src.shared.infrastructure.persistence.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork
 from src.modules.auth.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
 from src.modules.auth.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.modules.auth.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
-from src.infra.postgresql.connection import DBConnectionHandler
+from src.shared.infrastructure.persistence.postgresql.connection import DBConnectionHandler
 
 from src.modules.auth.infrastructure.persistence.postgresql.repositories.auth_sessions_repository import AuthSessionsRepository
 from src.modules.auth.infrastructure.persistence.postgresql.repositories.reset_password_repository import ResetPasswordRepository
 from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_email_verification_repository import UserEmailVerificationRepository
 from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_repository import UserRepository
 
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from ..models import UserModel, UserEmailVerificationModel, AuthSessionsModel
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel
 from ..models.reset_password_model import ResetPasswordModel

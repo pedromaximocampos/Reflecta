@@ -1,11 +1,11 @@
 from src.modules.auth.application.use_cases.login import LoginInput, LoginOutput
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.auth.public.email import Email
-from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.presentation.http_types import HttpRequest, HttpResponse, Cookie
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 from src.modules.auth.application.use_cases.login.ilogin_use_case import ILoginUseCase
 from basicauth import decode
-from src.domain.exceptions.api_types import BadRequestError
+from src.shared.domain.errors.api_types import BadRequestError
 
 class LoginController(IControllerInterface):
 

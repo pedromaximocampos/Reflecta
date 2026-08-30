@@ -1,7 +1,7 @@
 from src.modules.auth.application.use_cases.reset_password.ireset_password_use_case import IResetPasswordUseCase
 from src.modules.auth.domain.exceptions.passwords_exceptions import ResetPasswordTokenException
-from src.presentation.http_types import HttpRequest, HttpResponse
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.presentation.http_types import HttpRequest, HttpResponse
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 class ResetPasswordController(IControllerInterface):

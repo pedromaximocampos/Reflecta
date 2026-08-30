@@ -8,11 +8,26 @@ class EventRouter:
         self.__routes = dict(routes)
         self.__default = default
 
+    @property
+    def publishers(self) -> tuple[IEventPublisher, ...]:
+        publishers = list(self.__routes.values())
+        if self.__default is not None:
+            publishers.append(self.__default)
+
+        return tuple({id(publisher): publisher for publisher in publishers}.values())
+
+    async def start(self) -> None:
+        for publisher in self.publishers:
+            await publisher.start()
+
+    async def stop(self) -> None:
+        for publisher in reversed(self.publishers):
+            await publisher.stop()
 
     def resolve_publisher(self, event_type: EventType) -> IEventPublisher:
-
-
-        pub = self.__routes.get(event_type.domain, None)
+        pub = self.__routes.get(event_type.value)
+        if pub is None:
+            pub = self.__routes.get(event_type.domain)
         if pub:
             return pub
 

@@ -4,10 +4,10 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from src.domain.exceptions.api_types import NotFoundError
+from src.shared.domain.errors.api_types import NotFoundError
 from src.modules.auth.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.modules.auth.domain.entities.reset_password import ResetPassword
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.reset_password_mapper import ResetPasswordMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.reset_password_model import ResetPasswordModel
 

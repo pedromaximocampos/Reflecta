@@ -1,4 +1,4 @@
-from src.core.settings import get_settings
+from src.shared.config.settings import get_settings
 from src.modules.internal_events.infrastructure.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig, RabbitMQPublisherConfig
 
 _settings = get_settings()

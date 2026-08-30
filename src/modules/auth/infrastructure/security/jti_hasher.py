@@ -1,4 +1,4 @@
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.modules.auth.public.password_algorithm import PasswordAlgorithm
 from hashlib import sha256
 

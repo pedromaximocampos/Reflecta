@@ -4,13 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.domain.ports.repositories.ioutbox_repository import IOutboxRepository
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.internal_events.domain.ports.units_of_work.ioutbox_unit_of_work import IOutboxUnitOfWork
-from src.infra.postgresql.connection import DBConnectionHandler
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.connection import DBConnectionHandler
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.internal_events.infrastructure.persistence.postgresql.models import OutboxModel
 from src.modules.internal_events.infrastructure.persistence.postgresql.repositories.outbox_repository import OutboxRepository
-from src.infra.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork
+from src.shared.infrastructure.persistence.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork
 
 
 class OutboxUnitOfWork(SQLAlchemyUnitOfWork, IOutboxUnitOfWork):

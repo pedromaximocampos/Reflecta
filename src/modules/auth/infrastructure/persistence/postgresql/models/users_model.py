@@ -3,7 +3,7 @@ from src.modules.auth.infrastructure.persistence.postgresql.models import *
 from sqlalchemy import String, TIMESTAMP, DATE, func
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
-from src.infra.postgresql.configs.base import Base
+from src.shared.infrastructure.persistence.postgresql.configs.base import Base
 from src.modules.auth.infrastructure.persistence.postgresql.models.reset_password_model import ResetPasswordModel
 
 

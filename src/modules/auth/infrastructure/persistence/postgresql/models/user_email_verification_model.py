@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, relationship
 from src.modules.auth.infrastructure.persistence.postgresql.models import *
-from src.infra.postgresql.configs.base import Base
+from src.shared.infrastructure.persistence.postgresql.configs.base import Base
 
 
 class UserEmailVerificationModel(Base):

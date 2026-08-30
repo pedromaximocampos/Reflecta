@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 
 
 class ClockFake(IClock):

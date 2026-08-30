@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 
 class TestLogoffUseCase:
 

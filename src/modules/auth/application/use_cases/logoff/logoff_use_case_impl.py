@@ -2,7 +2,7 @@ from typing import Optional
 from src.modules.auth.application.services.auth_session import IAuthSessionService
 from src.modules.auth.application.use_cases.logoff.ilogoff_use_case import ILogoffUseCase
 from src.modules.auth.domain.entities.auth_session import AuthSession
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 
 

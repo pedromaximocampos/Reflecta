@@ -15,6 +15,12 @@ class BaseSQSPublisher(IEventPublisher, ABC):   # ABC a classe nao pode ser inst
         self.__sqs_settings = sqs_settings
         self.__client = make_sqs_client(self.__sqs_settings)
 
+    async def start(self) -> None:
+        """SQS não exige conexão persistente para iniciar o publisher."""
+
+    async def stop(self) -> None:
+        """SQS não mantém recursos assíncronos que precisem ser encerrados."""
+
     def _build_message(self, event: OutboxEvent) -> tuple[str, Optional[dict]]:
         return event.payload_json, event.attributes
 

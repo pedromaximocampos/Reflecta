@@ -1,6 +1,6 @@
 from src.modules.auth.application.use_cases.verify_email.iverify_email_verification import IVerifyEmailVerification
-from src.presentation.http_types import HttpRequest, HttpResponse
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.presentation.http_types import HttpRequest, HttpResponse
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 class VerifyEmailController(IControllerInterface):

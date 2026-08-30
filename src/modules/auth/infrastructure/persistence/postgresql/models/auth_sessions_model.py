@@ -1,5 +1,5 @@
 from src.modules.auth.infrastructure.persistence.postgresql.models import *
-from src.infra.postgresql.configs.base import Base
+from src.shared.infrastructure.persistence.postgresql.configs.base import Base
 from datetime import datetime
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import BigInteger, String, TIMESTAMP, func, ForeignKey

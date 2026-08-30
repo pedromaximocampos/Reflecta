@@ -5,8 +5,8 @@ from .irefresh_use_case import IRefreshUseCase
 from .dto import RefreshResultDTO
 from src.modules.auth.application.services.auth_session import IAuthSessionService, AuthSessionResultDTO
 from src.modules.auth.domain.entities.auth_session import AuthSession
-from src.domain.exceptions.api_types import AuthError
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.errors.api_types import AuthError
+from src.shared.domain.ports.system.iclock import IClock
 
 
 class RefreshUseCaseImpl(IRefreshUseCase):

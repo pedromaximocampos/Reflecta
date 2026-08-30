@@ -1,9 +1,9 @@
 from src.modules.auth.application.use_cases.refresh.dto import RefreshResultDTO
 from src.modules.auth.application.use_cases.refresh.irefresh_use_case import IRefreshUseCase
-from src.domain.exceptions.api_types import AuthError
-from src.domain.ports.system.iclock import IClock
-from src.presentation.http_types import HttpRequest, HttpResponse, Cookie
-from src.presentation.interfaces.controller_interface import IControllerInterface
+from src.shared.domain.errors.api_types import AuthError
+from src.shared.domain.ports.system.iclock import IClock
+from src.shared.presentation.http_types import HttpRequest, HttpResponse, Cookie
+from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 
 
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Query
-from src.main.adapters.fast_api.fast_api_adapter import adapter_fastapi_request
+from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
 from src.modules.auth.bootstrap.controllers import get_login_controller, get_logoff_controller, get_refresh_controller, \
     get_signup_controller, get_email_verification_controller, get_reset_password_controller, \
     get_request_reset_password_controller

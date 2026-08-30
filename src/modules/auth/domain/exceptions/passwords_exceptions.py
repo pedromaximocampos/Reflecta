@@ -1,4 +1,4 @@
-from src.domain.exceptions.domain_error import DomainError
+from src.shared.domain.errors.domain_error import DomainError
 
 
 

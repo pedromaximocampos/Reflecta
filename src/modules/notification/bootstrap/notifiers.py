@@ -1,6 +1,6 @@
 from src.modules.notification.infrastructure.email.smtp.smtp_email_password_reset_notifier import SmtpEmailPasswordResetNotifier
 from src.modules.notification.infrastructure.email.smtp.smtp_email_verification_notifier import SMTPEmailVerificationNotifier
-from src.main.composables.shared.providers import get_smtp_provider
+from src.modules.notification.bootstrap.providers import get_smtp_provider
 
 
 def get_email_password_reset_notifier() -> SmtpEmailPasswordResetNotifier:

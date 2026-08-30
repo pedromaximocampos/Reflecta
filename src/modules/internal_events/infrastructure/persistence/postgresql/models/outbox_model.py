@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.infra.postgresql.configs.base import Base
+from src.shared.infrastructure.persistence.postgresql.configs.base import Base
 from src.modules.internal_events.domain.value_objects.outbox_status import OutboxStatus
 
 

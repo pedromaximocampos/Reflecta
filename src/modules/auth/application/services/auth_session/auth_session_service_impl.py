@@ -1,16 +1,16 @@
 from typing import Optional, Final
 
 from src.modules.auth.application.services.auth_session import *
-from src.core.settings import get_settings
+from src.shared.config.settings import get_settings
 from src.modules.auth.domain.entities.user import User
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.application.ports.token.itoken_service import ITokenService
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.auth.domain.entities.auth_session import AuthSession
 from datetime import datetime
 from src.modules.auth.application.ports.token.dto import GeneratedTokenDTO
-from src.domain.ports.system.ihasher_generator import IHasherGenerator
-from src.domain.ports.system.iulid_generator import IULIDGenerator
+from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
+from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.domain.value_objects.token_jti import TokenJti
 from src.modules.auth.public.user_id import UserId

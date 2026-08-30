@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 from pathlib import Path
 
-from src.infra.postgresql.configs.base import Base
+from src.shared.infrastructure.persistence.postgresql.configs.base import Base
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from sqlalchemy.engine import make_url
@@ -10,7 +10,7 @@ from src.modules.internal_events.infrastructure.persistence.postgresql.models im
 from alembic import context
 import os
 
-from src.core.settings import get_settings
+from src.shared.config.settings import get_settings
 
 _settings = get_settings()
 

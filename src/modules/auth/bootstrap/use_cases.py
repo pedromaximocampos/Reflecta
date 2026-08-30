@@ -4,9 +4,9 @@ from src.modules.auth.application.use_cases.refresh.refresh_use_case_impl import
 from src.modules.auth.application.use_cases.signup.signup_use_case_impl import SignupUseCaseImpl
 from src.modules.auth.bootstrap.services import get_auth_session_service, get_password_reset_service
 from src.modules.auth.bootstrap.units_of_work import get_auth_unit_of_work
-from src.modules.auth.bootstrap.security import get_password_hasher
+from src.modules.auth.bootstrap.security import get_jti_hasher, get_password_hasher
 from src.modules.internal_events.bootstrap.services import get_outbox_service
-from src.main.composables.shared.system import get_clock, get_ulid_generator, get_jti_hasher
+from src.shared.infrastructure.system.providers import get_clock, get_ulid_generator
 from src.modules.auth.bootstrap.services import get_email_verification_service
 from src.modules.auth.application.use_cases.verify_email.verify_email_verification_use_case_impl import VerifyEmailVerificationUseCaseImpl
 from src.modules.auth.application.use_cases.reset_password.reset_password_use_case_impl import ResetPasswordUseCaseImpl

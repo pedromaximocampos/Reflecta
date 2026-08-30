@@ -1,10 +1,12 @@
 from src.modules.auth.application.services.auth_session.auth_session_service_impl import AuthSessionServiceImpl
 from src.modules.auth.application.services.email_verification.email_verification_service_impl import EmailVerificationServiceImpl
 from src.modules.internal_events.bootstrap.services import get_outbox_service
-from src.main.composables.shared.system import get_clock, get_ulid_generator, get_jti_hasher
-from src.modules.auth.bootstrap.security import get_token_service
+from src.shared.config.settings import get_settings
+from src.shared.infrastructure.system.providers import get_clock, get_ulid_generator
+from src.modules.auth.bootstrap.security import get_jti_hasher, get_token_service
 from src.modules.auth.application.services.reset_password_service.password_reset_service_impl import PasswordResetServiceImpl
-from src.main.composables.shared.settings import _SETTINGS
+
+_SETTINGS = get_settings()
 
 def get_auth_session_service() -> AuthSessionServiceImpl:
     """ Retorna a implementação do serviço de sessão de autenticação. """

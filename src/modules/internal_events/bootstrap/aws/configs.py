@@ -1,6 +1,7 @@
 from src.modules.internal_events.infrastructure.messaging.aws_sqs.configs.sqs_settings import SQSSettings
-from src.main.composables.shared.settings import _SETTINGS
+from src.shared.config.settings import get_settings
 
+_SETTINGS = get_settings()
 
 
 def get_sqs_emails_settings() -> SQSSettings:

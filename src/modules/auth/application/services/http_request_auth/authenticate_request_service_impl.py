@@ -1,7 +1,7 @@
 from src.modules.auth.application.services.http_request_auth.iauthenticate_request_service import IAuthenticateRequestService
 from src.modules.auth.application.services.http_request_auth.dto import AuthenticatedUserDTO
 from src.modules.auth.application.ports.token.itoken_service import ITokenService
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.public.user_id import UserId
 

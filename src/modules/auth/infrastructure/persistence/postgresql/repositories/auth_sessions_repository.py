@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.auth.domain.entities.auth_session import AuthSession
 from src.modules.auth.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.auth.domain.value_objects.token_jti import TokenJti
 from src.modules.auth.public.user_id import UserId
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.auth_sessions_model import AuthSessionsModel
 
 

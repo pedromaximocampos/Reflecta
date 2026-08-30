@@ -11,6 +11,7 @@ from aio_pika.abc import AbstractRobustConnection, AbstractChannel, AbstractInco
 from src.modules.internal_events.application.ports.messaging.ievent_consumer_worker import IEventConsumerWorker
 from src.modules.notification.domain.exceptions.email_notification_errors import TransientEmailError, PermanentEmailError
 from src.modules.internal_events.infrastructure.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
+from src.modules.internal_events.infrastructure.messaging.rabbitmq.topology import declare_rabbitmq_topology
 
 logger = logging.getLogger(__name__)
 
@@ -28,19 +29,14 @@ class BaseRabbitMQConsumerWorker(ABC, IEventConsumerWorker):
             ssl_default = ssl.create_default_context()
         self._connection = await aio_pika.connect_robust(self.__config.url, ssl_context=ssl_default)
 
-        args = {
-            "x-queue-type": "classic",
-            "x-dead-letter-exchange": self.__config.dlx_exchange,
-            "x-dead-letter-routing-key": self.__config.retry_routing_key,
-        }
-
         async with self._connection:
             logger.info(msg=f"[*] RabbitMQ Consumer Worker started for {self.__config.queue_name}. Waiting for messages...")
             self._channel = await self._connection.channel()
 
-            # Exchange DLX para envio de mensagens para a fila de retry ou para a fila de "mortos"
-            self._dlx_exchange = await self._channel.get_exchange(self.__config.dlx_exchange, ensure=True)
-            queue = await self._channel.declare_queue(self.__config.queue_name, durable=True, arguments=args)
+            _, self._dlx_exchange, queue = await declare_rabbitmq_topology(
+                self._channel,
+                self.__config,
+            )
 
 
             async with queue.iterator() as queue_iter:

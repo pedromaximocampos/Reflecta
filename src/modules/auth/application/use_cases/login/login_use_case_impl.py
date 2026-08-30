@@ -5,11 +5,11 @@ from src.modules.auth.application.services.auth_session.iauth_session_service im
 from src.modules.auth.domain.entities.user import User, AuthCredentials
 from src.modules.auth.domain.exceptions.email_verification_exceptions import EmailVerificationException
 from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
-from src.domain.ports.system.iclock import IClock
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.public.email import Email
 from src.modules.auth.domain.value_objects.password_hash import PasswordHash
-from src.domain.exceptions.api_types import AuthError
+from src.shared.domain.errors.api_types import AuthError
 
 from .dto import LoginInput, LoginOutput
 from .ilogin_use_case import ILoginUseCase

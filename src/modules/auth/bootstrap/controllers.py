@@ -2,7 +2,7 @@ from src.modules.auth.presentation.controllers.login_controller import LoginCont
 from src.modules.auth.presentation.controllers.logoff_controller import LogoffController
 from src.modules.auth.bootstrap.use_cases import get_login_use_case, get_logoff_use_case, get_refresh_use_case, \
     get_sign_up_use_case, get_verify_email_use_case, get_reset_password_use_case, get_request_password_reset_use_case
-from src.main.composables.shared.system import get_clock
+from src.shared.infrastructure.system.providers import get_clock
 from src.modules.auth.presentation.controllers.refresh_controller import RefreshController
 from src.modules.auth.presentation.controllers.request_reset_password_controller import RequestResetPasswordController
 from src.modules.auth.presentation.controllers.reset_password_controller import ResetPasswordController

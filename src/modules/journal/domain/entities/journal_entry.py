@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
-from src.domain.exceptions.domain_error import DomainError
+from src.shared.domain.errors.domain_error import DomainError
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.domain.value_objects.content_tags import ContentTags
 from src.modules.journal.domain.value_objects.journal_entry_status import JournalEntryStatus

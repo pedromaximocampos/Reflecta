@@ -1,6 +1,6 @@
 from src.modules.auth.domain.entities.email_verification import EmailVerification
 from src.modules.auth.public.user_id import UserId
-from src.infra.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models import UserEmailVerificationModel
 
 

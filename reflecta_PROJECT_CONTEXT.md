@@ -475,31 +475,45 @@ Não reorganizar todo um repositório existente apenas para reproduzir exatament
 Para os módulos já iniciados, a raiz física adotada é `src/modules/`:
 
 ```text
-src/modules/
-  journal/
-    domain/
-    application/
+src/
+  modules/
+    journal/
+      domain/
+      application/
 
-  auth/
+    auth/
+      domain/
+      application/
+      infrastructure/
+      presentation/
+      bootstrap/
+      public/
+
+    internal_events/
+      domain/
+      application/
+      infrastructure/
+      bootstrap/
+      public/
+
+    notification/
+      domain/
+      application/
+      infrastructure/
+      bootstrap/
+
+  shared/
+    config/
     domain/
-    application/
+      errors/
+      ports/
     infrastructure/
+      persistence/postgresql/
+      system/
     presentation/
-    bootstrap/
-    public/
 
-  internal_events/
-    domain/
-    application/
-    infrastructure/
-    bootstrap/
-    public/
-
-  notification/
-    domain/
-    application/
-    infrastructure/
-    bootstrap/
+  main/
+    server/
 ```
 
 - `auth.public` contém somente contratos que outros módulos podem referenciar;
@@ -507,9 +521,9 @@ src/modules/
   bootstrap só devem ser criados quando houver implementação real nessas camadas;
 - `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;
 - `notification` reage a eventos e contém adapters/consumers de entrega de e-mail;
+- `shared` contém somente configuração, contratos e adapters técnicos independentes de bounded context;
+- `shared` não pode importar `modules` nem `main`, e módulos não podem importar `main`;
 - `main` continua responsável pela aplicação FastAPI e pela composição final;
-- conexão/base SQLAlchemy, tipos HTTP e utilidades ainda compartilhados permanecem temporariamente nas
-  pastas horizontais legadas até uma refatoração própria;
 - migrations continuam centralizadas em `alembic/`, registrando explicitamente os models dos módulos.
 
 Essa organização física não implica que os casos de uso estejam concluídos; o estado funcional deve ser
@@ -795,7 +809,10 @@ Persistência:
 
 Este mecanismo implementa processamento assíncrono **dentro do monólito modular**.
 
-Não introduzir Kafka, RabbitMQ, SNS/SQS ou outro broker apenas por preferência técnica sem nova decisão arquitetural. Os artefatos atuais modelam Outbox + worker/event dispatcher internos.
+Decisão registrada em 2026-08-30 para o fluxo de notificações Auth: o dispatcher da Outbox publica em
+RabbitMQ e os workers do módulo Notification consomem as filas RabbitMQ de verificação de e-mail e reset
+de senha. O adapter/entrypoint SQS permanece no código como legado inativo e não integra o fluxo vigente.
+Novos brokers ou a extensão dessa escolha para Journal/IA continuam exigindo decisão arquitetural explícita.
 
 ---
 
@@ -1268,6 +1285,13 @@ Evitar:
 
 ## 11.3 Processamento
 
+No recorte atualmente adotado para notificações Auth, o caminho operacional é:
+
+`Outbox PostgreSQL -> worker dispatcher -> RabbitMQ -> consumer Notification -> SMTP`
+
+O dispatcher e os consumers são processos separados do mesmo monólito modular e são declarados no
+Compose de API/workers. A entrega SMTP externa e a idempotência do consumer ainda precisam ser verificadas.
+
 Fluxo esperado:
 
 1. worker seleciona evento PENDING/retry elegível;
@@ -1676,6 +1700,7 @@ Modelo antigo menciona texto cifrado; modelo atual não especifica. Ver seção 
 - Frontend Web;
 - API/BFF;
 - Outbox + workers + Processed Events;
+- RabbitMQ como broker vigente do fluxo de notificações Auth;
 - PlantUML e Mermaid como formatos de documentação arquitetural.
 
 ## 18.2 NÃO confirmadas pelos arquivos disponíveis neste contexto

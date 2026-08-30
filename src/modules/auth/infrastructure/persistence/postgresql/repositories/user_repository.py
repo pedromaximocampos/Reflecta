@@ -36,7 +36,7 @@ class UserRepository(IUserRepository):
 
         user_model, credentials_model = row
         return self.__user_mapper.to_entity(
-            model=user_model,
+            user_model,
         )
 
     async def find_by_email(self, email: Email) -> Optional[User]:
@@ -52,7 +52,7 @@ class UserRepository(IUserRepository):
 
         user_model, credentials_model = row
         return self.__user_mapper.to_entity(
-            model=user_model,
+            user_model,
         )
 
     async def update(self, user: User) -> None:

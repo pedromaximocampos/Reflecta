@@ -37,10 +37,10 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
         now = self.__clock.now()
         verification = await repo.get_active_email_verification_by_user_id(user.id)
 
-        if verification and not verification.is_expired:
+        if verification and not verification.is_expired(now):
             return None
 
-        if verification and verification.is_expired:
+        if verification and verification.is_expired(now):
             verification.revoke(now)
             await repo.revoke(verification)
 

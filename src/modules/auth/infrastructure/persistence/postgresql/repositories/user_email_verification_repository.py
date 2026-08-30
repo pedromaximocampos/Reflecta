@@ -59,7 +59,7 @@ class UserEmailVerificationRepository(IUserEmailVerificationRepository):
         query = (
             select(UserEmailVerificationModel)
             .where(
-                UserEmailVerificationModel.user_id == str(user_id),
+                UserEmailVerificationModel.user_id == user_id.value,
                 UserEmailVerificationModel.revoked_at.is_(None),
                 UserEmailVerificationModel.verified_at.is_(None),
             )

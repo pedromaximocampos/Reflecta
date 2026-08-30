@@ -13,4 +13,4 @@ class SMTPSettings:
 
     @property
     def from_address(self) -> str:
-        return f"individuum.mvp.app.adm@gmail.com"
+        return f"tccreflecta@gmail.com"

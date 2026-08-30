@@ -18,6 +18,7 @@ class PasswordResetRequested(IDomainEvent):
     username: str
     user_email: Email
     raw_code: str
+    expires_in_minutes: int
     occurred_at: datetime
 
     def to_outbox_event(self, event_id: str, created_at: datetime) -> OutboxEvent:
@@ -25,6 +26,7 @@ class PasswordResetRequested(IDomainEvent):
             "username": self.username,
             "user_email": self.user_email.value,
             "raw_code": self.raw_code,
+            "expires_in": self.expires_in_minutes,
             "occurred_at": self.occurred_at.isoformat(),
         }
 

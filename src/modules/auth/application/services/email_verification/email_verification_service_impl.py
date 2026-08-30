@@ -28,7 +28,7 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
 
         created_verification = await user_email_repo.create_verification_code(verification)
 
-        email_verification_event = self.__create_email_verification_event(user, raw)
+        email_verification_event = self.__create_email_verification_event(user, raw, verification)
 
 
         return email_verification_event
@@ -47,7 +47,7 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
         new_verification, raw = self.__create_email_verification_entity(user)
         await repo.create_verification_code(new_verification)
 
-        return self.__create_email_verification_event(user, raw)
+        return self.__create_email_verification_event(user, raw, new_verification)
 
 
     def __create_email_verification_entity(self, user: User) -> tuple[EmailVerification, str]:
@@ -71,11 +71,21 @@ class EmailVerificationServiceImpl(IEmailVerificationService):
 
 
 
-    def __create_email_verification_event(self,user: User, raw_token: str) -> EmailVerificationRequested:
+    def __create_email_verification_event(
+        self,
+        user: User,
+        raw_token: str,
+        verification: EmailVerification,
+    ) -> EmailVerificationRequested:
+        expires_in_minutes = int(
+            (verification.expires_at - verification.created_at).total_seconds() // 60
+        )
+
         return EmailVerificationRequested(
             user_id=user.id,
             user_email=user.email,
             raw_code=raw_token,
+            expires_in_minutes=expires_in_minutes,
             username=user.username,
             occurred_at=self.__clock.now()
         )

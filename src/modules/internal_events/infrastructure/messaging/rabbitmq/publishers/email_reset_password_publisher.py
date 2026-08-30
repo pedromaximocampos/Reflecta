@@ -9,5 +9,6 @@ class EmailResetPasswordPublisher(BaseRabbitMQPublisher):
 
     def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:
         payload = dict(event.payload)
-        payload["reset_password_link"] =  f"{self._config.frontend_base_url}/reset-password?code={event.payload.get("raw_code")}"
+        base_url = self._config.frontend_base_url.rstrip("/")
+        payload["reset_password_link"] = f"{base_url}/auth/reset-password?code={event.payload.get('raw_code')}"
         return payload, event.attributes

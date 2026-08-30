@@ -122,7 +122,7 @@ class UserRepository(IUserRepository):
 
     async def verify_email(self, user: User) -> User:
 
-        user_model, creds_model = self.__user_mapper.to_model(user)
+        user_model = self.__user_mapper.to_model(user)
         query = (
             update(UserModel)
             .where(UserModel.id == user.id.value)

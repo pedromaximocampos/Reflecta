@@ -9,8 +9,7 @@ from src.modules.auth.domain.events.emails.password_reset_requested import Passw
 from src.shared.domain.ports.system.iclock import IClock
 from src.shared.domain.ports.system.ihasher_generator import IHasherGenerator
 from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
-from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
-from src.modules.internal_events.public import IOutboxService
+from src.modules.auth.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 
 
 class PasswordResetServiceImpl(IPasswordResetService):
@@ -35,18 +34,44 @@ class PasswordResetServiceImpl(IPasswordResetService):
         return reset_password_entity, raw_code
 
     @staticmethod
-    def __create_password_reset_event(user: User, raw_code: str, now: datetime) -> PasswordResetRequested:
-        password_reset_event = PasswordResetRequested(user.id, user.username, user.email, raw_code, now)
+    def __create_password_reset_event(
+        user: User,
+        raw_code: str,
+        now: datetime,
+        reset_password: ResetPassword,
+    ) -> PasswordResetRequested:
+        expires_in_minutes = int(
+            (reset_password.expires_at - reset_password.created_at).total_seconds() // 60
+        )
+        password_reset_event = PasswordResetRequested(
+            user_id=user.id,
+            username=user.username,
+            user_email=user.email,
+            raw_code=raw_code,
+            expires_in_minutes=expires_in_minutes,
+            occurred_at=now,
+        )
         return password_reset_event
 
 
-    async def issue_for_user(self, user: User, uow: IAuthUnitOfWork) -> PasswordResetRequested:
+    async def issue_for_user(
+        self,
+        user: User,
+        reset_password_repository: IResetPasswordRepository,
+    ) -> PasswordResetRequested:
         now = self.__system_clock.now()
         reset_password_entity, raw_code = self.__create_reset_password_entity(user, now)
 
-        created_reset_password_entity = await uow.reset_password_repository.create_new_password_reset(reset_password_entity)
+        await reset_password_repository.create_new_password_reset(
+            reset_password_entity
+        )
 
-        password_reset_event = self.__create_password_reset_event(user, raw_code, now)
+        password_reset_event = self.__create_password_reset_event(
+            user,
+            raw_code,
+            now,
+            reset_password_entity,
+        )
 
 
         return password_reset_event

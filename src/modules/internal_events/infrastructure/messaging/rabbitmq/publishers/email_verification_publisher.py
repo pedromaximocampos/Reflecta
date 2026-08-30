@@ -8,5 +8,6 @@ class EmailVerificationPublisher(BaseRabbitMQPublisher):
 
     def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:
         payload = dict(event.payload)
-        payload["verification_url"] = f"{self._config.frontend_base_url}/verify-email?code={event.payload.get("raw_code")}"
+        base_url = self._config.frontend_base_url.rstrip("/")
+        payload["verification_url"] = f"{base_url}/auth/verify-email?code={event.payload.get('raw_code')}"
         return payload, event.attributes

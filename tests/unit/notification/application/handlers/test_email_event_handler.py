@@ -6,7 +6,7 @@ from src.modules.auth.public.email import Email
 from src.modules.notification.application.handlers.email_event_handler import EmailEventHandler
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.domain.exceptions.email_notification_errors import PermanentEmailError
-from src.modules.notification.domain.value_objects.event_types import EventType
+from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
 
 
 class EmailNotifierSpy:
@@ -32,7 +32,7 @@ async def test_maps_verification_event_to_generic_email_dto() -> None:
     notifier = EmailNotifierSpy()
     handler = EmailEventHandler(notifier, "http://localhost:8000/")
 
-    await handler.handle(EventType.EMAIL_VERIFICATION_REQUESTED, _payload())
+    await handler.handle(EmailsEventType.EMAIL_VERIFICATION_REQUESTED, _payload())
 
     assert notifier.sent == [
         EmailDTO(
@@ -53,7 +53,7 @@ async def test_maps_password_reset_event_to_same_email_dto() -> None:
     notifier = EmailNotifierSpy()
     handler = EmailEventHandler(notifier, "https://app.reflecta.test")
 
-    await handler.handle(EventType.EMAIL_PASSWORD_RESET_REQUESTED, _payload())
+    await handler.handle(EmailsEventType.EMAIL_PASSWORD_RESET_REQUESTED, _payload())
 
     assert notifier.sent[0].kind is EmailKind.PASSWORD_RESET
     assert notifier.sent[0].link == (
@@ -67,7 +67,7 @@ async def test_rejects_unsupported_email_event_without_sending() -> None:
     handler = EmailEventHandler(notifier, "https://app.reflecta.test")
 
     with pytest.raises(PermanentEmailError, match="Unsupported email event type"):
-        await handler.handle(cast(EventType, "emails.unknown"), _payload())
+        await handler.handle(cast(EmailsEventType, "emails.unknown"), _payload())
 
     assert notifier.sent == []
 
@@ -80,6 +80,6 @@ async def test_rejects_invalid_payload_without_exposing_field_values() -> None:
     del payload["raw_code"]
 
     with pytest.raises(PermanentEmailError, match="Invalid email event payload"):
-        await handler.handle(EventType.EMAIL_VERIFICATION_REQUESTED, payload)
+        await handler.handle(EmailsEventType.EMAIL_VERIFICATION_REQUESTED, payload)
 
     assert notifier.sent == []

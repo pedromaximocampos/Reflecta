@@ -3,7 +3,7 @@ from typing import Any, Final
 from urllib.parse import urlencode
 
 from src.modules.notification.application.ports.handlers.iemail_event_handler import IEmailEventHandler
-from src.modules.notification.domain.value_objects.event_types import EventType
+from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
 from src.modules.auth.public.email import Email
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.application.ports.notifiers.iemail_notifier import IEmailNotifier
@@ -11,12 +11,12 @@ from src.modules.notification.domain.exceptions.email_notification_errors import
 
 
 class EmailEventHandler(IEmailEventHandler):
-    _EVENT_CONFIG: Final[dict[EventType, tuple[EmailKind, str]]] = {
-        EventType.EMAIL_VERIFICATION_REQUESTED: (
+    _EVENT_CONFIG: Final[dict[EmailsEventType, tuple[EmailKind, str]]] = {
+        EmailsEventType.EMAIL_VERIFICATION_REQUESTED: (
             EmailKind.VERIFICATION,
             "/auth/verify-email",
         ),
-        EventType.EMAIL_PASSWORD_RESET_REQUESTED: (
+        EmailsEventType.EMAIL_PASSWORD_RESET_REQUESTED: (
             EmailKind.PASSWORD_RESET,
             "/auth/reset-password",
         ),
@@ -30,7 +30,7 @@ class EmailEventHandler(IEmailEventHandler):
         self.__email_notifier = email_notifier
         self.__frontend_base_url = frontend_base_url.rstrip("/")
 
-    async def handle(self, event_type: EventType, payload: Mapping[str, Any]) -> None:
+    async def handle(self, event_type: EmailsEventType, payload: Mapping[str, Any]) -> None:
         event_config = self._EVENT_CONFIG.get(event_type)
         if event_config is None:
             raise PermanentEmailError("Unsupported email event type")

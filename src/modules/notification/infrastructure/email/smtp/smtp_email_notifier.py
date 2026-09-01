@@ -17,9 +17,9 @@ class SMTPEmailNotifier(BaseSMTPEmailNotifier, IEmailNotifier):
 
     def get_template(self, dto: EmailDTO) -> str:
         if dto.kind is EmailKind.VERIFICATION:
-            return VerificationTemplateHTML.verification_template(dto)
+            return VerificationTemplateHTML.get_email_template(dto)
         if dto.kind is EmailKind.PASSWORD_RESET:
-            return PasswordResetTemplateHTML.password_reset_template(dto)
+            return PasswordResetTemplateHTML.get_email_template(dto)
         raise ValueError(f"Unsupported email kind: {dto.kind}")
 
     async def send_email(self, dto: EmailDTO) -> None:

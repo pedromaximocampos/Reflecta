@@ -1,10 +1,15 @@
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO
+from src.modules.notification.application.ports.templates.iemail_html_templates import IEmailHtmlTemplates
 
 
-class VerificationTemplateHTML:
+class VerificationTemplateHTML(IEmailHtmlTemplates):
 
     @staticmethod
-    def verification_template(dto: EmailDTO) -> str:
+    def get_subject_template(dto: EmailDTO) -> str:
+        return f"Verify your email for {dto.username}"
+
+    @staticmethod
+    def get_email_template(dto: EmailDTO) -> str:
         return f"""
            <!DOCTYPE html>
            <html lang="en">

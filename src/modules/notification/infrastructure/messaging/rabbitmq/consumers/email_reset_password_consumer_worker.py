@@ -1,11 +1,11 @@
 from src.modules.notification.application.ports.handlers.iemail_event_handler import IEmailEventHandler
-from src.modules.notification.domain.value_objects.event_types import EventType
+from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
 from src.modules.notification.infrastructure.messaging.rabbitmq.consumers.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.modules.internal_events.infrastructure.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
 
 class EmailPasswordResetConsumerWorker(BaseRabbitMQConsumerWorker):
-    EVENT_TYPE = EventType.EMAIL_PASSWORD_RESET_REQUESTED
+    EVENT_TYPE = EmailsEventType.EMAIL_PASSWORD_RESET_REQUESTED
 
     def __init__(
         self,

@@ -1,9 +1,6 @@
 import asyncio
-from collections.abc import Mapping
-from typing import Any, Protocol
-
 from botocore.exceptions import BotoCoreError, ClientError
-
+from src.modules.notification.domain.ports.isesv2_client import ISESV2Client
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.application.ports.notifiers.iemail_notifier import IEmailNotifier
 from src.modules.notification.domain.exceptions.email_notification_errors import (
@@ -18,8 +15,6 @@ from src.modules.notification.infrastructure.email.templates.verification_templa
 )
 
 
-class SESV2Client(Protocol):
-    def send_email(self, **kwargs: Any) -> Mapping[str, Any]: ...
 
 
 class SESNotifier(IEmailNotifier):
@@ -33,7 +28,7 @@ class SESNotifier(IEmailNotifier):
         }
     )
 
-    def __init__(self, client: SESV2Client, sender_email: str) -> None:
+    def __init__(self, client: ISESV2Client, sender_email: str) -> None:
         if not sender_email.strip():
             raise ValueError("SES sender email must not be empty")
 

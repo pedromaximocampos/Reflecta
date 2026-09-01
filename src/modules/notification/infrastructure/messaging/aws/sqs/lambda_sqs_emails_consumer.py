@@ -1,24 +1,9 @@
 import asyncio
 import json
-import os
-
-import boto3
-
 from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
-from src.modules.notification.application.handlers.email_event_handler import EmailEventHandler
-from src.modules.notification.infrastructure.email.ses.ses_notifier import SESNotifier
+from src.modules.notification.bootstrap.aws.lambda_emails import get_aws_email_handler
 
-client = boto3.client('sesv2')
-sender = os.getenv("SES_FROM_EMAIL")
-
-if not sender:
-    raise ValueError("SES_FROM_EMAIL environment variable is not set.")
-
-notifier_ses = SESNotifier(client, sender)
-email_handler = EmailEventHandler(
-    email_notifier=notifier_ses,
-    frontend_base_url=os.getenv("FRONTEND_BASE_URL", "http://localhost:8000")
-)
+email_handler = get_aws_email_handler()
 
 
 async def process_record(record: dict):

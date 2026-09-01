@@ -1,6 +1,6 @@
 from typing import Optional
 
-from modules.internal_events.domain.entities.outbox_event import OutboxEvent
+from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 
 
 class AwsPubHelper:

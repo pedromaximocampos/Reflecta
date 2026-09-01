@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC
 from mypy_boto3_sns import SNSClient
-from modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
+from src.modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
 from src.modules.internal_events.application.ports.messaging.ievent_publisher import IEventPublisher
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.infrastructure.messaging.aws_sns.clients.sns_client import make_sns_client

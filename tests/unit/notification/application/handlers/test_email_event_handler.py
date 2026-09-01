@@ -2,11 +2,11 @@ from typing import cast
 
 import pytest
 
-from src.modules.auth.public.email import Email
 from src.modules.notification.application.handlers.email_event_handler import EmailEventHandler
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.domain.exceptions.email_notification_errors import PermanentEmailError
 from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
+from src.modules.notification.domain.value_objects.recipient_email import RecipientEmail
 
 
 class EmailNotifierSpy:
@@ -36,7 +36,7 @@ async def test_maps_verification_event_to_generic_email_dto() -> None:
 
     assert notifier.sent == [
         EmailDTO(
-            email=Email("pedro@example.com"),
+            email=RecipientEmail("pedro@example.com"),
             username="Pedro",
             link=(
                 "http://localhost:8000/auth/verify-email"

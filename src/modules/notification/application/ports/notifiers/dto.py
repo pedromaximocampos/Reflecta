@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from src.modules.auth.public.email import Email
+from src.modules.notification.domain.value_objects.recipient_email import RecipientEmail
 
 
 class EmailKind(StrEnum):
@@ -11,7 +11,7 @@ class EmailKind(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class EmailDTO:
-    email: Email
+    email: RecipientEmail
     username: str
     link: str
     expires_in_minutes: int

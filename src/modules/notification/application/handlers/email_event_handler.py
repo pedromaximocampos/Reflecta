@@ -4,10 +4,10 @@ from urllib.parse import urlencode
 
 from src.modules.notification.application.ports.handlers.iemail_event_handler import IEmailEventHandler
 from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
-from src.modules.auth.public.email import Email
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.application.ports.notifiers.iemail_notifier import IEmailNotifier
 from src.modules.notification.domain.exceptions.email_notification_errors import PermanentEmailError
+from src.modules.notification.domain.value_objects.recipient_email import RecipientEmail
 
 
 class EmailEventHandler(IEmailEventHandler):
@@ -59,7 +59,7 @@ class EmailEventHandler(IEmailEventHandler):
             )
 
             return EmailDTO(
-                email=Email(user_email),
+                email=RecipientEmail(user_email),
                 username=username,
                 link=link,
                 expires_in_minutes=expires_in_minutes,

@@ -1,5 +1,5 @@
-from src.modules.auth.public.email import Email
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
+from src.modules.notification.domain.value_objects.recipient_email import RecipientEmail
 from src.modules.notification.infrastructure.email.smtp.configs.settings import SMTPSettings
 from src.modules.notification.infrastructure.email.smtp.smtp_email_notifier import SMTPEmailNotifier
 
@@ -20,7 +20,7 @@ def _notifier() -> SMTPEmailNotifier:
 
 def _dto(kind: EmailKind, link: str) -> EmailDTO:
     return EmailDTO(
-        email=Email("user@example.com"),
+        email=RecipientEmail("user@example.com"),
         username="Pedro",
         link=link,
         expires_in_minutes=15,

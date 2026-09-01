@@ -2,8 +2,8 @@ from typing import Any
 
 import pytest
 
-from src.modules.auth.public.email import Email
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
+from src.modules.notification.domain.value_objects.recipient_email import RecipientEmail
 from src.modules.notification.infrastructure.email.ses.ses_notifier import SESNotifier
 
 
@@ -18,7 +18,7 @@ class FakeSESV2Client:
 
 def _dto(kind: EmailKind, link: str) -> EmailDTO:
     return EmailDTO(
-        email=Email("user@example.com"),
+        email=RecipientEmail("user@example.com"),
         username="Pedro",
         link=link,
         expires_in_minutes=15,

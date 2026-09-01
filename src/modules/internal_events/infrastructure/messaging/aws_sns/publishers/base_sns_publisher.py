@@ -1,9 +1,6 @@
 import asyncio
 from abc import ABC
-from typing import Optional
-
 from mypy_boto3_sns import SNSClient
-
 from modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
 from src.modules.internal_events.application.ports.messaging.ievent_publisher import IEventPublisher
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
@@ -15,6 +12,12 @@ class BaseSnsPublisher(IEventPublisher, ABC):
     def __init__(self, sns_configs: SNSSettings) -> None:
         self.sns_settings = sns_configs
         self.client: SNSClient = make_sns_client(sns_configs)
+
+    async def start(self) -> None:
+        """SNS não exige conexão persistente para iniciar o publisher."""
+
+    async def stop(self) -> None:
+        """SNS não mantém recursos assíncronos que precisem ser encerrados."""
 
     async def publish(self, event: OutboxEvent) -> None:
         await asyncio.to_thread(self.sync_publish, event)

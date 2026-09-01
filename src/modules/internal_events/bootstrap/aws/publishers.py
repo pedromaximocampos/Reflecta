@@ -1,4 +1,4 @@
-from modules.internal_events.infrastructure.messaging.aws_sns.publishers.base_sns_publisher import BaseSnsPublisher
+from src.modules.internal_events.infrastructure.messaging.aws_sns.publishers.sns_publisher import SnsPublisher
 from src.modules.internal_events.infrastructure.messaging.aws_sqs.publishers.emails_sqs_publisher import EmailSQSPublisher
 from src.modules.internal_events.bootstrap.aws.configs import get_sqs_emails_settings, get_sns_publishers_settings
 
@@ -11,6 +11,6 @@ def get_emails_sqs_publishers() -> EmailSQSPublisher:
 
 
 def get_sns_publisher():
-    return BaseSnsPublisher(
+    return SnsPublisher(
         sns_configs=get_sns_publishers_settings(),
     )

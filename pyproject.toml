@@ -15,6 +15,7 @@ dependencies = [
     "email-validator==2.3.0",
     "fastapi==0.122.0",
     "httpx==0.28.1",
+    "mypy-boto3-sns>=1.43.23",
     "mypy-boto3-sqs==1.42.3",
     "pgvector==0.4.1",
     "psycopg2-binary==2.9.11",

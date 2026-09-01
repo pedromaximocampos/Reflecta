@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     RABBITMQ_VIRTUAL_HOST: str
     RABBITMQ_USE_SSL: bool = False
 
+    AWS_SNS_REGION: str
+    AWS_SNS_ARN: str
+
+
 
     # Exchanges
     RABBITMQ_EMAIL_EXCHANGE: str

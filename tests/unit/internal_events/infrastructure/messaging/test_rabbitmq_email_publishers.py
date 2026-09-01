@@ -56,7 +56,7 @@ def _event(event_type: str) -> OutboxEvent:
     )
 
 
-def test_email_verification_link_targets_auth_route() -> None:
+def test_email_verification_publisher_keeps_broker_neutral_payload() -> None:
     routing_key = "email.verification"
     publisher = EmailVerificationPublisher(
         _publisher_config(routing_key),
@@ -67,12 +67,10 @@ def test_email_verification_link_targets_auth_route() -> None:
         _event("emails.verification.requested")
     )
 
-    assert payload["verification_url"] == (
-        "http://localhost:8000/auth/verify-email?code=test-code"
-    )
+    assert payload == {"raw_code": "test-code"}
 
 
-def test_password_reset_link_targets_auth_route() -> None:
+def test_password_reset_publisher_keeps_broker_neutral_payload() -> None:
     routing_key = "password.reset"
     publisher = EmailResetPasswordPublisher(
         _publisher_config(routing_key),
@@ -83,6 +81,4 @@ def test_password_reset_link_targets_auth_route() -> None:
         _event("emails.password_reset.requested")
     )
 
-    assert payload["reset_password_link"] == (
-        "http://localhost:8000/auth/reset-password?code=test-code"
-    )
+    assert payload == {"raw_code": "test-code"}

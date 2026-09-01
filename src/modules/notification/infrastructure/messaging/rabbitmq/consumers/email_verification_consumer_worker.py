@@ -1,36 +1,23 @@
-from src.modules.notification.application.ports.dto import EmailVerificationDTO
-from src.modules.notification.application.ports.iemail_verification_notifier import IEmailVerificationNotifier
-from src.modules.auth.public.email import Email
+from src.modules.notification.application.ports.handlers.iemail_event_handler import IEmailEventHandler
+from src.modules.notification.domain.value_objects.event_types import EventType
 from src.modules.notification.infrastructure.messaging.rabbitmq.consumers.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.modules.internal_events.infrastructure.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
 
 class EmailVerificationConsumerWorker(BaseRabbitMQConsumerWorker):
+    EVENT_TYPE = EventType.EMAIL_VERIFICATION_REQUESTED
 
-    def __init__(self, consumer_config: RabbitMQConsumerConfig, email_verification_notifier: IEmailVerificationNotifier):
+    def __init__(
+        self,
+        consumer_config: RabbitMQConsumerConfig,
+        email_event_handler: IEmailEventHandler,
+    ) -> None:
         super().__init__(consumer_config)
-        self.__email_verification_notifier = email_verification_notifier
+        self.__email_event_handler = email_event_handler
 
-
-    async def handle_message(self, payload: dict):
-        verification_dto  = self.__return_email_verification_dto(payload)
-
-        await self.__email_verification_notifier.send_email(verification_dto)
-
-
-    @staticmethod
-    def __return_email_verification_dto(payload: dict) -> EmailVerificationDTO:
-        raw_token = payload.get("raw_code")
-        user_email = Email(payload.get("user_email"))
-        expires_in = payload.get("expires_in")
-        verification_url = payload.get("verification_url")
-        username = payload.get("username")
-
-        return EmailVerificationDTO(
-            email=user_email,
-            raw_code=raw_token,
-            expires_in_minutes=expires_in,
-            username=username,
-            verification_link=verification_url
+    async def handle_message(self, payload: dict) -> None:
+        await self.__email_event_handler.handle(
+            event_type=self.EVENT_TYPE,
+            payload=payload,
         )
 

@@ -1,9 +1,10 @@
-from abc import  ABC, abstractmethod
-from typing import Any
+from abc import ABC, abstractmethod
 from email.message import EmailMessage
+
 import aiosmtplib
 
 from src.modules.notification.domain.exceptions.email_notification_errors import TransientEmailError, PermanentEmailError
+from src.modules.notification.application.ports.notifiers.dto import EmailDTO
 from aiosmtplib.errors import (
     SMTPConnectError,
     SMTPServerDisconnected,
@@ -55,14 +56,14 @@ class BaseSMTPEmailNotifier(ABC):
             raise PermanentEmailError("SMTP authentication failed") from exc
 
     @abstractmethod
-    async def send_email(self, dto: Any) -> None:
+    async def send_email(self, dto: EmailDTO) -> None:
         ...
 
 
     @abstractmethod
-    def get_template(self, dto) -> str:
+    def get_template(self, dto: EmailDTO) -> str:
         ...
 
     @abstractmethod
-    def get_subject(self) -> str:
+    def get_subject(self, dto: EmailDTO) -> str:
         ...

@@ -1,6 +1,6 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria realizada em 2026-08-29 e atualizada em 2026-08-30 após a conexão local do fluxo RabbitMQ.
+> Auditoria realizada em 2026-08-29 e atualizada em 2026-08-31 após a unificação do handler de e-mail.
 >
 > O arquivo solicitado como `IMPLEMENTATION_STATUS.md` existe neste repositório com o nome
 > `reflecta_IMPLEMENTATION_STATUS.md`. Os arquivos operacionais e de contexto seguem a mesma
@@ -30,9 +30,9 @@ Verificações realizadas:
   corpo executável além de imports**;
 - inspeção Alembic: histórico linear e uma única head `ca9163c93ce6`;
 - importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -p no:cacheprovider --collect-only -q`: **nove testes coletados com sucesso**;
-- execução de `pytest -p no:cacheprovider -q`: **dois testes Internal Events aprovados e sete erros de
-  setup Auth** causados por fixtures incompatíveis com os construtores atuais;
+- execução de `pytest -p no:cacheprovider --collect-only -q`: **22 testes coletados com sucesso**;
+- execução de `pytest -p no:cacheprovider -q`: **15 testes aprovados e sete erros de setup Auth** causados
+  por fixtures antigas de Login/Logoff incompatíveis com os construtores atuais;
 - Docker daemon e containers locais de PostgreSQL/RabbitMQ foram verificados em execução;
 - publicação RabbitMQ, consumo e execução de handler com notifier falso em topologia temporária: **sucesso**; a topologia de
   teste foi removida após a verificação;
@@ -51,13 +51,13 @@ Verificações realizadas:
 | Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
 | Catalog / Knowledge | NOT_STARTED | Nenhuma entidade, adapter Neo4j, caso de uso ou API. |
 | Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
-| Notification | PARTIAL | SMTP, templates e consumers RabbitMQ existem; a cadeia do broker foi conectada, mas SMTP externo e idempotência não foram verificados. |
+| Notification | PARTIAL | Um handler broker-agnóstico, um `EmailDTO`, um port e um adapter SMTP atendem verificação/reset; RabbitMQ continua ativo, enquanto SQS/Lambda/SES e idempotência ainda não estão concluídos. |
 | Internal Events / Outbox | PARTIAL | Dispatcher e publishers RabbitMQ estão conectados ao Outbox e ao Compose; faltam idempotência e recuperação de eventos presos em `PROCESSING`. |
 | PostgreSQL | PARTIAL | Seis tabelas Auth/Outbox no schema padrão; execução real não verificada. |
 | pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
 | Neo4j | NOT_STARTED | Ausente das dependências, Compose e código. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | Nove testes coletam: dois testes Internal Events passam e sete testes Auth falham no setup por fixtures desatualizadas. |
+| Testes automatizados | PARTIAL | 22 testes coletam: 15 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
 
 ## 3. Stack real encontrada
 
@@ -73,14 +73,14 @@ Verificações realizadas:
 | Argon2 | IMPLEMENTED | `src/modules/auth/infrastructure/security/argon2id_password_hasher.py`, `src/modules/auth/infrastructure/security/configs/argon2/` | Adapter concreto de hash e verificação. |
 | JWT / PyJWT | PARTIAL | `src/modules/auth/infrastructure/security/token_service.py`, `src/modules/auth/application/services/auth_session/` | Tokens existem, mas access e refresh não têm tipo/audience distintos. |
 | RabbitMQ / aio-pika | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/`, `src/modules/internal_events/bootstrap/workers/publishers/rabbitmq/`, consumers em `src/modules/notification/` | Publisher, topologia, roteamento e consumo local foram conectados; smoke test do broker passou, sem envio SMTP externo. |
-| AWS SQS / boto3 | PARTIAL | `src/modules/internal_events/infrastructure/messaging/aws_sqs/`, `src/modules/internal_events/bootstrap/workers/publishers/sqs/sqs_outbox_dispatcher.py` | Adapter/entrypoint legado permanece disponível, mas não integra o fluxo ativo nem possui consumer SQS. |
+| AWS SQS / boto3 | PARTIAL | publisher em `src/modules/internal_events/infrastructure/messaging/aws_sqs/`; esqueleto de consumer em `src/modules/notification/infrastructure/messaging/aws/sqs/` | SQS é o alvo decidido, mas o consumer/Lambda ainda não processa mensagens e não integra o fluxo ativo. |
 | SMTP / aiosmtplib | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
 | SES | NOT_STARTED | Repositório inteiro inspecionado | Não há adapter/configuração SES. |
 | S3 | NOT_STARTED | Repositório inteiro inspecionado | `boto3` é usado apenas para SQS. |
 | Neo4j | NOT_STARTED | `pyproject.toml`, Compose e `src/` | Sem driver, serviço ou adapter. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | Nove testes coletam; dois passam e sete fixtures Auth causam erro no setup. |
+| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 22 testes coletam; 15 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
 | Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL e RabbitMQ locais verificados; API e workers completos ainda não executados juntos. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
 | Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria | Logging básico; sem métricas, tracing, alertas ou health/readiness. |
@@ -302,8 +302,8 @@ que adiciona o valor `PROCESSING` ao enum do outbox não remove esse valor.
 | Event Router | IMPLEMENTED | `src/modules/internal_events/infrastructure/messaging/routing/event_router.py`, `src/modules/internal_events/bootstrap/event_router.py` | Roteia os dois tipos concretos de e-mail para publishers RabbitMQ distintos e controla seu ciclo de vida. |
 | Topologia RabbitMQ | IMPLEMENTED | `src/modules/internal_events/infrastructure/messaging/rabbitmq/topology.py` | Declara exchange direta, filas principais, retry e DLQ; publicação/retirada de mensagem foi verificada localmente. |
 | RabbitMQ publishers | IMPLEMENTED | `src/modules/internal_events/infrastructure/messaging/rabbitmq/publishers/`, `src/modules/internal_events/bootstrap/rabbitmq/publishers.py` | Os dois publishers são usados pelo dispatcher efetivo e passaram no smoke test do broker. |
-| RabbitMQ e-mail consumers | PARTIAL | `src/modules/notification/infrastructure/messaging/rabbitmq/consumers/`, `src/modules/notification/bootstrap/workers/rabbitmq/` | Consomem as mesmas filas declaradas pelos publishers; execução com SMTP real e idempotência não foram verificadas. |
-| Consumers SQS | NOT_STARTED | `src/modules/internal_events/infrastructure/messaging/aws_sqs/consumers/` | Apenas `__init__.py`. |
+| RabbitMQ e-mail consumers | PARTIAL | `src/modules/notification/infrastructure/messaging/rabbitmq/consumers/`, `src/modules/notification/bootstrap/workers/rabbitmq/` | Os dois adapters de fila delegam ao mesmo `EmailEventHandler`; execução com SMTP real e idempotência não foram verificadas nesta auditoria. |
+| Consumers SQS | PARTIAL | `src/modules/notification/infrastructure/messaging/aws/sqs/` | Config/client e esqueleto existem, mas não há polling, parser de envelope, entrypoint Lambda, ack/delete, falha parcial ou idempotência. |
 | Processed Events | NOT_STARTED | models/migrations/repositories | Nenhuma tabela ou repository. |
 | Idempotência por consumer | NOT_STARTED | workers/repositories | Nenhum registro/deduplicação. |
 | Visibilidade operacional de falhas | NOT_STARTED | rotas/observabilidade | Falhas só ficam consultáveis diretamente no banco. |
@@ -328,9 +328,10 @@ O entrypoint SQS permanece no código como alternativa legada inativa.
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| Email ports | IMPLEMENTED | `src/modules/notification/application/ports/` | Contratos de verificação/reset existem. |
-| SMTP adapters/templates | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | HTML e envio assíncrono existem; remetente Gmail está hardcoded e entrega não foi verificada. |
-| NotificationWorker | PARTIAL | `src/modules/notification/bootstrap/workers/`, consumers RabbitMQ | O caminho RabbitMQ chega aos consumers; falta verificar SMTP externo, retry completo e idempotência. |
+| Email port/DTO unificados | IMPLEMENTED | `src/modules/notification/application/ports/notifiers/dto.py`, `iemail_notifier.py` | Um `EmailDTO` usa `link` genérico e `EmailKind`; o token bruto não atravessa o port do notifier. |
+| Handler de eventos de e-mail | IMPLEMENTED | `src/modules/notification/application/handlers/email_event_handler.py`, `src/modules/notification/application/ports/handlers/iemail_event_handler.py` | Mapeia os dois `event_type`, valida payload e constrói os links sem depender de RabbitMQ/SQS. |
+| SMTP adapter/templates | PARTIAL | `src/modules/notification/infrastructure/email/smtp/smtp_email_notifier.py` | Um adapter renderiza os dois templates e envia de forma assíncrona; remetente Gmail segue hardcoded e entrega não foi verificada nesta auditoria. |
+| NotificationWorker | PARTIAL | `src/modules/notification/bootstrap/workers/`, consumers RabbitMQ | O caminho RabbitMQ chega ao handler unificado; faltam cutover SQS/Lambda/SES, retry completo e idempotência. |
 | TemplateRenderer independente | NOT_STARTED | `src/modules/notification/infrastructure/email/smtp/` | Templates estão embutidos nos adapters. |
 | NotificationLog | NOT_STARTED | models/migrations/repositories | Ausente. |
 | SES | NOT_STARTED | projeto inteiro | Ausente. |
@@ -361,11 +362,12 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 |---|---|---|---|
 | Sintaxe Python | IMPLEMENTED | 350 arquivos sob `src/`, `tests/` e `alembic/` | Parsing estático sem falhas após a conexão RabbitMQ. |
 | Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | IMPLEMENTED | `tests/` | Nove testes coletados com sucesso. |
+| Coleta pytest | IMPLEMENTED | `tests/` | 22 testes coletados com sucesso. |
 | Testes Domain | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Integração repository/PostgreSQL | NOT_STARTED | `tests/` inspecionado | Nenhum teste de integração; o antigo diretório vazio foi removido. |
 | API/HTTP | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Outbox/roteamento | PARTIAL | `tests/unit/internal_events/infrastructure/messaging/test_rabbitmq_outbox_dispatcher.py` | Dois testes aprovados cobrem roteamento por tipo e marcação `SENT`; idempotência permanece ausente. |
+| Notification handler/templates | IMPLEMENTED | `tests/unit/notification/` | Seis testes aprovados cobrem os dois tipos de evento, links, payload inválido, tipo desconhecido e templates SMTP. |
 | Neo4j | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | LLM contract | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Frontend | NOT_STARTED | repositório | Frontend ausente. |
@@ -386,8 +388,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
    FastAPI, Compose e remetente SMTP ainda usam Individuum.
 2. **Arquitetura modular:** Auth, Journal, Internal Events e Notification possuem raízes verticais;
    Shared Kernel técnico e `main` foram separados, mas somente Auth é substancial.
-3. **Mensageria:** a decisão atual conecta Outbox, publisher e consumers via RabbitMQ; código SQS legado
-   continua presente, enquanto diagramas anteriores ainda representam dispatcher interno ou SQS.
+3. **Mensageria:** SQS + Lambda + SES é o alvo decidido em 2026-08-31, mas o código operacional ainda
+   conecta Outbox, publisher e consumers via RabbitMQ/SMTP; o consumer SQS permanece apenas embrionário.
 4. **PostgreSQL:** os diagramas/glossário planejam cinco schemas; o código cria seis tabelas no schema
    padrão e só cobre Auth/Outbox.
 5. **Identificadores:** documentação usa UUID; código e migrations usam ULID `String(26)`.
@@ -405,8 +407,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 12. **pgvector:** planejado para embeddings; há apenas dependência/imagem, sem extensão ou dados.
 13. **Neo4j, S3 e IA:** aparecem na arquitetura planejada, mas estão ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
-15. **Testes:** TCC descreve cenários e uma matriz ampla; o repositório possui sete testes Auth
-    desatualizados e dois testes Internal Events aprovados.
+15. **Testes:** TCC descreve cenários e uma matriz ampla; o repositório coleta 22 testes, dos quais 15
+    passam e sete testes antigos de Login/Logoff falham no setup.
 16. **Deploy/workers:** o Compose agora declara dispatcher RabbitMQ e dois workers Notification; depende
     de `.env.dev` ausente, e o Neo4j planejado continua fora da infraestrutura.
 17. **OpenAPI/Auth:** documentação sugere contratos HTTP usuais; cinco rotas Auth não expõem
@@ -432,8 +434,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 
 1. Escolher o baseline canônico de Auth antes de ampliar as migrations: schemas e UUID versus ULID,
    campos User/Credentials/Session, verificação de e-mail, RBAC/admin e prioridade de MFA.
-2. RabbitMQ foi escolhido para notificações Auth; ainda é necessário fechar envelope, retry, lease,
-   idempotência e decidir se o código SQS legado será removido.
+2. SQS + Lambda + SES foi escolhido como alvo para notificações Auth; ainda é necessário implementar o
+   consumer versionado, adapter SES, idempotência, falha parcial, deploy e cutover antes de remover RabbitMQ/SMTP.
 3. Confirmar sem ambiguidade o ciclo Journal: uso de DRAFT, transição para análise, edição/reanálise,
    exclusão e análise vigente/versionada.
 4. Definir privacidade/segurança do LLM: provider, retenção, redaction, modelo, schema de saída e falhas.
@@ -458,7 +460,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - **Exposição de segredos/PII:** código bruto de verificação/reset no Outbox e log integral do consumer;
   erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
 - **Configuração não reproduzível:** sem `.env.example` e com helper de URL do banco malformado.
-- **Rede de segurança insuficiente:** somente dois testes Internal Events passam; não há integração/API/E2E/CI.
+- **Rede de segurança insuficiente:** 15 testes unitários passam, mas não há integração/API/E2E/CI e os
+  sete testes antigos de Login/Logoff continuam quebrados no setup.
 - **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
   baseline definido no contexto.
 - **Escopo sensível sem controles:** journaling/LLM/export lidam com dados pessoais e de saúde sem política
@@ -482,21 +485,19 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 
 ## 18. Menor próximo incremento vertical coerente
 
-**Não iniciado por esta auditoria.**
+**Não iniciado por esta refatoração.**
 
-O menor incremento recomendado é fechar **UC08 — cadastro com emissão transacional da solicitação de
-verificação**, atravessando HTTP → Application → Domain → PostgreSQL → Outbox, com um teste de API e um
-teste de integração contra PostgreSQL. O limite deve ser explícito: criar usuário/credencial/verificação,
-persistir o evento na mesma transação, responder `201` e rejeitar duplicidade/entrada inválida; a entrega
-externa do e-mail pode ser o incremento seguinte, desde que o evento persistido tenha contrato canônico.
+O menor incremento recomendado agora é concluir a entrega de notificações Auth no caminho-alvo
+**SQS -> Lambda -> handler Notification -> SES**, reutilizando o `EmailEventHandler` já implementado.
+O corte deve incluir:
 
-Antes de implementá-lo, a revisão deste diagnóstico precisa decidir apenas o necessário para esse corte:
+1. mapper validado do envelope SQS (`event_id`, `event_type` e payload);
+2. adapter SES que implemente `IEmailNotifier`;
+3. entrypoint Lambda fino com resposta de falha parcial por item;
+4. idempotência por `event_id` e consumidor, com armazenamento decidido antes de habilitar o gatilho;
+5. testes unitários do envelope, dos dois eventos, de duplicidade e das falhas transitória/permanente;
+6. pacote/deploy versionado a partir do repositório e smoke test manual;
+7. gatilho inicialmente com batch pequeno, ativado somente após as verificações acima.
 
-1. manter ou migrar agora ULID/schema padrão para UUID/`auth_schema`;
-2. confirmar os campos e a regra de senha do cadastro;
-3. confirmar que a verificação de e-mail pertence ao baseline;
-4. confirmar o envelope mínimo do evento RabbitMQ, inclusive expiração e metadados necessários.
-
-Esse corte é menor e mais seguro do que iniciar Journal/IA sobre uma base Auth, transacional e de testes
-que hoje não executa. Ele também força a corrigir o lifetime do UoW e torna uma capacidade real
-reproduzível antes de aumentar o escopo.
+RabbitMQ/SMTP não devem ser removidos antes do teste ponta a ponta do novo caminho. O incremento não altera
+os nomes nem o payload canônico dos dois eventos Auth e não inicia Journal/IA.

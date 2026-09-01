@@ -5,10 +5,5 @@ from src.modules.internal_events.infrastructure.messaging.rabbitmq.publishers.ba
 
 
 class EmailResetPasswordPublisher(BaseRabbitMQPublisher):
-
-
     def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:
-        payload = dict(event.payload)
-        base_url = self._config.frontend_base_url.rstrip("/")
-        payload["reset_password_link"] = f"{base_url}/auth/reset-password?code={event.payload.get('raw_code')}"
-        return payload, event.attributes
+        return dict(event.payload), event.attributes

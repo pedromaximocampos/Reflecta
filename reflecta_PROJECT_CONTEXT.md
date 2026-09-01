@@ -809,10 +809,13 @@ Persistência:
 
 Este mecanismo implementa processamento assíncrono **dentro do monólito modular**.
 
-Decisão registrada em 2026-08-30 para o fluxo de notificações Auth: o dispatcher da Outbox publica em
-RabbitMQ e os workers do módulo Notification consomem as filas RabbitMQ de verificação de e-mail e reset
-de senha. O adapter/entrypoint SQS permanece no código como legado inativo e não integra o fluxo vigente.
-Novos brokers ou a extensão dessa escolha para Journal/IA continuam exigindo decisão arquitetural explícita.
+Decisão atualizada em 2026-08-31 para o fluxo de notificações Auth: o alvo de implantação é
+`Outbox PostgreSQL -> dispatcher -> Amazon SQS -> AWS Lambda -> Notification handler -> Amazon SES`.
+O handler e os contratos pertencem ao módulo Notification no mesmo repositório; a Lambda é apenas um
+entrypoint/adaptador de execução, não um novo bounded context ou autorização para converter o sistema em
+microsserviços. RabbitMQ/SMTP permanecem como caminho de transição enquanto o consumer SQS/Lambda e o
+adapter SES não estiverem implementados, testados e aptos ao cutover. A extensão dessa escolha para
+Journal/IA continua exigindo decisão arquitetural explícita.
 
 ---
 
@@ -1285,12 +1288,17 @@ Evitar:
 
 ## 11.3 Processamento
 
-No recorte atualmente adotado para notificações Auth, o caminho operacional é:
+No código atual, o caminho operacional de transição para notificações Auth ainda é:
 
 `Outbox PostgreSQL -> worker dispatcher -> RabbitMQ -> consumer Notification -> SMTP`
 
-O dispatcher e os consumers são processos separados do mesmo monólito modular e são declarados no
-Compose de API/workers. A entrega SMTP externa e a idempotência do consumer ainda precisam ser verificadas.
+O caminho-alvo decidido é:
+
+`Outbox PostgreSQL -> worker dispatcher -> Amazon SQS -> AWS Lambda -> handler Notification -> Amazon SES`
+
+O dispatcher permanece um processo do monólito modular. O código da Lambda deve ser versionado neste
+repositório como entrypoint fino que reutiliza o handler de aplicação do módulo Notification. O gatilho SQS
+só deve ser ativado após implementar idempotência, tratamento de falha parcial e testes do consumer.
 
 Fluxo esperado:
 
@@ -1700,7 +1708,8 @@ Modelo antigo menciona texto cifrado; modelo atual não especifica. Ver seção 
 - Frontend Web;
 - API/BFF;
 - Outbox + workers + Processed Events;
-- RabbitMQ como broker vigente do fluxo de notificações Auth;
+- Amazon SQS + AWS Lambda + Amazon SES como alvo decidido para notificações Auth;
+- RabbitMQ + SMTP como implementação de transição até o cutover validado;
 - PlantUML e Mermaid como formatos de documentação arquitetural.
 
 ## 18.2 NÃO confirmadas pelos arquivos disponíveis neste contexto

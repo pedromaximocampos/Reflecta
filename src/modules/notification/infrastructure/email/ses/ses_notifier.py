@@ -13,6 +13,12 @@ from src.modules.notification.infrastructure.email.templates.password_reset_temp
 from src.modules.notification.infrastructure.email.templates.verification_template_html import (
     VerificationTemplateHTML,
 )
+from src.modules.notification.infrastructure.email.templates.user_deletion_template_html import (
+    UserDeletionTemplateHTML,
+)
+from src.modules.notification.infrastructure.email.templates.user_recovery_template_html import (
+    UserRecoveryTemplateHTML,
+)
 
 
 
@@ -46,6 +52,16 @@ class SESNotifier(IEmailNotifier):
             return (
                 PasswordResetTemplateHTML.get_subject_template(dto),
                 PasswordResetTemplateHTML.get_email_template(dto),
+            )
+        if dto.kind is EmailKind.USER_DELETION:
+            return (
+                UserDeletionTemplateHTML.get_subject_template(dto),
+                UserDeletionTemplateHTML.get_email_template(dto),
+            )
+        if dto.kind is EmailKind.USER_RECOVERY:
+            return (
+                UserRecoveryTemplateHTML.get_subject_template(dto),
+                UserRecoveryTemplateHTML.get_email_template(dto),
             )
         raise PermanentEmailError(f"Unsupported email kind: {dto.kind}")
 

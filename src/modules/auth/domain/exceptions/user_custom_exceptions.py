@@ -38,3 +38,13 @@ class UserNotFoundError(DomainError):
             name="UserNotFoundError",
             **kwargs,
         )
+
+
+class InvalidUserInfoError(DomainError):
+    def __init__(self, message: str = "Invalid user information.", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=400,
+            name="InvalidUserInfoError",
+            **kwargs,
+        )

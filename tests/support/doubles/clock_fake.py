@@ -19,11 +19,17 @@ class ClockFake(IClock):
         access_token_exp_seconds: int = 15 * 60,               # 15 min
         refresh_token_exp_seconds: int = 30 * 24 * 60 * 60,    # 30 dias
         email_verification_exp_seconds: int = 15 * 60,         # 15 min
+        password_reset_exp_seconds: int = 15 * 60,
+        user_deletion_exp_seconds: int = 15 * 60,
+        user_recovery_exp_seconds: int = 15 * 60,
     ) -> None:
         self._now = now or datetime.utcnow()
         self._access_token_exp_seconds = access_token_exp_seconds
         self._refresh_token_exp_seconds = refresh_token_exp_seconds
         self._email_verification_exp_seconds = email_verification_exp_seconds
+        self._password_reset_exp_seconds = password_reset_exp_seconds
+        self._user_deletion_exp_seconds = user_deletion_exp_seconds
+        self._user_recovery_exp_seconds = user_recovery_exp_seconds
 
         self.calls_now = 0
 
@@ -42,3 +48,12 @@ class ClockFake(IClock):
 
     def email_verification_code_expiration_in_seconds(self) -> int:
         return self._email_verification_exp_seconds
+
+    def password_reset_expiration_in_seconds(self) -> int:
+        return self._password_reset_exp_seconds
+
+    def user_deletion_expiration_in_seconds(self) -> int:
+        return self._user_deletion_exp_seconds
+
+    def user_recovery_expiration_in_seconds(self) -> int:
+        return self._user_recovery_exp_seconds

@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_DAYS: Final[int] = 30
     EMAIL_VERIFICATION_MINUTES: Final[int] = 15
     RESET_PASSWORD_MINUTES: Final[int] = 15
+    USER_DELETION_MINUTES: int = 15
+    USER_RECOVERY_MINUTES: int = 15
 
     MINIMUM_PASSWORD_LENGTH: Final[int] = 12
 

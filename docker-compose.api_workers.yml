@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: individuum-worker-outbox-dispatcher
-    command: uv run python -m src.modules.internal_events.bootstrap.workers.publishers.rabbitmq.rabbitmq_outbox_dispatcher
+    command: uv run python -m src.modules.internal_events.bootstrap.workers.publishers.sns.sns_outbox_dispatcher
     environment:
       ENV: dev
       DEBUG: "1"

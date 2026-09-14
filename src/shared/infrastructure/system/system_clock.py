@@ -20,3 +20,9 @@ class SystemClock(IClock):
 
     def password_reset_expiration_in_seconds(self) -> int:
         return _settings.RESET_PASSWORD_MINUTES * 60
+
+    def user_deletion_expiration_in_seconds(self) -> int:
+        return _settings.USER_DELETION_MINUTES * 60
+
+    def user_recovery_expiration_in_seconds(self) -> int:
+        return _settings.USER_RECOVERY_MINUTES * 60

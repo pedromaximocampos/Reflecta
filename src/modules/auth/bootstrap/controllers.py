@@ -1,13 +1,32 @@
 from src.modules.auth.presentation.controllers.login_controller import LoginController
 from src.modules.auth.presentation.controllers.logoff_controller import LogoffController
-from src.modules.auth.bootstrap.use_cases import get_login_use_case, get_logoff_use_case, get_refresh_use_case, \
-    get_sign_up_use_case, get_verify_email_use_case, get_reset_password_use_case, get_request_password_reset_use_case
+from src.modules.auth.bootstrap.use_cases import (
+    get_delete_user_use_case,
+    get_login_use_case,
+    get_logoff_use_case,
+    get_refresh_use_case,
+    get_request_delete_use_case,
+    get_request_recovery_use_case,
+    get_recovery_use_case,
+    get_request_password_reset_use_case,
+    get_reset_password_use_case,
+    get_sign_up_use_case,
+    get_verify_email_use_case,
+    get_update_user_info_use_case,
+)
 from src.shared.infrastructure.system.providers import get_clock
 from src.modules.auth.presentation.controllers.refresh_controller import RefreshController
 from src.modules.auth.presentation.controllers.request_reset_password_controller import RequestResetPasswordController
 from src.modules.auth.presentation.controllers.reset_password_controller import ResetPasswordController
 from src.modules.auth.presentation.controllers.sign_up_controller import SignUpController
 from src.modules.auth.presentation.controllers.verify_email_controller import VerifyEmailController
+from src.modules.auth.presentation.controllers.delete_user_controller import DeleteUserController
+from src.modules.auth.presentation.controllers.request_delete_controller import RequestDeleteController
+from src.modules.auth.presentation.controllers.request_recovery_controller import RequestRecoveryController
+from src.modules.auth.presentation.controllers.recovery_controller import RecoveryController
+from src.modules.auth.presentation.controllers.update_user_info_controller import (
+    UpdateUserInfoController,
+)
 
 
 def get_login_controller() -> LoginController:
@@ -61,4 +80,32 @@ def get_request_reset_password_controller():
 
     return RequestResetPasswordController(
         request_reset_password_use_case=get_request_password_reset_use_case()
+    )
+
+
+def get_request_delete_controller() -> RequestDeleteController:
+    return RequestDeleteController(
+        request_delete_use_case=get_request_delete_use_case(),
+    )
+
+
+def get_delete_user_controller() -> DeleteUserController:
+    return DeleteUserController(
+        delete_user_use_case=get_delete_user_use_case(),
+    )
+
+
+def get_request_recovery_controller() -> RequestRecoveryController:
+    return RequestRecoveryController(
+        request_recovery_use_case=get_request_recovery_use_case(),
+    )
+
+
+def get_recovery_controller() -> RecoveryController:
+    return RecoveryController(recovery_use_case=get_recovery_use_case())
+
+
+def get_update_user_info_controller() -> UpdateUserInfoController:
+    return UpdateUserInfoController(
+        update_user_info_use_case=get_update_user_info_use_case(),
     )

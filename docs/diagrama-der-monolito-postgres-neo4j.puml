@@ -17,7 +17,8 @@ package "PostgreSQL\nBanco transacional do monólito modular" as PG {
       email : VARCHAR <<UNIQUE>>
       name : VARCHAR
       avatar_url : VARCHAR
-      status : VARCHAR
+      role : USER_ROLE <<INDEX>>
+      deleted_at : TIMESTAMPTZ
       created_at : TIMESTAMPTZ
       updated_at : TIMESTAMPTZ
       last_login_at : TIMESTAMPTZ
@@ -53,6 +54,28 @@ package "PostgreSQL\nBanco transacional do monólito modular" as PG {
       expires_at : TIMESTAMPTZ
       used_at : TIMESTAMPTZ
       created_at : TIMESTAMPTZ
+    }
+
+    entity "USER_DELETION_REQUESTS" as user_deletion_requests {
+      * id : ULID <<PK>>
+      --
+      user_id : ULID <<FK, INDEX>>
+      token_hash : VARCHAR <<UNIQUE>>
+      created_at : TIMESTAMPTZ
+      expires_at : TIMESTAMPTZ
+      confirmed_at : TIMESTAMPTZ
+      revoked_at : TIMESTAMPTZ
+    }
+
+    entity "USER_RECOVERY_REQUESTS" as user_recovery_requests {
+      * id : ULID <<PK>>
+      --
+      user_id : ULID <<FK, INDEX>>
+      token_hash : VARCHAR <<UNIQUE>>
+      created_at : TIMESTAMPTZ
+      expires_at : TIMESTAMPTZ
+      confirmed_at : TIMESTAMPTZ
+      revoked_at : TIMESTAMPTZ
     }
   }
 
@@ -301,6 +324,8 @@ package "Neo4j\nGrafo de Conhecimento" as GRAPH {
 users ||--|| auth_credentials
 users ||--o{ auth_sessions
 users ||--o{ password_resets
+users ||--o{ user_deletion_requests
+users ||--o{ user_recovery_requests
 
 users ||--o{ journal_entries
 journal_entries ||--o{ analysis

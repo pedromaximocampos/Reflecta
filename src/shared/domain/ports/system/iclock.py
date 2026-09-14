@@ -17,3 +17,9 @@ class IClock(Protocol):
 
     def password_reset_expiration_in_seconds(self) -> int:
         pass
+
+    def user_deletion_expiration_in_seconds(self) -> int:
+        pass
+
+    def user_recovery_expiration_in_seconds(self) -> int:
+        pass

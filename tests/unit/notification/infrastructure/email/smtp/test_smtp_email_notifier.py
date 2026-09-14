@@ -50,3 +50,27 @@ def test_renders_password_reset_email_from_same_generic_dto() -> None:
     assert notifier.get_subject(dto) == "Reset password link for Reflecta"
     assert dto.link in notifier.get_template(dto)
     assert "Reset password" in notifier.get_template(dto)
+
+
+def test_renders_user_deletion_email_from_same_generic_dto() -> None:
+    notifier = _notifier()
+    dto = _dto(
+        EmailKind.USER_DELETION,
+        "https://app.reflecta.test/auth/delete?code=deletion-code",
+    )
+
+    assert notifier.get_subject(dto) == "Confirm account deletion for Reflecta"
+    assert dto.link in notifier.get_template(dto)
+    assert "Review account deletion" in notifier.get_template(dto)
+
+
+def test_renders_user_recovery_email_from_same_generic_dto() -> None:
+    notifier = _notifier()
+    dto = _dto(
+        EmailKind.USER_RECOVERY,
+        "https://app.reflecta.test/auth/recovery?code=recovery-code",
+    )
+
+    assert notifier.get_subject(dto) == "Recover your account for Reflecta"
+    assert dto.link in notifier.get_template(dto)
+    assert "Review account recovery" in notifier.get_template(dto)

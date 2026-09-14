@@ -20,6 +20,14 @@ class EmailEventHandler(IEmailEventHandler):
             EmailKind.PASSWORD_RESET,
             "/auth/reset-password",
         ),
+        EmailsEventType.EMAIL_USER_DELETION_REQUESTED: (
+            EmailKind.USER_DELETION,
+            "/auth/delete",
+        ),
+        EmailsEventType.EMAIL_USER_RECOVERY_REQUESTED: (
+            EmailKind.USER_RECOVERY,
+            "/auth/recovery",
+        ),
     }
 
     def __init__(

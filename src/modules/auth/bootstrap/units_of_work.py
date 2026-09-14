@@ -5,6 +5,12 @@ from src.modules.auth.infrastructure.persistence.postgresql.mappers.reset_passwo
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_mapper import UserMapper
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.email_verification_mapper import EmailVerificationMapper
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.auth_sessions_mapper import AuthSessionsMapper
+from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_deletion_request_mapper import (
+    UserDeletionRequestMapper,
+)
+from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_recovery_request_mapper import (
+    UserRecoveryRequestMapper,
+)
 from src.modules.auth.infrastructure.persistence.postgresql.units_of_work.auth_unit_of_work_impl import AuthUnitOfWorkImpl
 from src.shared.infrastructure.system.providers import get_clock
 
@@ -19,5 +25,7 @@ def get_auth_unit_of_work() -> AuthUnitOfWorkImpl:
         email_verification_mapper=EmailVerificationMapper(),
         auth_session_mapper=AuthSessionsMapper(),
         reset_password_mapper=ResetPasswordMapper(),
+        user_deletion_request_mapper=UserDeletionRequestMapper(),
+        user_recovery_request_mapper=UserRecoveryRequestMapper(),
         outbox_mapper=OutboxMapper(),
     )

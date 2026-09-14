@@ -62,6 +62,32 @@ async def test_maps_password_reset_event_to_same_email_dto() -> None:
 
 
 @pytest.mark.asyncio
+async def test_maps_user_deletion_event_to_confirmation_link() -> None:
+    notifier = EmailNotifierSpy()
+    handler = EmailEventHandler(notifier, "https://app.reflecta.test")
+
+    await handler.handle(EmailsEventType.EMAIL_USER_DELETION_REQUESTED, _payload())
+
+    assert notifier.sent[0].kind is EmailKind.USER_DELETION
+    assert notifier.sent[0].link == (
+        "https://app.reflecta.test/auth/delete?code=abc%2F%2B%3D"
+    )
+
+
+@pytest.mark.asyncio
+async def test_maps_user_recovery_event_to_confirmation_link() -> None:
+    notifier = EmailNotifierSpy()
+    handler = EmailEventHandler(notifier, "https://app.reflecta.test")
+
+    await handler.handle(EmailsEventType.EMAIL_USER_RECOVERY_REQUESTED, _payload())
+
+    assert notifier.sent[0].kind is EmailKind.USER_RECOVERY
+    assert notifier.sent[0].link == (
+        "https://app.reflecta.test/auth/recovery?code=abc%2F%2B%3D"
+    )
+
+
+@pytest.mark.asyncio
 async def test_rejects_unsupported_email_event_without_sending() -> None:
     notifier = EmailNotifierSpy()
     handler = EmailEventHandler(notifier, "https://app.reflecta.test")

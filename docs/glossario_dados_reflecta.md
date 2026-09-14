@@ -45,7 +45,8 @@ Representa o usuário cadastrado no sistema Reflecta.
 | email | Endereço de e-mail utilizado para autenticação e comunicação. |
 | name | Nome do usuário. |
 | avatar_url | URL da imagem de perfil do usuário, quando cadastrada. |
-| status | Situação atual da conta, como ativa, inativa ou excluída. |
+| role | Papel de autorização do usuário no MVP: `USER` ou `ADMIN`. |
+| deleted_at | Data e hora da exclusão lógica da conta; nulo enquanto a conta está ativa. |
 | created_at | Data e hora de criação do usuário. |
 | updated_at | Data e hora da última atualização do usuário. |
 | last_login_at | Data e hora do último acesso realizado pelo usuário. |
@@ -90,6 +91,34 @@ Controla solicitações de redefinição de senha.
 | expires_at | Data e hora de expiração do token. |
 | used_at | Data e hora em que o token foi utilizado. |
 | created_at | Data e hora de criação da solicitação. |
+
+### USER_DELETION_REQUESTS
+
+Controla os códigos de uso único usados para confirmar a exclusão lógica de uma conta.
+
+| Campo | Descrição |
+|---|---|
+| id | Identificador ULID da solicitação. |
+| user_id | Identificador do usuário autenticado que solicitou a exclusão. |
+| token_hash | Hash do código de confirmação; o código bruto não é armazenado. |
+| created_at | Data e hora de criação da solicitação. |
+| expires_at | Data e hora a partir da qual o código deixa de ser aceito. |
+| confirmed_at | Data e hora de consumo bem-sucedido do código. |
+| revoked_at | Data e hora de revogação, inclusive quando uma nova solicitação substitui a anterior. |
+
+### USER_RECOVERY_REQUESTS
+
+Controla os códigos de uso único usados para recuperar uma conta excluída logicamente.
+
+| Campo | Descrição |
+|---|---|
+| id | Identificador ULID da solicitação. |
+| user_id | Identificador da conta excluída associada à recuperação. |
+| token_hash | Hash do código de recuperação; o código bruto não é armazenado. |
+| created_at | Data e hora de criação da solicitação. |
+| expires_at | Data e hora a partir da qual o código deixa de ser aceito. |
+| confirmed_at | Data e hora de consumo bem-sucedido do código. |
+| revoked_at | Data e hora de revogação, inclusive quando uma nova solicitação substitui a anterior. |
 
 ---
 

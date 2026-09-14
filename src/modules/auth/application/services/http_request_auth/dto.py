@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
+
+from src.modules.auth.domain.value_objects import UserRole
 from src.modules.auth.public.user_id import UserId
 
 
@@ -7,4 +9,4 @@ from src.modules.auth.public.user_id import UserId
 class AuthenticatedUserDTO:
     user_id: UserId
     is_admin: bool = False
-    roles: Optional[list[str]] = None
+    roles: UserRole = None

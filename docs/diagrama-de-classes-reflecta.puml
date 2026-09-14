@@ -13,23 +13,25 @@ hide empty methods
 ' =========================
 package "Auth Module" {
 
-  enum UserStatus {
-    ACTIVE
-    INACTIVE
-    DELETED
+  enum UserRole {
+    USER
+    ADMIN
   }
 
   class User {
     +id: UUID
     +email: String
     +name: String
+    +surname: String
+    +dateOfBirth: Date
     +avatarUrl: String
-    +status: UserStatus
+    +role: UserRole
+    +deletedAt: DateTime
     +createdAt: DateTime
     +updatedAt: DateTime
     +lastLoginAt: DateTime
     --
-    +updateProfile(name, avatarUrl)
+    +updateProfile(name, surname, dateOfBirth, avatarUrl)
     +markAsDeleted()
   }
 
@@ -68,6 +70,34 @@ package "Auth Module" {
     +createdAt: DateTime
     --
     +markAsUsed()
+    +isExpired(): Boolean
+  }
+
+  class UserDeletionRequest {
+    +id: ULID
+    +userId: ULID
+    +tokenHash: String
+    +createdAt: DateTime
+    +expiresAt: DateTime
+    +confirmedAt: DateTime
+    +revokedAt: DateTime
+    --
+    +confirm()
+    +revoke()
+    +isExpired(): Boolean
+  }
+
+  class UserRecoveryRequest {
+    +id: ULID
+    +userId: ULID
+    +tokenHash: String
+    +createdAt: DateTime
+    +expiresAt: DateTime
+    +confirmedAt: DateTime
+    +revokedAt: DateTime
+    --
+    +confirm()
+    +revoke()
     +isExpired(): Boolean
   }
 }
@@ -409,6 +439,8 @@ package "Internal Events Module" {
 User "1" *-- "1" AuthCredential
 User "1" o-- "0..*" AuthSession
 User "1" o-- "0..*" PasswordReset
+User "1" o-- "0..*" UserDeletionRequest
+User "1" o-- "0..*" UserRecoveryRequest
 
 User "1" o-- "0..*" JournalEntry
 JournalEntry "1" *-- "0..*" Analysis

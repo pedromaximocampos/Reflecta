@@ -64,3 +64,39 @@ async def test_sends_password_reset_email_using_existing_template() -> None:
     simple_content = client.request["Content"]["Simple"]
     assert simple_content["Subject"]["Data"] == "Reset password link for Pedro"
     assert dto.link in simple_content["Body"]["Html"]["Data"]
+
+
+@pytest.mark.asyncio
+async def test_sends_user_deletion_email_using_confirmation_template() -> None:
+    client = FakeSESV2Client()
+    notifier = SESNotifier(client, "sender@example.com")
+    dto = _dto(
+        EmailKind.USER_DELETION,
+        "https://app.reflecta.test/auth/delete?code=deletion-code",
+    )
+
+    await notifier.send_email(dto)
+
+    assert client.request is not None
+    simple_content = client.request["Content"]["Simple"]
+    assert simple_content["Subject"]["Data"] == "Confirm account deletion for Pedro"
+    assert dto.link in simple_content["Body"]["Html"]["Data"]
+    assert "will remain active" in simple_content["Body"]["Html"]["Data"]
+
+
+@pytest.mark.asyncio
+async def test_sends_user_recovery_email_using_confirmation_template() -> None:
+    client = FakeSESV2Client()
+    notifier = SESNotifier(client, "sender@example.com")
+    dto = _dto(
+        EmailKind.USER_RECOVERY,
+        "https://app.reflecta.test/auth/recovery?code=recovery-code",
+    )
+
+    await notifier.send_email(dto)
+
+    assert client.request is not None
+    simple_content = client.request["Content"]["Simple"]
+    assert simple_content["Subject"]["Data"] == "Recover your account for Pedro"
+    assert dto.link in simple_content["Body"]["Html"]["Data"]
+    assert "will remain deleted" in simple_content["Body"]["Html"]["Data"]

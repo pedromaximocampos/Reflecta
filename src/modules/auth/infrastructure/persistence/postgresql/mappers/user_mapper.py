@@ -28,6 +28,8 @@ class UserMapper(IMapper[UserModel, User]):
             last_login_at=user_model.last_login_at,
             is_email_verified=user_model.is_email_verified,
             email_verified_at=user_model.email_verified_at,
+            role=user_model.role,
+            deleted_at=user_model.deleted_at,
         )
 
 
@@ -45,6 +47,8 @@ class UserMapper(IMapper[UserModel, User]):
             last_login_at=user_entity.last_login_at,
             is_email_verified=user_entity.is_email_verified,
             email_verified_at=user_entity.email_verified_at,
+            role=user_entity.role,
+            deleted_at=user_entity.deleted_at,
         )
 
         auth_credentials_model = self.__auth_credentials_mapper.to_model(user_entity.auth_credentials)

@@ -7,6 +7,8 @@ from src.modules.notification.domain.value_objects.recipient_email import Recipi
 class EmailKind(StrEnum):
     VERIFICATION = "verification"
     PASSWORD_RESET = "password_reset"
+    USER_DELETION = "user_deletion"
+    USER_RECOVERY = "user_recovery"
 
 
 @dataclass(frozen=True, slots=True)

@@ -233,7 +233,7 @@ Regras vigentes:
 - a autorização deve consultar o papel do usuário, e não confiar em valor enviado pelo cliente;
 - uma tabela de permissões granular não faz parte deste incremento e só deve ser introduzida se os requisitos superarem os dois papéis atuais.
 
-A persistência do papel existe como fundação. A propagação para o contexto autenticado/JWT e os guards dos casos de uso administrativos ainda precisam ser implementados e testados.
+A autenticação carrega o papel persistido no Auth a cada request e o propaga por meio de um `AuthenticatedPrincipal`; a camada HTTP disponibiliza um guard `require_role`. Ainda faltam aplicar esse guard às rotas administrativas, distinguir access/refresh token e implementar o bootstrap e a alteração administrativa de papel.
 
 ## 4.4 Sistema de IA
 
@@ -1640,7 +1640,7 @@ Regra temporária:
 
 A representação do MVP foi decidida: `UserRole` (`USER`/`ADMIN`) no agregado e na tabela `users`.
 
-Permanece pendente implementar a autorização efetiva nas fronteiras da aplicação, definir se o papel será incluído no access token ou carregado do Auth a cada request e cobrir acesso autorizado/não autorizado por testes.
+O papel é carregado do Auth a cada request e propagado no `AuthenticatedPrincipal`, sem confiar em role enviada pelo cliente ou gravada no JWT. O guard HTTP `require_role` possui cobertura unitária no serviço que diferencia `USER` e `ADMIN`; permanecem pendentes sua aplicação em rotas administrativas reais, testes HTTP de acesso permitido/negado e o fluxo seguro de bootstrap/promoção/rebaixamento de administradores.
 
 ## 17.3 ConsentRepository sem entidade correspondente
 

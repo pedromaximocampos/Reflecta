@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Query
-from src.modules.auth.application.services.http_request_auth.dto import AuthenticatedUserDTO
+from src.modules.auth.public import AuthenticatedPrincipal
 from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
 from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
 from src.modules.auth.bootstrap.controllers import (
@@ -88,7 +88,7 @@ async def auth_request_reset_password(request: Request):
 @auth_router.post("/request-delete", status_code=202)
 async def auth_request_delete(
     request: Request,
-    current_user: AuthenticatedUserDTO = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
 ):
     """Request a one-time account deletion confirmation code."""
     return await adapter_fastapi_request(
@@ -130,7 +130,7 @@ async def auth_recovery(
 async def auth_update_user_info(
     body: UpdateUserInfoValidator,
     request: Request,
-    current_user: AuthenticatedUserDTO = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
 ):
     """Update one or more allowed fields of the authenticated user's profile."""
     return await adapter_fastapi_request(

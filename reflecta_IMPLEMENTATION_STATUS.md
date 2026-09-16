@@ -30,7 +30,7 @@ Verificações realizadas:
   corpo executável além de imports**;
 - inspeção Alembic: histórico linear e uma única head `9c4f12a7e6d3`;
 - importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -q`: **76 testes aprovados e sete erros de setup Auth** causados
+- execução de `pytest -q`: **80 testes aprovados e sete erros de setup Auth** causados
   por fixtures antigas de Login/Logoff incompatíveis com os construtores atuais;
 - testes focais de recuperação, repositories relacionados e Notification: **34 aprovados**;
 - testes focais da atualização parcial de perfil e do repository de usuário: **23 aprovados**;
@@ -59,7 +59,7 @@ Verificações realizadas:
 | pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
 | Neo4j | NOT_STARTED | Ausente das dependências, Compose e código. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | 83 testes coletam: 76 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
+| Testes automatizados | PARTIAL | 87 testes coletam: 80 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
 
 ## 3. Stack real encontrada
 
@@ -82,7 +82,7 @@ Verificações realizadas:
 | Neo4j | NOT_STARTED | `pyproject.toml`, Compose e `src/` | Sem driver, serviço ou adapter. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 83 testes coletam; 76 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
+| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 87 testes coletam; 80 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
 | Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL e RabbitMQ locais verificados; API e workers completos ainda não executados juntos. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
 | Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria, `src/modules/notification/infrastructure/email/ses/ses_notifier.py` | Logging básico e diagnóstico seguro de falhas SES; sem correlação completa, métricas, tracing, alertas ou health/readiness. |
@@ -152,7 +152,7 @@ Não há ciclo entre módulos. `src/shared/` não importa módulos nem `main`, e
 | Exclusão/anonimização | PARTIAL | `src/modules/auth/application/use_cases/request_delete/`, `src/modules/auth/application/use_cases/delete/`, `src/modules/auth/application/services/user_deletion/`, `src/modules/auth/domain/entities/user_deletion_request.py`, `src/modules/auth/infrastructure/persistence/postgresql/`, `src/modules/auth/presentation/controllers/request_delete_controller.py`, `src/modules/auth/presentation/controllers/delete_user_controller.py`, `src/modules/auth/presentation/routes.py`, migration `7b82d9e3a104_add_user_deletion_requests.py`, testes em `tests/unit/auth/` | Solicitação autenticada, código com hash/expiração/uso único, confirmação, `deleted_at`, revogação das sessões e eventos Outbox estão implementados e cobertos unitariamente. Permanece `PARTIAL` por ausência de teste PostgreSQL/API/AWS de ponta a ponta e de consumers de `auth.user.deleted` nos demais módulos. |
 | Recuperação da conta | PARTIAL | `src/modules/auth/application/use_cases/request_recovery/`, `src/modules/auth/application/use_cases/recovery/`, `src/modules/auth/application/services/user_recovery/`, entidade/eventos/ports de recuperação, model/mapper/repository, controllers/rotas, migration `9c4f12a7e6d3_add_user_recovery_requests.py`, testes em `tests/unit/auth/` | Solicitação pública com resposta anti-enumeração, emissão de código com hash/expiração/uso único, restauração de `deleted_at` e eventos Outbox estão cobertos unitariamente. Permanece `PARTIAL` por ausência de teste PostgreSQL/API/AWS de ponta a ponta, prazo máximo de recuperação e consumers intermodulares de `auth.user.recovered`. |
 | Exportação geral da conta | NOT_STARTED | `src/` inspecionado | Nenhum job/caso de uso/endpoint. |
-| Admin authorization | PARTIAL | `src/modules/auth/domain/value_objects/user_role.py`, `src/modules/auth/domain/entities/user.py`, `src/modules/auth/infrastructure/persistence/postgresql/models/users_model.py`, migration `48f1a9d4c2b7_add_user_role_and_soft_delete.py` | Decisão e persistência `USER`/`ADMIN` existem; cadastro administrativo, alteração de papel, contexto autenticado/claim e guards ainda não foram implementados. |
+| Admin authorization | PARTIAL | `src/modules/auth/domain/value_objects/user_role.py`, `src/modules/auth/public/authenticated_principal.py`, `src/modules/auth/application/services/http_request_auth/`, `src/modules/auth/presentation/services/fast_api_auth_service.py`, `src/modules/auth/presentation/adapters/fast_api_auth.py`, `src/modules/auth/infrastructure/persistence/postgresql/models/users_model.py`, migration `48f1a9d4c2b7_add_user_role_and_soft_delete.py`, testes `tests/unit/auth/application/services/test_authenticate_request_service.py` e `tests/unit/auth/presentation/test_fast_api_auth_service.py` | O contexto autenticado agora carrega a role persistida e o guard singular `require_role` distingue `USER`/`ADMIN`; faltam aplicar o guard em uma rota administrativa, diferenciar access/refresh token e implementar bootstrap/alteração administrativa de papel. |
 | MFA | NOT_STARTED | `src/` inspecionado | Nenhuma implementação. |
 
 Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
@@ -367,7 +367,7 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 |---|---|---|---|
 | Sintaxe Python | IMPLEMENTED | arquivos sob `src/`, `tests/` e `alembic/` | `compileall` sem falhas após a atualização parcial de perfil. |
 | Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | IMPLEMENTED | `tests/` | 83 testes coletados: 76 aprovados e sete erros de setup preexistentes. |
+| Coleta pytest | IMPLEMENTED | `tests/` | 87 testes coletados: 80 aprovados e sete erros de setup preexistentes. |
 | Testes Domain | PARTIAL | `tests/unit/auth/domain/` | Cobrem `UserRole`, parte do estado de exclusão e as regras de atualização parcial do perfil; demais domínios continuam sem cobertura. |
 | Integração repository/PostgreSQL | NOT_STARTED | `tests/` inspecionado | Nenhum teste de integração; o antigo diretório vazio foi removido. |
 | API/HTTP | NOT_STARTED | `tests/` inspecionado | Ausentes. |
@@ -415,7 +415,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 12. **pgvector:** planejado para embeddings; há apenas dependência/imagem, sem extensão ou dados.
 13. **Neo4j, S3 e IA:** aparecem na arquitetura planejada, mas estão ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
-15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 76 testes passam e sete
+15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 80 testes passam e sete
     testes antigos de Login/Logoff falham no setup.
 16. **Deploy/workers:** o Compose agora declara dispatcher RabbitMQ e dois workers Notification; depende
     de `.env.dev` ausente, e o Neo4j planejado continua fora da infraestrutura.
@@ -426,7 +426,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 
 - o escopo atual é journaling textual, mas o TCC ainda mostra áudio/imagem e S3 para mídia;
 - `ConsentService/Repository` existe no componente Sharing sem entidade/tabela Consent;
-- casos administrativos exigem autorização efetiva; o modelo Auth agora possui `UserRole`, mas os guards e o contexto autenticado ainda não usam esse papel;
+- casos administrativos exigem autorização efetiva; o contexto autenticado e o guard já propagam `UserRole`, mas nenhuma rota administrativa utiliza o guard e access/refresh token continuam sem propósito distinguível;
 - UC18 exige histórico contextual sem entidade persistente correspondente;
 - identidade, e-mail, envio e auditoria de acesso do profissional não cabem em `SharedExport`;
 - atividade profissional não tem campo para a anotação pessoal mostrada no TCC;
@@ -441,8 +441,8 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 ## 15. Decisões pendentes e bloqueadores
 
 1. Concluir o baseline canônico de Auth: schemas e UUID versus ULID, campos ainda divergentes de
-   User/Credentials/Session, prioridade de MFA e forma de propagar o `UserRole` para autorização. A representação
-   `USER`/`ADMIN` e a exclusão lógica por `deleted_at` já foram decididas.
+   User/Credentials/Session, prioridade de MFA, bootstrap do primeiro administrador e alteração de papel. A representação
+   `USER`/`ADMIN`, a exclusão lógica por `deleted_at` e a propagação da role persistida no contexto autenticado já foram implementadas.
 2. SQS + Lambda + SES foi escolhido como alvo para notificações Auth; ainda é necessário implementar o
    consumer versionado, adapter SES, idempotência, falha parcial, deploy e cutover antes de remover RabbitMQ/SMTP.
 3. Confirmar sem ambiguidade o ciclo Journal: uso de DRAFT, transição para análise, edição/reanálise,
@@ -469,7 +469,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - **Exposição de segredos/PII:** códigos brutos de verificação/reset/exclusão/recuperação no Outbox e log integral do consumer;
   erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
 - **Configuração não reproduzível:** sem `.env.example` e com helper de URL do banco malformado.
-- **Rede de segurança insuficiente:** 76 testes unitários passam, mas não há integração/API/E2E/CI e os
+- **Rede de segurança insuficiente:** 80 testes unitários passam, mas não há integração/API/E2E/CI e os
   sete testes antigos de Login/Logoff continuam quebrados no setup.
 - **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
   baseline definido no contexto.

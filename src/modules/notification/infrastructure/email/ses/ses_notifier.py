@@ -1,4 +1,6 @@
 import asyncio
+import logging
+
 from botocore.exceptions import BotoCoreError, ClientError
 from src.modules.notification.domain.ports.isesv2_client import ISESV2Client
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
@@ -20,6 +22,8 @@ from src.modules.notification.infrastructure.email.templates.user_recovery_templ
     UserRecoveryTemplateHTML,
 )
 
+
+_LOGGER = logging.getLogger(__name__)
 
 
 
@@ -90,8 +94,19 @@ class SESNotifier(IEmailNotifier):
             )
         except ClientError as exc:
             error_code = exc.response.get("Error", {}).get("Code", "")
+            response_metadata = exc.response.get("ResponseMetadata", {})
+            _LOGGER.error(
+                "Amazon SES SendEmail failed: error_code=%s http_status=%s request_id=%s",
+                error_code or "Unknown",
+                response_metadata.get("HTTPStatusCode", "Unknown"),
+                response_metadata.get("RequestId", "Unknown"),
+            )
             if error_code in self._TRANSIENT_ERROR_CODES:
                 raise TransientEmailError("Temporary Amazon SES error") from exc
             raise PermanentEmailError("Amazon SES rejected the email") from exc
         except BotoCoreError as exc:
+            _LOGGER.error(
+                "Amazon SES client failed: error_type=%s",
+                type(exc).__name__,
+            )
             raise TransientEmailError("Temporary Amazon SES client error") from exc

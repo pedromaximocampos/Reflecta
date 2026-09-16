@@ -66,7 +66,7 @@ async def test_update_user_info_uses_token_identity_and_only_sent_fields() -> No
         {},
         {"name": None},
         {"unknown": "value"},
-        {"date_of_birth": "2026-09-14"},
+        {"date_of_birth": "2999-09-14"},
         {"avatar_url": "not-a-url"},
     ],
 )

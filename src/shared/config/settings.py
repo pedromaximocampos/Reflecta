@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Ambiente
     ENV: str = "dev"              # dev | prod | test
     DEBUG: bool = True if ENV == "dev" else False
+    SQL_ECHO: bool
     LOG_LEVEL: str = "ERROR"       # DEBUG | INFO | WARNING | ERROR | CRITICAL
 
     # Postgres

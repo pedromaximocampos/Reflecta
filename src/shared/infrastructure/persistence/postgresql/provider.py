@@ -11,7 +11,7 @@ postgres_settings = PostgresqlSettings(
     port=settings.POSTGRES_PORT,
     db_name=settings.POSTGRES_DB,
     ssl=(settings.ENV == "prod"),
-    echo=settings.DEBUG,
+    echo=settings.SQL_ECHO,
 )
 
 individuum_mvp_provider = DBConnectionHandler(postgres_settings)

@@ -30,7 +30,7 @@ Verificações realizadas:
   corpo executável além de imports**;
 - inspeção Alembic: histórico linear e uma única head `9c4f12a7e6d3`;
 - importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -q`: **75 testes aprovados e sete erros de setup Auth** causados
+- execução de `pytest -q`: **76 testes aprovados e sete erros de setup Auth** causados
   por fixtures antigas de Login/Logoff incompatíveis com os construtores atuais;
 - testes focais de recuperação, repositories relacionados e Notification: **34 aprovados**;
 - testes focais da atualização parcial de perfil e do repository de usuário: **23 aprovados**;
@@ -59,7 +59,7 @@ Verificações realizadas:
 | pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
 | Neo4j | NOT_STARTED | Ausente das dependências, Compose e código. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | 82 testes coletam: 75 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
+| Testes automatizados | PARTIAL | 83 testes coletam: 76 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
 
 ## 3. Stack real encontrada
 
@@ -77,15 +77,15 @@ Verificações realizadas:
 | RabbitMQ / aio-pika | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/`, `src/modules/internal_events/bootstrap/workers/publishers/rabbitmq/`, consumers em `src/modules/notification/` | Publisher, topologia, roteamento e consumo local foram conectados; smoke test do broker passou, sem envio SMTP externo. |
 | AWS SNS/SQS / boto3 | PARTIAL | publishers em `src/modules/internal_events/infrastructure/messaging/aws_sns/` e `aws_sqs/`; consumer em `src/modules/notification/infrastructure/messaging/aws/sqs/`; bootstraps AWS de ambos os módulos | O dispatcher do Compose publica no SNS e o Lambda processa lotes SQS com `batchItemFailures`; ainda não há idempotência persistente nem deploy reproduzível. |
 | SMTP / aiosmtplib | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
-| SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py` | Adapter SESv2 e composição Lambda existem, sem infraestrutura como código ou teste externo automatizado. |
+| SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py` | Adapter SESv2 e composição Lambda existem; falhas registram código, status HTTP e request ID sem payload/PII. Não há infraestrutura como código ou teste externo automatizado. |
 | S3 | NOT_STARTED | Repositório inteiro inspecionado | `boto3` é usado apenas para SQS. |
 | Neo4j | NOT_STARTED | `pyproject.toml`, Compose e `src/` | Sem driver, serviço ou adapter. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 82 testes coletam; 75 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
+| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 83 testes coletam; 76 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
 | Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL e RabbitMQ locais verificados; API e workers completos ainda não executados juntos. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
-| Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria | Logging básico; sem métricas, tracing, alertas ou health/readiness. |
+| Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria, `src/modules/notification/infrastructure/email/ses/ses_notifier.py` | Logging básico e diagnóstico seguro de falhas SES; sem correlação completa, métricas, tracing, alertas ou health/readiness. |
 
 Não existe `.env.example` ou equivalente. Há um `.env.dev` local ignorado pelo Git, referenciado por
 `src/shared/config/settings.py` e `docker-compose.api_workers.yml`; portanto, um novo colaborador ainda não possui um contrato versionado de configuração.
@@ -367,7 +367,7 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 |---|---|---|---|
 | Sintaxe Python | IMPLEMENTED | arquivos sob `src/`, `tests/` e `alembic/` | `compileall` sem falhas após a atualização parcial de perfil. |
 | Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | IMPLEMENTED | `tests/` | 82 testes coletados: 75 aprovados e sete erros de setup preexistentes. |
+| Coleta pytest | IMPLEMENTED | `tests/` | 83 testes coletados: 76 aprovados e sete erros de setup preexistentes. |
 | Testes Domain | PARTIAL | `tests/unit/auth/domain/` | Cobrem `UserRole`, parte do estado de exclusão e as regras de atualização parcial do perfil; demais domínios continuam sem cobertura. |
 | Integração repository/PostgreSQL | NOT_STARTED | `tests/` inspecionado | Nenhum teste de integração; o antigo diretório vazio foi removido. |
 | API/HTTP | NOT_STARTED | `tests/` inspecionado | Ausentes. |
@@ -375,7 +375,7 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 | Exclusão lógica Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_deletion_service.py`, `tests/unit/auth/application/use_cases/test_user_deletion_use_cases.py`, testes de controller/mapper/repository | Doze testes aprovados cobrem emissão/substituição, confirmação, expiração, revogação/reuso, sessões, eventos e adapters HTTP/persistência. |
 | Recuperação Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_recovery_service.py`, `tests/unit/auth/application/use_cases/test_user_recovery_use_cases.py`, testes de controller/mapper/repository | Dezesseis testes novos cobrem emissão/substituição, anti-enumeração, confirmação, expiração, revogação/reuso, estado excluído e adapters HTTP/persistência. |
 | Atualização de perfil Auth | IMPLEMENTED | `tests/unit/auth/domain/test_user_info.py`, `tests/unit/auth/application/use_cases/test_update_user_info_use_case.py`, `tests/unit/auth/presentation/controllers/test_update_user_info_controller.py`, `tests/unit/auth/infrastructure/persistence/postgresql/repositories/test_user_repository_active_users.py` | Dezessete testes novos cobrem regras de domínio, atualização de subconjunto, identidade autenticada, validação do payload e allowlist de colunas no SQL. |
-| Notification handler/templates | IMPLEMENTED | `tests/unit/notification/` | Quatorze testes aprovados cobrem os quatro tipos de evento, links, payload inválido, tipo desconhecido e templates SMTP/SES. |
+| Notification handler/templates | IMPLEMENTED | `tests/unit/notification/` | Quinze testes aprovados cobrem os quatro tipos de evento, links, payload inválido, tipo desconhecido, templates SMTP/SES e diagnóstico SES sem vazamento de e-mail, código ou mensagem bruta da AWS. |
 | Neo4j | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | LLM contract | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Frontend | NOT_STARTED | repositório | Frontend ausente. |
@@ -415,7 +415,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 12. **pgvector:** planejado para embeddings; há apenas dependência/imagem, sem extensão ou dados.
 13. **Neo4j, S3 e IA:** aparecem na arquitetura planejada, mas estão ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
-15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 75 testes passam e sete
+15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 76 testes passam e sete
     testes antigos de Login/Logoff falham no setup.
 16. **Deploy/workers:** o Compose agora declara dispatcher RabbitMQ e dois workers Notification; depende
     de `.env.dev` ausente, e o Neo4j planejado continua fora da infraestrutura.
@@ -469,7 +469,7 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - **Exposição de segredos/PII:** códigos brutos de verificação/reset/exclusão/recuperação no Outbox e log integral do consumer;
   erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
 - **Configuração não reproduzível:** sem `.env.example` e com helper de URL do banco malformado.
-- **Rede de segurança insuficiente:** 75 testes unitários passam, mas não há integração/API/E2E/CI e os
+- **Rede de segurança insuficiente:** 76 testes unitários passam, mas não há integração/API/E2E/CI e os
   sete testes antigos de Login/Logoff continuam quebrados no setup.
 - **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
   baseline definido no contexto.

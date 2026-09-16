@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres_dev:
     image: pgvector/pgvector:pg16
@@ -29,6 +27,20 @@ services:
     networks:
       - individuum-net
 
+  neo4j_dev:
+    image: neo4j:5.26-community
+    container_name: reflecta-neo4j-dev
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/reflecta_dev}
+    ports:
+      - "7474:7474"  # Neo4j Browser / HTTP
+      - "7687:7687"  # Bolt (aplicação Python)
+    volumes:
+      - neo4j_data_dev:/data
+      - neo4j_logs_dev:/logs
+    networks:
+      - individuum-net
+
   rabbitmq:
     image: rabbitmq:management   # você já tem essa imagem
     container_name: individuum-rabbitmq
@@ -46,6 +58,8 @@ services:
 volumes:
   pgdata_dev:
   pgdata_test:
+  neo4j_data_dev:
+  neo4j_logs_dev:
   rabbitmq_data:
 
 networks:

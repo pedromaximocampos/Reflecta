@@ -10,7 +10,7 @@ class ThemeValidator(BaseModel):
 
     label: str = Field(..., description="Theme name", min_length=3, max_length=50)
     description: str = Field(..., description="Theme description", min_length=3, max_length=255)
-    is_active: bool = Field(..., description="Is theme active")
+    is_active: bool = Field(default=True, description="Is theme active", )
 
 class CreateThemesValidator(BaseModel):
     """Validator for creating themes"""

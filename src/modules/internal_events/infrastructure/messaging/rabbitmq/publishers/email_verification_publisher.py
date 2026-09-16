@@ -4,10 +4,5 @@ from src.modules.internal_events.infrastructure.messaging.rabbitmq.publishers.ba
 
 
 class EmailVerificationPublisher(BaseRabbitMQPublisher):
-
-
     def _build_message(self, event: OutboxEvent) -> Tuple[dict, Optional[dict]]:
-        payload = dict(event.payload)
-        base_url = self._config.frontend_base_url.rstrip("/")
-        payload["verification_url"] = f"{base_url}/auth/verify-email?code={event.payload.get('raw_code')}"
-        return payload, event.attributes
+        return dict(event.payload), event.attributes

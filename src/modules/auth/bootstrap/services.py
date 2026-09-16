@@ -5,6 +5,12 @@ from src.shared.config.settings import get_settings
 from src.shared.infrastructure.system.providers import get_clock, get_ulid_generator
 from src.modules.auth.bootstrap.security import get_jti_hasher, get_token_service
 from src.modules.auth.application.services.reset_password_service.password_reset_service_impl import PasswordResetServiceImpl
+from src.modules.auth.application.services.user_deletion.user_deletion_service_impl import (
+    UserDeletionServiceImpl,
+)
+from src.modules.auth.application.services.user_recovery.user_recovery_service_impl import (
+    UserRecoveryServiceImpl,
+)
 
 _SETTINGS = get_settings()
 
@@ -33,6 +39,22 @@ def get_email_verification_service() -> EmailVerificationServiceImpl:
 def get_password_reset_service():
 
     return PasswordResetServiceImpl(
+        system_clock=get_clock(),
+        ulid_generator=get_ulid_generator(),
+        hasher_generator=get_jti_hasher(),
+    )
+
+
+def get_user_deletion_service() -> UserDeletionServiceImpl:
+    return UserDeletionServiceImpl(
+        system_clock=get_clock(),
+        ulid_generator=get_ulid_generator(),
+        hasher_generator=get_jti_hasher(),
+    )
+
+
+def get_user_recovery_service() -> UserRecoveryServiceImpl:
+    return UserRecoveryServiceImpl(
         system_clock=get_clock(),
         ulid_generator=get_ulid_generator(),
         hasher_generator=get_jti_hasher(),

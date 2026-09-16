@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Ambiente
     ENV: str = "dev"              # dev | prod | test
     DEBUG: bool = True if ENV == "dev" else False
+    SQL_ECHO: bool
     LOG_LEVEL: str = "ERROR"       # DEBUG | INFO | WARNING | ERROR | CRITICAL
 
     # Postgres
@@ -52,6 +53,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_DAYS: Final[int] = 30
     EMAIL_VERIFICATION_MINUTES: Final[int] = 15
     RESET_PASSWORD_MINUTES: Final[int] = 15
+    USER_DELETION_MINUTES: int = 15
+    USER_RECOVERY_MINUTES: int = 15
 
     MINIMUM_PASSWORD_LENGTH: Final[int] = 12
 
@@ -63,6 +66,10 @@ class Settings(BaseSettings):
     RABBITMQ_PASSWORD: str
     RABBITMQ_VIRTUAL_HOST: str
     RABBITMQ_USE_SSL: bool = False
+
+    AWS_SNS_REGION: str
+    AWS_SNS_ARN: str
+
 
 
     # Exchanges

@@ -224,18 +224,16 @@ A UI/documentação menciona e-mail e identificação do profissional, mas o mod
 
 ## 4.3 Administrador
 
-Existe ator e conjunto de casos de uso administrativos, mas o modelo atual de `User` não apresenta campo/entidade de `role` ou permissão administrativa.
+Para o MVP, a permissão administrativa é representada por um único `UserRole` no agregado `User`, com os valores `USER` e `ADMIN`, persistido na coluna `users.role`.
 
-**Não inventar uma solução silenciosamente.** Antes de implementar autorização administrativa definitiva, decidir como a permissão será representada.
+Regras vigentes:
 
-Opções possíveis precisam ser avaliadas no contexto da stack e do código real, por exemplo:
+- cadastro público sempre cria `USER`;
+- promover ou rebaixar um usuário exige caso de uso administrativo autenticado;
+- a autorização deve consultar o papel do usuário, e não confiar em valor enviado pelo cliente;
+- uma tabela de permissões granular não faz parte deste incremento e só deve ser introduzida se os requisitos superarem os dois papéis atuais.
 
-- role no usuário;
-- tabela de roles/permissions;
-- claim externa;
-- configuração administrativa separada.
-
-Nenhuma dessas opções é considerada decisão vigente apenas por aparecer nesta lista.
+A persistência do papel existe como fundação. A propagação para o contexto autenticado/JWT e os guards dos casos de uso administrativos ainda precisam ser implementados e testados.
 
 ## 4.4 Sistema de IA
 
@@ -809,10 +807,13 @@ Persistência:
 
 Este mecanismo implementa processamento assíncrono **dentro do monólito modular**.
 
-Decisão registrada em 2026-08-30 para o fluxo de notificações Auth: o dispatcher da Outbox publica em
-RabbitMQ e os workers do módulo Notification consomem as filas RabbitMQ de verificação de e-mail e reset
-de senha. O adapter/entrypoint SQS permanece no código como legado inativo e não integra o fluxo vigente.
-Novos brokers ou a extensão dessa escolha para Journal/IA continuam exigindo decisão arquitetural explícita.
+Decisão atualizada em 2026-08-31 para o fluxo de notificações Auth: o alvo de implantação é
+`Outbox PostgreSQL -> dispatcher -> Amazon SQS -> AWS Lambda -> Notification handler -> Amazon SES`.
+O handler e os contratos pertencem ao módulo Notification no mesmo repositório; a Lambda é apenas um
+entrypoint/adaptador de execução, não um novo bounded context ou autorização para converter o sistema em
+microsserviços. RabbitMQ/SMTP permanecem como caminho de transição enquanto o consumer SQS/Lambda e o
+adapter SES não estiverem implementados, testados e aptos ao cutover. A extensão dessa escolha para
+Journal/IA continua exigindo decisão arquitetural explícita.
 
 ---
 
@@ -901,10 +902,13 @@ Campos documentados:
 - email unique;
 - name;
 - avatar_url;
-- status;
+- role (`USER` ou `ADMIN`);
+- deleted_at nullable para exclusão lógica;
 - created_at;
 - updated_at;
 - last_login_at.
+
+A decisão vigente de ciclo de vida usa `deleted_at`, sem remoção física neste estágio. E-mail e username continuam globalmente únicos mesmo após exclusão lógica; eventual liberação ou anonimização desses identificadores requer política explícita posterior.
 
 ### AUTH_CREDENTIALS
 
@@ -1250,6 +1254,29 @@ Fluxo esperado em alto nível, sem fixar nomes ainda não formalizados:
 
 O Auth Module coordena a operação, mas não deve romper limites de módulos com SQL cruzado.
 
+O fluxo vigente é deliberadamente dividido em duas etapas:
+
+1. `POST /auth/request-delete` exige uma sessão autenticada e obtém o `user_id` exclusivamente do contexto de autenticação;
+2. o Auth revoga qualquer solicitação ativa anterior, gera um código criptograficamente aleatório, persiste somente seu hash com expiração e registra `emails.user_deletion.requested` na Outbox na mesma transação;
+3. o Notification transforma esse evento em um e-mail contendo um link para a tela de confirmação;
+4. a confirmação chama `DELETE /auth/delete?code=...`; abrir o link por `GET` não pode excluir a conta automaticamente;
+5. um código válido, não expirado, não revogado e ainda não usado marca `users.deleted_at`, confirma o código, revoga todas as sessões e registra `auth.user.deleted` na Outbox na mesma transação;
+6. consumidores dos demais módulos deverão reagir a `auth.user.deleted` para aplicar suas próprias políticas, sem SQL cruzado pelo Auth.
+
+O código de confirmação é de uso único e o valor bruto só existe durante a emissão e no evento necessário ao envio do e-mail. O banco armazena apenas `token_hash`. Respostas de código inexistente, expirado, revogado ou reutilizado não devem revelar qual condição ocorreu.
+
+### Recuperação da conta excluída
+
+A recuperação também usa duas etapas, mas nenhuma exige sessão, pois a exclusão revoga todas as sessões:
+
+1. `POST /auth/request-recovery` recebe somente o e-mail e sempre responde de forma genérica, independentemente de o endereço não existir, pertencer a uma conta ativa ou pertencer a uma conta excluída;
+2. apenas para uma conta com `deleted_at` preenchido, o Auth revoga uma solicitação ativa anterior, persiste o hash de um novo código e registra `emails.recovery_user.requested` na Outbox;
+3. o Notification envia o link de recuperação pelo mesmo pipeline SNS/SQS/Lambda/SES;
+4. `POST /auth/recovery?code=...` valida um código não expirado, não revogado e ainda não usado, limpa `users.deleted_at`, confirma o código e registra `auth.user.recovered` na Outbox, atomicamente;
+5. a recuperação não cria sessão: o usuário deve efetuar login novamente com suas credenciais existentes.
+
+No estado atual, a recuperação restaura somente a capacidade de autenticação. O comportamento de Journal, Sharing, Recommendation e arquivos após `auth.user.recovered` depende das políticas futuras de retenção e dos consumers de cada módulo. Não há prazo máximo de recuperação da conta além da expiração de cada código emitido; essa janela permanece uma decisão de produto/privacidade pendente.
+
 A operação precisa coordenar, por interfaces/eventos:
 
 - conta/credenciais/sessões;
@@ -1285,12 +1312,17 @@ Evitar:
 
 ## 11.3 Processamento
 
-No recorte atualmente adotado para notificações Auth, o caminho operacional é:
+No código atual, o caminho operacional de transição para notificações Auth ainda é:
 
 `Outbox PostgreSQL -> worker dispatcher -> RabbitMQ -> consumer Notification -> SMTP`
 
-O dispatcher e os consumers são processos separados do mesmo monólito modular e são declarados no
-Compose de API/workers. A entrega SMTP externa e a idempotência do consumer ainda precisam ser verificadas.
+O caminho-alvo decidido é:
+
+`Outbox PostgreSQL -> worker dispatcher -> Amazon SQS -> AWS Lambda -> handler Notification -> Amazon SES`
+
+O dispatcher permanece um processo do monólito modular. O código da Lambda deve ser versionado neste
+repositório como entrypoint fino que reutiliza o handler de aplicação do módulo Notification. O gatilho SQS
+só deve ser ativado após implementar idempotência, tratamento de falha parcial e testes do consumer.
 
 Fluxo esperado:
 
@@ -1606,9 +1638,9 @@ Regra temporária:
 
 ## 17.2 Ator Administrador x modelo de autorização
 
-O sistema possui Administrator nos UCs/UI, mas `USERS` não possui role/permission no modelo atual.
+A representação do MVP foi decidida: `UserRole` (`USER`/`ADMIN`) no agregado e na tabela `users`.
 
-**Decidir antes de concluir Auth/Admin.**
+Permanece pendente implementar a autorização efetiva nas fronteiras da aplicação, definir se o papel será incluído no access token ou carregado do Auth a cada request e cobrir acesso autorizado/não autorizado por testes.
 
 ## 17.3 ConsentRepository sem entidade correspondente
 
@@ -1700,7 +1732,8 @@ Modelo antigo menciona texto cifrado; modelo atual não especifica. Ver seção 
 - Frontend Web;
 - API/BFF;
 - Outbox + workers + Processed Events;
-- RabbitMQ como broker vigente do fluxo de notificações Auth;
+- Amazon SQS + AWS Lambda + Amazon SES como alvo decidido para notificações Auth;
+- RabbitMQ + SMTP como implementação de transição até o cutover validado;
 - PlantUML e Mermaid como formatos de documentação arquitetural.
 
 ## 18.2 NÃO confirmadas pelos arquivos disponíveis neste contexto

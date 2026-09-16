@@ -1,0 +1,483 @@
+{
+  "info": {
+    "_postman_id": "65db9442-a684-4a42-aa3e-344e52fb5fc4",
+    "name": "Reflecta - Auth API",
+    "description": "Coleção das 12 rotas Auth atualmente expostas pelo backend Reflecta. Edite as variáveis da coleção antes de executar. Os códigos de e-mail devem ser preenchidos manualmente após o recebimento.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Cadastro e verificação",
+      "item": [
+        {
+          "name": "Cadastrar usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"username\": \"{{username}}\",\n  \"name\": \"{{name}}\",\n  \"surname\": \"{{surname}}\",\n  \"date_of_birth\": \"{{date_of_birth}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirm\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Cria um usuário e inicia o fluxo de verificação de e-mail. A senha deve possuir pelo menos 12 caracteres para atender também à regra de domínio atual."
+          }
+        },
+        {
+          "name": "Verificar e-mail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email?code={{verification_code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{verification_code}}",
+                  "description": "Código recebido no e-mail de verificação."
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Sessão",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "    const setCookie = pm.response.headers.get('Set-Cookie');",
+                  "    const match = setCookie && setCookie.match(/refresh_token=([^;]+)/);",
+                  "    if (match) pm.collectionVariables.set('refresh_token', match[1]);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{email}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "O código atual recebe e-mail e senha por HTTP Basic Auth. O script salva access_token e refresh_token nas variáveis da coleção."
+          }
+        },
+        {
+          "name": "Renovar tokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "    const setCookie = pm.response.headers.get('Set-Cookie');",
+                  "    const match = setCookie && setCookie.match(/refresh_token=([^;]+)/);",
+                  "    if (match) pm.collectionVariables.set('refresh_token', match[1]);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "refresh_token={{refresh_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Envia o refresh token em cookie e atualiza as variáveis da coleção quando a resposta for bem-sucedida."
+          }
+        },
+        {
+          "name": "Logoff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.unset('access_token');",
+                  "    pm.collectionVariables.unset('refresh_token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "refresh_token={{refresh_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logoff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logoff"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Senha",
+      "item": [
+        {
+          "name": "Solicitar redefinição de senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/request-reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "request-reset-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Redefinir senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reset_token\": \"{{password_reset_code}}\",\n  \"new_password\": \"{{new_password}}\",\n  \"repeated_password\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Preencha password_reset_code com o código recebido por e-mail."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Perfil",
+      "item": [
+        {
+          "name": "Atualizar informações do usuário",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"surname\": \"{{surname}}\",\n  \"date_of_birth\": \"{{date_of_birth}}\",\n  \"avatar_url\": \"{{avatar_url}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/user-info",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "user-info"
+              ]
+            },
+            "description": "Envie pelo menos um campo. Remova do JSON os campos que não deseja alterar; valores nulos não são aceitos."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Exclusão e recuperação da conta",
+      "item": [
+        {
+          "name": "Solicitar exclusão",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/request-delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "request-delete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirmar exclusão lógica",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/delete?code={{deletion_code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "delete"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{deletion_code}}",
+                  "description": "Código recebido no e-mail de exclusão."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Solicitar recuperação da conta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/request-recovery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "request-recovery"
+              ]
+            },
+            "description": "Rota pública com resposta genérica para reduzir enumeração de contas."
+          }
+        },
+        {
+          "name": "Confirmar recuperação da conta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/recovery?code={{recovery_code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recovery"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{recovery_code}}",
+                  "description": "Código recebido no e-mail de recuperação."
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "usuario.reflecta@example.com",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "usuario_reflecta",
+      "type": "string"
+    },
+    {
+      "key": "name",
+      "value": "Usuário",
+      "type": "string"
+    },
+    {
+      "key": "surname",
+      "value": "Reflecta",
+      "type": "string"
+    },
+    {
+      "key": "date_of_birth",
+      "value": "2000-01-01",
+      "type": "string"
+    },
+    {
+      "key": "avatar_url",
+      "value": "https://example.com/avatar.png",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "SenhaForte123!",
+      "type": "string"
+    },
+    {
+      "key": "new_password",
+      "value": "NovaSenhaForte123!",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verification_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password_reset_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deletion_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recovery_code",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

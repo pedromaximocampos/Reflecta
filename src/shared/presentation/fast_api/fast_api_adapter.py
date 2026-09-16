@@ -16,7 +16,12 @@ async def get_json_silent(request: FastAPIRequests):
     except Exception:
         return {}
 
-async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: ControllerHandle, body_override: Optional[Any] = None) -> Response:
+async def adapter_fastapi_request(
+    request: FastAPIRequests,
+    controller_handle: ControllerHandle,
+    body_override: Optional[Any] = None,
+    authenticated_user_id: Optional[str] = None,
+) -> Response:
     try:
         if body_override is not None:
             body = body_override
@@ -38,6 +43,7 @@ async def adapter_fastapi_request( request: FastAPIRequests, controller_handle: 
             cookies=cookies_dict,
             refresh_token=refresh_token,
             ipv4=request.client.host if request.client else None,
+            authenticated_user_id=authenticated_user_id,
         )
 
         http_response: HttpResponse = await controller_handle(http_request)

@@ -2,6 +2,7 @@ import asyncio
 from abc import ABC
 from typing import Optional
 
+from modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
 from src.modules.internal_events.application.ports.messaging.ievent_publisher import IEventPublisher
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.infrastructure.messaging.aws_sqs.clients.sqs_clients import make_sqs_client
@@ -33,21 +34,7 @@ class BaseSQSPublisher(IEventPublisher, ABC):   # ABC a classe nao pode ser inst
         }
 
         if attributes:
-            kwargs["MessageAttributes"] = self._to_sqs_attributes(attributes)
+            kwargs["MessageAttributes"] = AwsPubHelper.to_attributes(attributes)
 
         self.__client.send_message(**kwargs)
-
-    def _to_sqs_attributes(self, attrs: dict) -> dict:
-        out = {}
-        for k, v in attrs.items():
-            if v is None:
-                continue
-            if isinstance(v, (int, float)):
-                out[k] = {"DataType": "Number", "StringValue": str(v)}
-            else:
-                 out[k] = {"DataType": "String", "StringValue": str(v)}
-        return out
-
-    async def publish(self, event: OutboxEvent) -> None:
-        await asyncio.to_thread(self.sync_publish, event)
 

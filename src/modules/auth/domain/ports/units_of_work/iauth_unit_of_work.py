@@ -8,6 +8,12 @@ from src.modules.internal_events.public import IOutboxRepository
 from src.modules.auth.domain.ports.repositories.ireset_password_repository import IResetPasswordRepository
 from src.modules.auth.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
+from src.modules.auth.domain.ports.repositories.iuser_deletion_request_repository import (
+    IUserDeletionRequestRepository,
+)
+from src.modules.auth.domain.ports.repositories.iuser_recovery_request_repository import (
+    IUserRecoveryRequestRepository,
+)
 
 TAuthUow = TypeVar("TAuthUow", bound="IAuthUnitOfWork")
 
@@ -40,6 +46,10 @@ class IAuthUnitOfWork(Protocol):
     def auth_sessions_repository(self) -> IAuthSessionRepository: ...
     @property
     def user_email_verification_repository(self) -> IUserEmailVerificationRepository: ...
+    @property
+    def user_deletion_request_repository(self) -> IUserDeletionRequestRepository: ...
+    @property
+    def user_recovery_request_repository(self) -> IUserRecoveryRequestRepository: ...
     @property
     def outbox_repository(self) -> IOutboxRepository: ...
 

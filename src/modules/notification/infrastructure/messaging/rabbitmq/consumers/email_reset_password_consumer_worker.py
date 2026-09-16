@@ -1,28 +1,22 @@
-from src.modules.notification.application.ports.dto import EmailPasswordResetDTO
-from src.modules.notification.application.ports.iemail_password_reset_notifier import IEmailPasswordResetNotifier
-from src.modules.auth.public.email import Email
+from src.modules.notification.application.ports.handlers.iemail_event_handler import IEmailEventHandler
+from src.modules.notification.domain.value_objects.emails_event_types import EmailsEventType
 from src.modules.notification.infrastructure.messaging.rabbitmq.consumers.base_rabbitmq_consumer_worker import BaseRabbitMQConsumerWorker
 from src.modules.internal_events.infrastructure.messaging.rabbitmq.configs.settings import RabbitMQConsumerConfig
 
 
 class EmailPasswordResetConsumerWorker(BaseRabbitMQConsumerWorker):
+    EVENT_TYPE = EmailsEventType.EMAIL_PASSWORD_RESET_REQUESTED
 
-    def __init__(self, consumer_config: RabbitMQConsumerConfig, email_password_reset_notifier: IEmailPasswordResetNotifier):
+    def __init__(
+        self,
+        consumer_config: RabbitMQConsumerConfig,
+        email_event_handler: IEmailEventHandler,
+    ) -> None:
         super().__init__(consumer_config)
-        self.__email_password_reset_notifier = email_password_reset_notifier
+        self.__email_event_handler = email_event_handler
 
-
-    async def handle_message(self, payload: dict):
-        password_reset_dto  = self.__return_email_password_reset_dto(payload)
-
-        await self.__email_password_reset_notifier.send_email(password_reset_dto)
-
-
-    @staticmethod
-    def __return_email_password_reset_dto(payload: dict) -> EmailPasswordResetDTO:
-        return EmailPasswordResetDTO(
-            email=Email(payload.get("user_email")),
-            raw_code=payload.get("raw_code"),
-            expires_in_minutes=payload.get("expires_in"),
-            username=payload.get("username"),
-            reset_password_link=payload.get("reset_password_link"))
+    async def handle_message(self, payload: dict) -> None:
+        await self.__email_event_handler.handle(
+            event_type=self.EVENT_TYPE,
+            payload=payload,
+        )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional
+from datetime import datetime
+from typing import FrozenSet, Optional
 from sqlalchemy import select, update, Row
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.modules.auth.domain.entities.user import User, AuthCredentials
 from src.modules.auth.domain.exceptions.user_custom_exceptions import (
     EmailAlreadyExistsError,
+    UserNotFoundError,
     UsernameAlreadyExistsError,
 )
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
@@ -27,7 +29,10 @@ class UserRepository(IUserRepository):
         query = (
             select(UserModel, AuthCredentialsModel)
             .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-            .where(UserModel.id == user_id.value)
+            .where(
+                UserModel.id == user_id.value,
+                UserModel.deleted_at.is_(None),
+            )
         )
 
         row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (await self.__session.execute(query)).first()
@@ -43,7 +48,10 @@ class UserRepository(IUserRepository):
         query = (
             select(UserModel, AuthCredentialsModel)
             .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
-            .where(UserModel.email == email.value)
+            .where(
+                UserModel.email == email.value,
+                UserModel.deleted_at.is_(None),
+            )
         )
 
         row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (await self.__session.execute(query)).first()
@@ -55,10 +63,47 @@ class UserRepository(IUserRepository):
             user_model,
         )
 
+    async def find_deleted_by_email(self, email: Email) -> Optional[User]:
+        query = (
+            select(UserModel, AuthCredentialsModel)
+            .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
+            .where(
+                UserModel.email == email.value,
+                UserModel.deleted_at.is_not(None),
+            )
+        )
+        row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (
+            await self.__session.execute(query)
+        ).first()
+        if not row:
+            return None
+        user_model, _ = row
+        return self.__user_mapper.to_entity(user_model)
+
+    async def find_deleted_by_id(self, user_id: UserId) -> Optional[User]:
+        query = (
+            select(UserModel, AuthCredentialsModel)
+            .join(AuthCredentialsModel, UserModel.id == AuthCredentialsModel.user_id)
+            .where(
+                UserModel.id == user_id.value,
+                UserModel.deleted_at.is_not(None),
+            )
+        )
+        row: Optional[Row[tuple[UserModel, AuthCredentialsModel]]] = (
+            await self.__session.execute(query)
+        ).first()
+        if not row:
+            return None
+        user_model, _ = row
+        return self.__user_mapper.to_entity(user_model)
+
     async def update(self, user: User) -> None:
         query = (
             update(UserModel)
-            .where(UserModel.id == user.id.value)
+            .where(
+                UserModel.id == user.id.value,
+                UserModel.deleted_at.is_(None),
+            )
             .values(
                 username=user.username,
                 email=user.email.value,
@@ -67,16 +112,48 @@ class UserRepository(IUserRepository):
                 date_of_birth=user.date_of_birth,
                 avatar_url=user.avatar_url,
                 last_login_at=user.last_login_at,
+                role=user.role,
+                deleted_at=user.deleted_at,
             )
         )
         await self.__session.execute(query)
+
+    async def update_user_info(
+        self,
+        user: User,
+        fields_to_update: FrozenSet[str],
+    ) -> None:
+        allowed_values = {
+            "name": user.name,
+            "surname": user.surname,
+            "date_of_birth": user.date_of_birth,
+            "avatar_url": user.avatar_url,
+        }
+        if not fields_to_update or not fields_to_update.issubset(allowed_values):
+            raise ValueError("Invalid fields for user information update.")
+
+        query = (
+            update(UserModel)
+            .where(
+                UserModel.id == user.id.value,
+                UserModel.deleted_at.is_(None),
+            )
+            .values(**{field: allowed_values[field] for field in fields_to_update})
+            .returning(UserModel.id)
+        )
+        result = await self.__session.execute(query)
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError()
 
     async def update_auth_credentials(self, user: User) -> None:
         creds: AuthCredentials = user.auth_credentials
 
         auth_query = (
             update(AuthCredentialsModel)
-            .where(AuthCredentialsModel.user_id == creds.user_id.value)
+            .where(
+                AuthCredentialsModel.user_id == creds.user_id.value,
+                AuthCredentialsModel.user.has(UserModel.deleted_at.is_(None)),
+            )
             .values(
                 password_hash=creds.password.hash,
                 password_algorithm=creds.password.algorithm,
@@ -89,7 +166,10 @@ class UserRepository(IUserRepository):
     async def update_last_login_at(self, user: User) -> None:
         user_query = (
             update(UserModel)
-            .where(UserModel.id == user.id.value)
+            .where(
+                UserModel.id == user.id.value,
+                UserModel.deleted_at.is_(None),
+            )
             .values(last_login_at=user.last_login_at)
         )
         await self.__session.execute(user_query)
@@ -125,7 +205,10 @@ class UserRepository(IUserRepository):
         user_model = self.__user_mapper.to_model(user)
         query = (
             update(UserModel)
-            .where(UserModel.id == user.id.value)
+            .where(
+                UserModel.id == user.id.value,
+                UserModel.deleted_at.is_(None),
+            )
             .values(
                 is_email_verified=True,
                 email_verified_at=user_model.email_verified_at,
@@ -137,3 +220,31 @@ class UserRepository(IUserRepository):
         updated_user = result.scalar_one()  # ou scalar_one_or_none()
 
         return updated_user
+
+    async def mark_as_deleted(self, user_id: UserId, deleted_at: datetime) -> None:
+        query = (
+            update(UserModel)
+            .where(
+                UserModel.id == user_id.value,
+                UserModel.deleted_at.is_(None),
+            )
+            .values(deleted_at=deleted_at)
+            .returning(UserModel.id)
+        )
+        result = await self.__session.execute(query)
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError()
+
+    async def mark_as_recovered(self, user_id: UserId) -> None:
+        query = (
+            update(UserModel)
+            .where(
+                UserModel.id == user_id.value,
+                UserModel.deleted_at.is_not(None),
+            )
+            .values(deleted_at=None)
+            .returning(UserModel.id)
+        )
+        result = await self.__session.execute(query)
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError()

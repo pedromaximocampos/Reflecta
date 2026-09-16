@@ -14,6 +14,7 @@ class HttpRequest:
     path_params: Dict[str, Any] = field(default_factory=dict)
     refresh_token: Optional[str] = None
     cookies: Dict[str, Any] = field(default_factory=dict)
+    authenticated_user_id: Optional[str] = None
 
     def __repr__(self) -> str:
         return (

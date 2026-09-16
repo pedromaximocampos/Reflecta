@@ -17,3 +17,7 @@ def get_smtp_provider() -> SMTPSettings:
 
     return smtp_settings
 
+
+def get_frontend_base_url() -> str:
+    return _settings.FRONT_END_DOMAIN
+

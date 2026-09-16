@@ -1,6 +1,6 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria realizada em 2026-08-29, com atualização focal em 2026-09-14 após a implementação dos fluxos de exclusão lógica e recuperação de conta.
+> Auditoria realizada em 2026-08-29, com atualização focal em 2026-09-16 após a criação do esqueleto físico do Catalog / Knowledge Module.
 >
 > O arquivo solicitado como `IMPLEMENTATION_STATUS.md` existe neste repositório com o nome
 > `reflecta_IMPLEMENTATION_STATUS.md`. Os arquivos operacionais e de contexto seguem a mesma
@@ -25,7 +25,7 @@ Verificações realizadas:
 - leitura do código, configurações, dependências, migrations, testes, Docker/Compose, documentação,
   seis diagramas `.puml`, sete diagramas `.mmd`, glossário e as 116 páginas do TCC;
 - parsing estático dos arquivos Python atuais: **sem erro de sintaxe**;
-- inspeção do grafo de imports: **um ciclo interno em Auth** e nenhum ciclo entre os quatro módulos físicos;
+- inspeção do grafo de imports: **um ciclo interno em Auth** e nenhum ciclo entre os cinco módulos físicos;
 - comparação AST de 215 arquivos Python rastreados afetados pela reorganização: **nenhuma mudança de
   corpo executável além de imports**;
 - inspeção Alembic: histórico linear e uma única head `9c4f12a7e6d3`;
@@ -51,7 +51,7 @@ Verificações realizadas:
 | Journal Module | PARTIAL | Entidade e caso de uso embrionário; não há persistência, endpoint nem processamento. |
 | AI Processing | NOT_STARTED | Nenhum port, provider, schema, worker ou persistência de IA. |
 | Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
-| Catalog / Knowledge | NOT_STARTED | Nenhuma entidade, adapter Neo4j, caso de uso ou API. |
+| Catalog / Knowledge | PARTIAL | A fronteira física e os pacotes das camadas existem em `src/modules/catalog/`; nenhuma entidade, adapter Neo4j, caso de uso ou API foi implementado. |
 | Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
 | Notification | PARTIAL | Handler, DTO e adapters SMTP/SES atendem verificação, reset, exclusão e recuperação; o consumer Lambda/SQS existe, mas idempotência persistente ainda não foi implementada. |
 | Internal Events / Outbox | PARTIAL | Dispatcher SNS está conectado ao Outbox e ao Compose; faltam idempotência, recuperação de eventos presos em `PROCESSING` e alinhamento dos consumers locais. |
@@ -97,13 +97,13 @@ Não existe `.env.example` ou equivalente. Há um `.env.dev` local ignorado pelo
 | Capacidade | Status | Evidência | Diagnóstico |
 |---|---|---|---|
 | Um único backend implantável | IMPLEMENTED | `Dockerfile`, `src/main/server/fast_api/run.py` | É um monólito no sentido de um processo/API principal. |
-| Modularidade por bounded context | PARTIAL | `src/modules/`, `src/shared/`, `src/main/` | Quatro módulos possuem fronteira física; Shared Kernel técnico e composition root têm dependências direcionadas. |
-| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth possui as quatro camadas; Journal só possui Domain/Application porque as demais ainda não foram implementadas. |
+| Modularidade por bounded context | PARTIAL | `src/modules/`, `src/shared/`, `src/main/` | Cinco módulos possuem fronteira física; Catalog ainda é somente um esqueleto sem comportamento. Shared Kernel técnico e composition root têm dependências direcionadas. |
+| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/catalog/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth possui as quatro camadas; Catalog declara as camadas sem implementá-las e Journal só possui Domain/Application. |
 | Clean Architecture | PARTIAL | ports/use cases em `src/modules/*/application/` e `domain/`; adapters em `infrastructure/` | Há inversão em vários pontos, mas Domain ainda depende de configuração e semântica HTTP compartilhada. |
 | DDD | PARTIAL | entidades/VOs/eventos em `src/modules/auth/domain/` e `src/modules/internal_events/domain/` | Bounded modules físicos foram iniciados, mas agregados, contratos e isolamento de persistência ainda são incompletos. |
 | Composition root / DI | PARTIAL | `src/modules/auth/bootstrap/`, `src/modules/internal_events/bootstrap/`, `src/modules/notification/bootstrap/` | Composição é manual e ainda cria instâncias globais reutilizadas entre requests. |
 | API/BFF | PARTIAL | `src/modules/auth/presentation/routes.py`, `src/main/server/fast_api/server.py` | Apenas Auth é exposto; não existe frontend nem BFF para os outros módulos. |
-| Dependências acíclicas | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/` | Não há ciclo entre os quatro módulos físicos; persiste um ciclo interno nos models de Auth. |
+| Dependências acíclicas | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/`, `src/modules/catalog/` | Não há ciclo entre os cinco módulos físicos; Catalog ainda não importa outros módulos e persiste um ciclo interno nos models de Auth. |
 
 Dependências entre módulos observadas pelo AST após a separação física:
 
@@ -112,8 +112,9 @@ Dependências entre módulos observadas pelo AST após a separação física:
 - `auth -> internal_events.public` e, na composição transacional existente, implementação de Outbox;
 - `internal_events` não importa Auth nem Notification.
 
-Não há ciclo entre módulos. `src/shared/` não importa módulos nem `main`, e os módulos não importam
-`main`. Ainda existe acoplamento do Domain de Auth com configuração compartilhada.
+Não há ciclo entre módulos. O novo esqueleto de Catalog ainda não possui dependências. `src/shared/` não
+importa módulos nem `main`, e os módulos não importam `main`. Ainda existe acoplamento do Domain de Auth
+com configuração compartilhada.
 
 ### 4.2 Violações arquiteturais comprovadas
 
@@ -206,8 +207,9 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 
 | Capacidade | Status | Evidência |
 |---|---|---|
+| Fronteira física do módulo | PARTIAL | `src/modules/catalog/domain/`, `application/`, `infrastructure/`, `presentation/`, `bootstrap/`, `public/` |
 | Neo4j adapter/config | NOT_STARTED | `pyproject.toml`, Compose e `src/` |
-| Theme / Author / Work / Passage | NOT_STARTED | `src/` inspecionado |
+| Theme / Author / Work / Passage | NOT_STARTED | `src/modules/catalog/` contém somente pacotes, sem classes de domínio |
 | Relações RELATES_TO / BELONGS_TO / WRITTEN_BY | NOT_STARTED | `src/` inspecionado |
 | CRUD e revisão administrativa | NOT_STARTED | rotas e `src/` inspecionados |
 | PDF/capa S3 e ingestão | NOT_STARTED | `src/` inspecionado |

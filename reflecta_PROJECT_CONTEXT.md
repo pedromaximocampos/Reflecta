@@ -479,6 +479,14 @@ src/
       domain/
       application/
 
+    catalog/
+      domain/
+      application/
+      infrastructure/
+      presentation/
+      bootstrap/
+      public/
+
     auth/
       domain/
       application/
@@ -517,6 +525,10 @@ src/
 - `auth.public` contém somente contratos que outros módulos podem referenciar;
 - `journal` contém o domínio e o caso de uso embrionário já existentes; persistência, presentation e
   bootstrap só devem ser criados quando houver implementação real nessas camadas;
+- `catalog` possui somente o esqueleto das camadas e da persistência Neo4j; entidades, ports,
+  casos de uso, adapters, composição e API ainda não estão implementados;
+- `catalog.public` será a fronteira de consultas/contratos consumidos por outros módulos e não deve
+  expor driver, records ou repositories Neo4j;
 - `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;
 - `notification` reage a eventos e contém adapters/consumers de entrega de e-mail;
 - `shared` contém somente configuração, contratos e adapters técnicos independentes de bounded context;

@@ -38,7 +38,7 @@ from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_re
     UserRecoveryRequestRepository,
 )
 
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from ..models import (
     AuthSessionsModel,
     UserDeletionRequestModel,

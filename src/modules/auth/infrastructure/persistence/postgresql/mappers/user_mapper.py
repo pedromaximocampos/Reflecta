@@ -1,7 +1,7 @@
 from src.modules.auth.domain.entities.user import User, AuthCredentials
 from src.modules.auth.public.email import Email
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.users_model import UserModel
 from src.modules.auth.infrastructure.persistence.postgresql.models.auth_credentials_model import AuthCredentialsModel
 

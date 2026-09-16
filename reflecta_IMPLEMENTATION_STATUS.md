@@ -38,6 +38,8 @@ Verificações realizadas:
   **NOT_VERIFIED** porque o Docker/PostgreSQL local estava desligado na atualização de 2026-09-14;
 - publicação RabbitMQ, consumo e execução de handler com notifier falso em topologia temporária: **sucesso**; a topologia de
   teste foi removida após a verificação;
+- container Neo4j 5.26 Community iniciado pelo Compose, portas HTTP/Bolt publicadas e consulta
+  `RETURN 1` executada via `cypher-shell`: **sucesso**;
 - banco real, API em container e entrega SMTP externa continuam não verificados.
 
 ## 2. Resumo executivo
@@ -51,13 +53,13 @@ Verificações realizadas:
 | Journal Module | PARTIAL | Entidade e caso de uso embrionário; não há persistência, endpoint nem processamento. |
 | AI Processing | NOT_STARTED | Nenhum port, provider, schema, worker ou persistência de IA. |
 | Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
-| Catalog / Knowledge | PARTIAL | A fronteira física e os pacotes das camadas existem em `src/modules/catalog/`; nenhuma entidade, adapter Neo4j, caso de uso ou API foi implementado. |
+| Catalog / Knowledge | PARTIAL | A fronteira física, DTOs e código preliminar de criação de temas existem em `src/modules/catalog/`; ainda não há entidade `Theme`, repository Neo4j funcional, composição ou API verificada. |
 | Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
 | Notification | PARTIAL | Handler, DTO e adapters SMTP/SES atendem verificação, reset, exclusão e recuperação; o consumer Lambda/SQS existe, mas idempotência persistente ainda não foi implementada. |
 | Internal Events / Outbox | PARTIAL | Dispatcher SNS está conectado ao Outbox e ao Compose; faltam idempotência, recuperação de eventos presos em `PROCESSING` e alinhamento dos consumers locais. |
 | PostgreSQL | PARTIAL | Oito tabelas Auth/Outbox no schema padrão; a nova migration de recuperação ainda não foi executada contra um banco real nesta atualização. |
 | pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
-| Neo4j | NOT_STARTED | Ausente das dependências, Compose e código. |
+| Neo4j | PARTIAL | O serviço local `neo4j_dev` está no Compose e teve conectividade Cypher verificada; driver Python, constraints, repositories e dados do catálogo ainda não existem. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
 | Testes automatizados | PARTIAL | 87 testes coletam: 80 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
 
@@ -79,11 +81,11 @@ Verificações realizadas:
 | SMTP / aiosmtplib | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
 | SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py` | Adapter SESv2 e composição Lambda existem; falhas registram código, status HTTP e request ID sem payload/PII. Não há infraestrutura como código ou teste externo automatizado. |
 | S3 | NOT_STARTED | Repositório inteiro inspecionado | `boto3` é usado apenas para SQS. |
-| Neo4j | NOT_STARTED | `pyproject.toml`, Compose e `src/` | Sem driver, serviço ou adapter. |
+| Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Neo4j 5.26 Community local está configurado e respondeu via Bolt; pacote Python, settings, constraints e adapter ainda não existem. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
 | Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 87 testes coletam; 80 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
-| Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL e RabbitMQ locais verificados; API e workers completos ainda não executados juntos. |
+| Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL, RabbitMQ e Neo4j locais foram iniciados/verificados em momentos distintos; API e workers completos ainda não foram executados juntos. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
 | Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria, `src/modules/notification/infrastructure/email/ses/ses_notifier.py` | Logging básico e diagnóstico seguro de falhas SES; sem correlação completa, métricas, tracing, alertas ou health/readiness. |
 
@@ -208,10 +210,12 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 | Capacidade | Status | Evidência |
 |---|---|---|
 | Fronteira física do módulo | PARTIAL | `src/modules/catalog/domain/`, `application/`, `infrastructure/`, `presentation/`, `bootstrap/`, `public/` |
-| Neo4j adapter/config | NOT_STARTED | `pyproject.toml`, Compose e `src/` |
-| Theme / Author / Work / Passage | NOT_STARTED | `src/modules/catalog/` contém somente pacotes, sem classes de domínio |
+| Neo4j runtime local | IMPLEMENTED | `docker-compose.infra.yml`; container `reflecta-neo4j-dev` respondeu a `RETURN 1` via Bolt |
+| Neo4j driver/settings/adapter | NOT_STARTED | `pyproject.toml`, `src/shared/config/` e `src/modules/catalog/infrastructure/persistence/neo4j/` |
+| Theme | PARTIAL | `src/modules/catalog/application/use_cases/create_themes/`, `presentation/`, `public/theme_id.py` possuem código preliminar; entidade, repository e fluxo executável ainda não existem |
+| Author / Work / Passage | NOT_STARTED | `src/modules/catalog/` inspecionado; somente diretórios/arquivos vazios fora do fluxo preliminar de Theme |
 | Relações RELATES_TO / BELONGS_TO / WRITTEN_BY | NOT_STARTED | `src/` inspecionado |
-| CRUD e revisão administrativa | NOT_STARTED | rotas e `src/` inspecionados |
+| CRUD e revisão administrativa | PARTIAL | há início não verificado de criação em lote de Theme; listar, atualizar, excluir e revisão não estão implementados |
 | PDF/capa S3 e ingestão | NOT_STARTED | `src/` inspecionado |
 | Estados de processamento de Work | BLOCKED | documentação contradiz o próprio enum `CatalogStatus` |
 
@@ -284,7 +288,7 @@ gerar contrato OpenAPI. `POST /auth/request-delete` e `PATCH /auth/user-info` an
 | `sharing_schema` | NOT_STARTED | models/migrations | Ausente. |
 | `event_schema` | NOT_STARTED | models/migrations | Outbox usa schema padrão. |
 | Extensão/colunas/índices pgvector | NOT_STARTED | migrations/models | Nenhum `CREATE EXTENSION`, `VECTOR`, dimensão ou índice. |
-| Neo4j | NOT_STARTED | projeto inteiro | Ausente. |
+| Neo4j | PARTIAL | `docker-compose.infra.yml` | Serviço local e volumes configurados; nenhuma constraint, dado, migration Cypher ou integração Python. |
 | Relação PostgreSQL–Neo4j | NOT_STARTED | projeto inteiro | Ausente. |
 
 Os identificadores persistidos são strings ULID de 26 caracteres, não UUID. O downgrade da migration
@@ -343,7 +347,7 @@ Esses consumers locais não recebem mensagens publicadas no SNS; o caminho AWS d
 | NotificationLog | NOT_STARTED | models/migrations/repositories | Ausente. |
 | SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py`, testes SES | Adapter e composição Lambda existem e têm testes unitários; envio externo não foi revalidado nesta atualização. |
 | S3 | NOT_STARTED | projeto inteiro | Ausente. |
-| Neo4j | NOT_STARTED | projeto inteiro | Ausente. |
+| Neo4j | PARTIAL | `docker-compose.infra.yml` | Infraestrutura local verificada; integração do Catalog ainda ausente. |
 | Provedor de IA | NOT_STARTED | projeto inteiro | Ausente. |
 | RabbitMQ local | IMPLEMENTED | Compose/config/topologia | Container, conexão, declaração de topologia, publicação e retirada de mensagem verificados localmente. |
 | SQS externo | NOT_VERIFIED | config/adapter | Nenhuma credencial/queue real foi usada. |
@@ -383,7 +387,7 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 | Frontend | NOT_STARTED | repositório | Frontend ausente. |
 | E2E | NOT_STARTED | `tests/` inspecionado | Nenhum teste E2E; o antigo diretório vazio foi removido. |
 | API import/OpenAPI | IMPLEMENTED | `src/main/server/fast_api/run.py` | Importação e enumeração de rotas tiveram sucesso com env temporário. |
-| Docker/PostgreSQL/brokers | PARTIAL | Compose e smoke test local | Daemon e containers PostgreSQL/RabbitMQ ativos; RabbitMQ verificado, banco e stack completa não. |
+| Docker/PostgreSQL/brokers | PARTIAL | Compose e smoke tests locais | Neo4j respondeu via Bolt e RabbitMQ foi verificado anteriormente; PostgreSQL e a stack completa não foram revalidados nesta atualização. |
 
 O pacote de login agora exporta `LoginUseCaseImpl` sem o ciclo Application anterior. Fixtures e doubles
 continuam refletindo assinaturas antigas: ausência de UoW/Outbox, `AuthSessionResultDTO` sem `session_id`
@@ -415,12 +419,13 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
     `SENT`, não tem aggregate nem Processed Events.
 11. **Notification:** planejado SES e log de notificação; código usa SMTP Gmail e não persiste tentativas.
 12. **pgvector:** planejado para embeddings; há apenas dependência/imagem, sem extensão ou dados.
-13. **Neo4j, S3 e IA:** aparecem na arquitetura planejada, mas estão ausentes do código/infra real.
+13. **Neo4j, S3 e IA:** Neo4j agora possui runtime local no Compose, mas ainda não possui driver,
+    constraints ou adapter; S3 e IA continuam ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
 15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 80 testes passam e sete
     testes antigos de Login/Logoff falham no setup.
-16. **Deploy/workers:** o Compose agora declara dispatcher RabbitMQ e dois workers Notification; depende
-    de `.env.dev` ausente, e o Neo4j planejado continua fora da infraestrutura.
+16. **Deploy/workers:** o Compose declara dispatcher RabbitMQ e dois workers Notification e depende
+    de `.env.dev` ausente; Neo4j existe somente como infraestrutura local, sem integração da aplicação.
 17. **OpenAPI/Auth:** documentação sugere contratos HTTP usuais; cinco rotas Auth não expõem
     body/parâmetros/security na spec, e login usa Basic Auth sem registrá-lo.
 

@@ -514,7 +514,9 @@ src/
       errors/
       ports/
     infrastructure/
-      persistence/postgresql/
+      persistence/
+        mappers/
+        postgresql/
       system/
     presentation/
 
@@ -532,6 +534,8 @@ src/
 - `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;
 - `notification` reage a eventos e contém adapters/consumers de entrega de e-mail;
 - `shared` contém somente configuração, contratos e adapters técnicos independentes de bounded context;
+- `shared.infrastructure.persistence.mappers` contém apenas o contrato genérico de mapeamento usado
+  por adapters de persistência; mappers concretos continuam pertencendo ao módulo e à tecnologia correspondente;
 - `shared` não pode importar `modules` nem `main`, e módulos não podem importar `main`;
 - `main` continua responsável pela aplicação FastAPI e pela composição final;
 - migrations continuam centralizadas em `alembic/`, registrando explicitamente os models dos módulos.

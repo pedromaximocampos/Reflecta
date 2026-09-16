@@ -1,6 +1,6 @@
 from src.modules.auth.domain.entities.reset_password import ResetPassword
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.reset_password_model import ResetPasswordModel
 
 

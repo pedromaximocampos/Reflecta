@@ -1,6 +1,6 @@
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.domain.value_objects.event_type import EventType
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel
 
 

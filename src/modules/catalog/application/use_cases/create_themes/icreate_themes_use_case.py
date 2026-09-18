@@ -1,6 +1,9 @@
 from typing import Protocol
 
-from modules.catalog.application.use_cases.create_themes.dto import CreateThemesInputDTO, CreateThemesOutputDTO
+from src.modules.catalog.application.use_cases.create_themes.dto import (
+    CreateThemesInputDTO,
+    CreateThemesOutputDTO,
+)
 
 
 class ICreateThemesUseCase(Protocol):

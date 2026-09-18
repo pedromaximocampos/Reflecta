@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.modules.auth.presentation.routes import auth_router
+from src.modules.catalog.presentation.routes import catalog_router
 from src.shared.config.constants import API_VERSION
 from src.main.server.fast_api.fast_api_exception_handler import add_exception_handlers
 
@@ -25,5 +26,6 @@ def create_fast_api_app() -> FastAPI:
     add_exception_handlers(app)
 
     app.include_router(auth_router)
+    app.include_router(catalog_router)
 
     return app

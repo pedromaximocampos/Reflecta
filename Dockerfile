@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Criando o diretorio de trabalho no caso app (convensao)
 WORKDIR /app

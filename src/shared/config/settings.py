@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     ALEMBIC_CONNECTION_STRING: str
     ALEMBIC_MIGRATE: bool = False
 
+    # Neo4j
+    NEO4J_URI: str
+    NEO4J_DATABASE: str
+    NEO4J_USER: str
+    NEO4J_PASSWORD: str
+    NEO4J_ENCRYPTED: bool = True
+
     # SMTP
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

@@ -1,6 +1,6 @@
 from src.modules.auth.application.services.http_request_auth.iauthenticate_request_service import IAuthenticateRequestService
-from src.modules.auth.application.services.http_request_auth.dto import AuthenticatedUserDTO
 from src.modules.auth.application.ports.token.itoken_service import ITokenService
+from src.modules.auth.public import AuthenticatedPrincipal
 from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
 from src.modules.auth.public.user_id import UserId
@@ -14,7 +14,7 @@ class AuthenticateRequestServiceImpl(IAuthenticateRequestService):
         self.__auth_unit_of_work = auth_unit_of_work
 
 
-    async def authenticate_request(self, access_token: str) -> AuthenticatedUserDTO:
+    async def authenticate_request(self, access_token: str) -> AuthenticatedPrincipal:
         """Autentica a rota com base no token fornecido."""
         try:
             payload = self.__token_service.validate_token(access_token)
@@ -25,7 +25,10 @@ class AuthenticateRequestServiceImpl(IAuthenticateRequestService):
                 if not user:
                     raise Exception("User not found")
 
-                return AuthenticatedUserDTO(user.id)
+                return AuthenticatedPrincipal(
+                    user_id=user.id,
+                    role=user.role,
+                )
 
         except Exception:
             raise AuthError("Credenciais invalidas")

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlalchemy import select, update, or_
 
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
@@ -8,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.domain.ports.system.iclock import IClock
 from src.modules.internal_events.domain.value_objects.outbox_status import OutboxStatus
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel
 
 

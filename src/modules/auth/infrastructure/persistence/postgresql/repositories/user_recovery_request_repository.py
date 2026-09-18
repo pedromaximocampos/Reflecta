@@ -13,7 +13,7 @@ from src.modules.auth.infrastructure.persistence.postgresql.models.user_recovery
     UserRecoveryRequestModel,
 )
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 
 
 class UserRecoveryRequestRepository(IUserRecoveryRequestRepository):

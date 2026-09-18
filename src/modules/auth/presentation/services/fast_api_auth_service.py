@@ -1,9 +1,8 @@
 from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 
-from src.modules.auth.domain.value_objects import UserRole
+from src.modules.auth.public import AuthenticatedPrincipal, UserRole
 from src.modules.auth.application.services.http_request_auth.iauthenticate_request_service import IAuthenticateRequestService
-from src.modules.auth.application.services.http_request_auth.dto import AuthenticatedUserDTO
 
 class FastAPIAuthService:
 
@@ -11,15 +10,15 @@ class FastAPIAuthService:
     def __init__(self, authenticate_request_service: IAuthenticateRequestService):
         self._authenticate_request_service = authenticate_request_service
 
-    async def authenticate_request(self, credentials: HTTPAuthorizationCredentials) -> AuthenticatedUserDTO:
+    async def authenticate_request(self, credentials: HTTPAuthorizationCredentials) -> AuthenticatedPrincipal:
 
         """Autentica a rota com base no token fornecido."""
         try:
             access_token = credentials.credentials
 
-            user: AuthenticatedUserDTO = await self._authenticate_request_service.authenticate_request(access_token)
+            principal = await self._authenticate_request_service.authenticate_request(access_token)
 
-            return user
+            return principal
 
         except Exception:
             raise HTTPException(
@@ -29,14 +28,18 @@ class FastAPIAuthService:
 
 
 
-    async def authenticate_user_role(self, credentials: HTTPAuthorizationCredentials, required_role: UserRole) -> AuthenticatedUserDTO:
+    async def authenticate_user_role(
+        self,
+        credentials: HTTPAuthorizationCredentials,
+        required_role: UserRole,
+    ) -> AuthenticatedPrincipal:
         """Autentica a rota com base no token fornecido e verifica se o usuário possui a role necessária."""
-        user = await self.authenticate_request(credentials)
+        principal = await self.authenticate_request(credentials)
 
-        if required_role not in user.roles:
+        if principal.role is not required_role:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User does not have the required role",
             )
 
-        return user
+        return principal

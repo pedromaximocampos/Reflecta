@@ -7,7 +7,7 @@ from src.modules.internal_events.domain.ports.repositories.ioutbox_repository im
 from src.shared.domain.ports.system.iclock import IClock
 from src.modules.internal_events.domain.ports.units_of_work.ioutbox_unit_of_work import IOutboxUnitOfWork
 from src.shared.infrastructure.persistence.postgresql.connection import DBConnectionHandler
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.internal_events.infrastructure.persistence.postgresql.models import OutboxModel
 from src.modules.internal_events.infrastructure.persistence.postgresql.repositories.outbox_repository import OutboxRepository
 from src.shared.infrastructure.persistence.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork

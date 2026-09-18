@@ -233,7 +233,7 @@ Regras vigentes:
 - a autorização deve consultar o papel do usuário, e não confiar em valor enviado pelo cliente;
 - uma tabela de permissões granular não faz parte deste incremento e só deve ser introduzida se os requisitos superarem os dois papéis atuais.
 
-A persistência do papel existe como fundação. A propagação para o contexto autenticado/JWT e os guards dos casos de uso administrativos ainda precisam ser implementados e testados.
+A autenticação carrega o papel persistido no Auth a cada request e o propaga por meio de um `AuthenticatedPrincipal`; a camada HTTP disponibiliza um guard `require_role`. O guard já protege o CRUD administrativo de temas; ainda faltam aplicá-lo às futuras rotas administrativas, distinguir access/refresh token e implementar o bootstrap e a alteração administrativa de papel.
 
 ## 4.4 Sistema de IA
 
@@ -479,6 +479,14 @@ src/
       domain/
       application/
 
+    catalog/
+      domain/
+      application/
+      infrastructure/
+      presentation/
+      bootstrap/
+      public/
+
     auth/
       domain/
       application/
@@ -506,7 +514,9 @@ src/
       errors/
       ports/
     infrastructure/
-      persistence/postgresql/
+      persistence/
+        mappers/
+        postgresql/
       system/
     presentation/
 
@@ -517,9 +527,16 @@ src/
 - `auth.public` contém somente contratos que outros módulos podem referenciar;
 - `journal` contém o domínio e o caso de uso embrionário já existentes; persistência, presentation e
   bootstrap só devem ser criados quando houver implementação real nessas camadas;
+- `catalog` possui a primeira fatia vertical de CRUD administrativo de temas, com entidade, ports,
+  casos de uso, UoW/repository Neo4j, composição e rotas protegidas; as demais entidades do catálogo
+  ainda não estão implementadas. O slug é criado a partir do label e permanece estável nas atualizações;
+- `catalog.public` será a fronteira de consultas/contratos consumidos por outros módulos e não deve
+  expor driver, records ou repositories Neo4j;
 - `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;
 - `notification` reage a eventos e contém adapters/consumers de entrega de e-mail;
 - `shared` contém somente configuração, contratos e adapters técnicos independentes de bounded context;
+- `shared.infrastructure.persistence.mappers` contém apenas o contrato genérico de mapeamento usado
+  por adapters de persistência; mappers concretos continuam pertencendo ao módulo e à tecnologia correspondente;
 - `shared` não pode importar `modules` nem `main`, e módulos não podem importar `main`;
 - `main` continua responsável pela aplicação FastAPI e pela composição final;
 - migrations continuam centralizadas em `alembic/`, registrando explicitamente os models dos módulos.
@@ -1640,7 +1657,7 @@ Regra temporária:
 
 A representação do MVP foi decidida: `UserRole` (`USER`/`ADMIN`) no agregado e na tabela `users`.
 
-Permanece pendente implementar a autorização efetiva nas fronteiras da aplicação, definir se o papel será incluído no access token ou carregado do Auth a cada request e cobrir acesso autorizado/não autorizado por testes.
+O papel é carregado do Auth a cada request e propagado no `AuthenticatedPrincipal`, sem confiar em role enviada pelo cliente ou gravada no JWT. O guard HTTP `require_role` possui cobertura unitária no serviço que diferencia `USER` e `ADMIN` e protege a criação administrativa de temas; permanecem pendentes testes HTTP de acesso permitido/negado, sua aplicação nas demais rotas administrativas e o fluxo seguro de bootstrap/promoção/rebaixamento de administradores.
 
 ## 17.3 ConsentRepository sem entidade correspondente
 

@@ -1,22 +1,30 @@
+from collections.abc import Awaitable, Callable
+
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.modules.auth.domain.value_objects import UserRole
-from src.modules.auth.application.services.http_request_auth.dto import AuthenticatedUserDTO
+from src.modules.auth.public import AuthenticatedPrincipal, UserRole
 from src.modules.auth.bootstrap.fast_api_services import get_fast_api_auth_service
-
-_FAST_API_AUTH_SERVICE = get_fast_api_auth_service()
-
-
+from src.modules.auth.presentation.services.fast_api_auth_service import FastAPIAuthService
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-    ) -> AuthenticatedUserDTO:
-    return await _FAST_API_AUTH_SERVICE.authenticate_request(credentials)
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    auth_service: FastAPIAuthService = Depends(get_fast_api_auth_service),
+) -> AuthenticatedPrincipal:
+    return await auth_service.authenticate_request(credentials)
 
-async def get_current_user_and_check_role(
+
+def require_role(
     required_role: UserRole,
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-) -> AuthenticatedUserDTO:
-    return await _FAST_API_AUTH_SERVICE.authenticate_user_role(credentials, required_role)
+) -> Callable[..., Awaitable[AuthenticatedPrincipal]]:
+    async def dependency(
+        credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+        auth_service: FastAPIAuthService = Depends(get_fast_api_auth_service),
+    ) -> AuthenticatedPrincipal:
+        return await auth_service.authenticate_user_role(
+            credentials,
+            required_role,
+        )
+
+    return dependency

@@ -5,11 +5,10 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models import UserEmailVerificationModel
 from src.modules.auth.domain.entities.email_verification import EmailVerification
 from src.modules.auth.domain.ports.repositories.iuser_email_verification_repository import IUserEmailVerificationRepository
-from src.modules.auth.infrastructure.persistence.postgresql.mappers.email_verification_mapper import EmailVerificationMapper
 
 
 class UserEmailVerificationRepository(IUserEmailVerificationRepository):

@@ -11,7 +11,7 @@ from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_re
 from src.modules.auth.domain.value_objects.user_role import UserRole
 from src.modules.auth.public.email import Email
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from tests.support.builders.user_builder import UserBuilder
 
 

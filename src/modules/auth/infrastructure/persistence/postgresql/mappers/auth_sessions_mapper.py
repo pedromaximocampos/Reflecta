@@ -1,7 +1,7 @@
 from src.modules.auth.domain.entities.auth_session import AuthSession
 from src.modules.auth.domain.value_objects.token_jti import TokenJti
 from src.modules.auth.public.user_id import UserId
-from src.shared.infrastructure.persistence.postgresql.mappers.interface.imapper import IMapper
+from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models.auth_sessions_model import AuthSessionsModel
 
 class AuthSessionsMapper(IMapper[AuthSessionsModel, AuthSession]):

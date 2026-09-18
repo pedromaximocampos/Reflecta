@@ -41,3 +41,9 @@ class CreateThemesResponseValidator(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     themes: list[CreatedThemeValidator] = Field(..., min_length=1)
+
+
+class ThemesResponseValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    themes: list[CreatedThemeValidator]

@@ -51,10 +51,13 @@ async def adapter_fastapi_request(
     except Exception as ex:
         http_response = ExceptionHandler.handle_exception(ex)
 
-    response = JSONResponse(
-        status_code=http_response.status_code,
-        content=http_response.body,
-    )
+    if http_response.status_code in {204, 304}:
+        response = Response(status_code=http_response.status_code)
+    else:
+        response = JSONResponse(
+            status_code=http_response.status_code,
+            content=http_response.body,
+        )
 
     # headers custom
     for name, value in getattr(http_response, "headers", {}).items():

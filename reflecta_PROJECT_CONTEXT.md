@@ -233,7 +233,7 @@ Regras vigentes:
 - a autorização deve consultar o papel do usuário, e não confiar em valor enviado pelo cliente;
 - uma tabela de permissões granular não faz parte deste incremento e só deve ser introduzida se os requisitos superarem os dois papéis atuais.
 
-A autenticação carrega o papel persistido no Auth a cada request e o propaga por meio de um `AuthenticatedPrincipal`; a camada HTTP disponibiliza um guard `require_role`. O guard já protege a criação administrativa de temas; ainda faltam aplicá-lo às demais rotas administrativas, distinguir access/refresh token e implementar o bootstrap e a alteração administrativa de papel.
+A autenticação carrega o papel persistido no Auth a cada request e o propaga por meio de um `AuthenticatedPrincipal`; a camada HTTP disponibiliza um guard `require_role`. O guard já protege o CRUD administrativo de temas; ainda faltam aplicá-lo às futuras rotas administrativas, distinguir access/refresh token e implementar o bootstrap e a alteração administrativa de papel.
 
 ## 4.4 Sistema de IA
 
@@ -527,9 +527,9 @@ src/
 - `auth.public` contém somente contratos que outros módulos podem referenciar;
 - `journal` contém o domínio e o caso de uso embrionário já existentes; persistência, presentation e
   bootstrap só devem ser criados quando houver implementação real nessas camadas;
-- `catalog` possui a primeira fatia vertical para criação administrativa de temas, com entidade, ports,
-  caso de uso, UoW/repository Neo4j, composição e rota protegida; as demais operações e entidades do catálogo
-  ainda não estão implementadas;
+- `catalog` possui a primeira fatia vertical de CRUD administrativo de temas, com entidade, ports,
+  casos de uso, UoW/repository Neo4j, composição e rotas protegidas; as demais entidades do catálogo
+  ainda não estão implementadas. O slug é criado a partir do label e permanece estável nas atualizações;
 - `catalog.public` será a fronteira de consultas/contratos consumidos por outros módulos e não deve
   expor driver, records ou repositories Neo4j;
 - `internal_events` é o proprietário de Outbox, dispatcher, router, retry e contratos de eventos;

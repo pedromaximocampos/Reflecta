@@ -525,8 +525,10 @@ src/
 ```
 
 - `auth.public` contém somente contratos que outros módulos podem referenciar;
-- `journal` contém o domínio e o caso de uso embrionário já existentes; persistência, presentation e
-  bootstrap só devem ser criados quando houver implementação real nessas camadas;
+- `journal` possui uma primeira fatia vertical de CRUD textual: domínio, casos de uso, persistência
+  PostgreSQL, presentation, bootstrap e rotas autenticadas. O schema completo planejado para Journal
+  já possui models/migration, porém Analysis, sentenças, associações e embeddings ainda não possuem
+  repositories ou pipeline de processamento;
 - `catalog` possui a primeira fatia vertical de CRUD administrativo de temas, com entidade, ports,
   casos de uso, UoW/repository Neo4j, composição e rotas protegidas; as demais entidades do catálogo
   ainda não estão implementadas. O slug é criado a partir do label e permanece estável nas atualizações;
@@ -640,6 +642,20 @@ Persistência: `journal_schema`.
 - `JournalEntryUpdated`;
 - `JournalEntryDeleted`;
 - `JournalEntryAnalyzed`.
+
+### Decisões incrementais vigentes no código
+
+- o CRUD inicial cria entradas em `DRAFT` e permite edição apenas nesse estado;
+- a exclusão do CRUD é lógica, por `deleted_at` e status `DELETED`;
+- todas as leituras e escritas do CRUD são limitadas ao `user_id` autenticado;
+- esta primeira fatia não publica eventos Journal; a transição para `PENDING_ANALYSIS` e a escrita
+  transacional na Outbox pertencem ao próximo incremento do pipeline;
+- os identificadores seguem o padrão atual do código, ULID textual de 26 caracteres, embora os
+  artefatos acadêmicos ainda usem UUID;
+- `Analysis` permanece fisicamente 1:N com `JournalEntry`, mas a seleção da análise vigente continua
+  pendente por não existir `version`, `is_current` ou `superseded_at`;
+- as colunas vetoriais existem sem dimensão e sem índice até a escolha do modelo de embeddings;
+- o conteúdo textual está persistido em `TEXT`; criptografia de conteúdo ainda não foi implementada.
 
 ## 7.3 AI Processing Module
 
@@ -848,7 +864,7 @@ Responsável pelos dados:
 - eventos internos;
 - logs/auditoria.
 
-Schemas atuais:
+Schemas planejados por responsabilidade:
 
 | Schema | Responsabilidade |
 |---|---|
@@ -865,7 +881,9 @@ Os modelos incluem:
 - `ENTRY_EMBEDDINGS.embedding : VECTOR`;
 - `SENTENCE_EMBEDDINGS.embedding : VECTOR`.
 
-O uso pressupõe suporte a vetores no PostgreSQL, normalmente através de pgvector, mas a extensão, versão e migration real devem ser confirmadas no repositório antes de codificar.
+A migration Journal habilita atualmente a extensão `vector` e cria as duas colunas sem dimensão. O
+modelo de embeddings, a dimensão e a estratégia de índice continuam decisões pendentes e devem ser
+definidos antes de implementar geração ou busca semântica.
 
 ## 8.3 Neo4j
 
@@ -1800,13 +1818,12 @@ Neste pacote de contexto foram analisados artefatos de projeto/documentação, i
 - glossário atual;
 - diagrama de classes.
 
-## 19.2 O que NÃO está disponível aqui
+## 19.2 Onde consultar o estado real
 
-O código-fonte do repositório não foi fornecido junto aos anexos usados para montar este contexto.
+Este documento consolida decisões e modelo planejado, mas não substitui a inspeção do código.
 
-Portanto, este documento **não pode afirmar quais módulos/endpoints/migrations já estão implementados**.
-
-O primeiro trabalho do agente que tiver acesso ao repositório deve ser executar o procedimento de bootstrap descrito em `IMPLEMENTATION_STATUS.md` e atualizar o status com evidência de arquivos reais.
+O estado efetivamente implementado, incluindo arquivos de evidência, migrations executadas e resultados
+de testes, deve ser consultado em `reflecta_IMPLEMENTATION_STATUS.md` e confirmado no repositório.
 
 ---
 
@@ -2016,6 +2033,10 @@ A ordem precisa ser validada contra o código real, mas o domínio sugere uma se
 - exclusão;
 - propriedade;
 - estados.
+
+Estado em 2026-09-18: a primeira fatia vertical desta fase está implementada com CRUD autenticado,
+ownership, exclusão lógica, migration e testes. A integração com eventos e o ciclo de análise permanecem
+na Fase C.
 
 ## Fase C - Pipeline assíncrono de IA
 

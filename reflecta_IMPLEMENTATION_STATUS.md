@@ -1,6 +1,7 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria realizada em 2026-08-29, com atualização focal em 2026-09-18 após a implementação unitariamente verificada do CRUD administrativo de `Theme` no Neo4j.
+> Auditoria realizada em 2026-08-29, com atualização focal em 2026-09-18 após a implementação e
+> verificação do schema PostgreSQL e do CRUD básico do Journal.
 >
 > O arquivo solicitado como `IMPLEMENTATION_STATUS.md` existe neste repositório com o nome
 > `reflecta_IMPLEMENTATION_STATUS.md`. Os arquivos operacionais e de contexto seguem a mesma
@@ -28,14 +29,18 @@ Verificações realizadas:
 - inspeção do grafo de imports: **um ciclo interno em Auth** e nenhum ciclo entre os cinco módulos físicos;
 - comparação AST de 215 arquivos Python rastreados afetados pela reorganização: **nenhuma mudança de
   corpo executável além de imports**;
-- inspeção Alembic: histórico linear e uma única head `9c4f12a7e6d3`;
+- inspeção Alembic: histórico linear e uma única head `d4a1c7e9b203`;
 - importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -q`: **118 testes aprovados e sete erros de setup Auth** causados
+- execução de `pytest -q`: **144 testes aprovados e sete erros de setup Auth** causados
   por fixtures antigas de Login/Logoff incompatíveis com os construtores atuais;
 - testes focais de recuperação, repositories relacionados e Notification: **34 aprovados**;
 - testes focais da atualização parcial de perfil e do repository de usuário: **23 aprovados**;
-- a migration `9c4f12a7e6d3_add_user_recovery_requests.py` é a única head, mas sua aplicação real está
-  **NOT_VERIFIED** porque o Docker/PostgreSQL local estava desligado na atualização de 2026-09-14;
+- testes focais do Journal: **26 aprovados**, cobrindo entidade, casos de uso, ownership, validators,
+  controllers, mapper, repository e o registro das sete tabelas no metadata;
+- migration `d4a1c7e9b203_create_journal_schema.py` aplicada com sucesso no PostgreSQL local;
+  `alembic check` não encontrou operações pendentes;
+- smoke test real do repository Journal no PostgreSQL executou create, get, list, update e exclusão
+  lógica com sucesso e reverteu a transação de teste;
 - publicação RabbitMQ, consumo e execução de handler com notifier falso em topologia temporária: **sucesso**; a topologia de
   teste foi removida após a verificação;
 - container Neo4j 5.26 Community iniciado pelo Compose, portas HTTP/Bolt publicadas e consulta
@@ -43,28 +48,29 @@ Verificações realizadas:
 - testes focais de Catalog/Neo4j: **38 aprovados**, cobrindo casos de uso, DTOs, validators, repository,
   UoW e configuração de conexão; importação da aplicação e geração do OpenAPI confirmaram as cinco
   operações de `/catalog/themes` com Bearer;
-- banco real, API em container e entrega SMTP externa continuam não verificados.
+- importação/OpenAPI confirmou as cinco operações autenticadas de `/journal/entries`;
+- API em container e entrega SMTP externa continuam não verificadas nesta atualização.
 
 ## 2. Resumo executivo
 
 | Área | Status | Estado real |
 |---|---|---|
-| Backend/API | PARTIAL | FastAPI expõe doze rotas Auth e cinco operações administrativas de `/catalog/themes`, protegidas por papel `ADMIN`; os demais módulos não possuem API funcional. |
+| Backend/API | PARTIAL | FastAPI expõe doze rotas Auth, cinco operações administrativas de `/catalog/themes` e cinco operações autenticadas de `/journal/entries`; AI, Recommendation, Sharing e Notification não possuem API funcional. |
 | Monólito modular | PARTIAL | Bounded contexts estão em `src/modules/`, componentes técnicos em `src/shared/` e a composição final em `src/main/`; permanecem violações internas e fluxos incompletos. |
 | Clean Architecture / DDD | PARTIAL | Há entidades, portas, casos de uso e adapters, com violações e ciclos de dependência. |
 | Auth Module | PARTIAL | É o único módulo substancial. Exclusão e recuperação possuem casos de uso e testes unitários, mas ainda não foram verificadas de ponta a ponta com PostgreSQL e AWS reais. |
-| Journal Module | PARTIAL | Entidade e caso de uso embrionário; não há persistência, endpoint nem processamento. |
+| Journal Module | PARTIAL | O CRUD textual vertical está implementado com ownership, exclusão lógica, PostgreSQL e API. O schema planejado existe, mas análise, eventos, repositories derivados e pipeline de IA ainda não foram iniciados. |
 | AI Processing | NOT_STARTED | Nenhum port, provider, schema, worker ou persistência de IA. |
 | Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
 | Catalog / Knowledge | PARTIAL | `Theme` possui CRUD administrativo vertical, slug determinístico e estável, repository/UoW Neo4j e transações explícitas; faltam integração com Neo4j real e Author/Work/Passage/relações. |
 | Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
 | Notification | PARTIAL | Handler, DTO e adapters SMTP/SES atendem verificação, reset, exclusão e recuperação; o consumer Lambda/SQS existe, mas idempotência persistente ainda não foi implementada. |
 | Internal Events / Outbox | PARTIAL | Dispatcher SNS está conectado ao Outbox e ao Compose; faltam idempotência, recuperação de eventos presos em `PROCESSING` e alinhamento dos consumers locais. |
-| PostgreSQL | PARTIAL | Oito tabelas Auth/Outbox no schema padrão; a nova migration de recuperação ainda não foi executada contra um banco real nesta atualização. |
-| pgvector | PARTIAL | Dependência e imagem Docker presentes, sem extensão, coluna, migration ou consulta vetorial. |
+| PostgreSQL | PARTIAL | Oito tabelas Auth/Outbox no schema padrão e sete tabelas em `journal_schema`; migrations até a head atual foram aplicadas no banco local. Os demais schemas planejados ainda não existem. |
+| pgvector | PARTIAL | Extensão e duas colunas `VECTOR` do Journal existem; dimensão, índice, geração e consulta vetorial continuam pendentes. |
 | Neo4j | PARTIAL | O serviço local `neo4j_dev` respondeu via Bolt; driver, settings, constraint Cypher, mapper, repository e UoW de `Theme` existem e têm testes unitários, mas a integração do fluxo com o banco real ainda não foi verificada. |
 | Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | 125 testes coletam: 118 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
+| Testes automatizados | PARTIAL | 151 testes coletam: 144 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
 
 ## 3. Stack real encontrada
 
@@ -74,9 +80,9 @@ Verificações realizadas:
 | FastAPI / Uvicorn | IMPLEMENTED | `pyproject.toml`, `src/main/server/fast_api/server.py`, `src/main/server/fast_api/run.py` | Aplicação importada com sucesso durante a auditoria. |
 | Pydantic / pydantic-settings | IMPLEMENTED | `pyproject.toml`, `src/shared/config/settings.py`, `src/modules/auth/presentation/validators/` | Há warnings de configuração Pydantic legada. |
 | SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | `pyproject.toml`, `src/shared/infrastructure/persistence/postgresql/connection.py`, models nos módulos Auth/Internal Events | Stack de persistência efetiva. |
-| Alembic | IMPLEMENTED | `alembic.ini`, `alembic/env.py`, `alembic/versions/` | Cadeia estática válida, uma head. Aplicação contra banco: `NOT_VERIFIED`. |
-| PostgreSQL 16 | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/postgresql/` | Imagem `pgvector/pgvector:pg16`; banco real não executado. |
-| pgvector | PARTIAL | `pyproject.toml`, `docker-compose.infra.yml` | Somente pacote/imagem; sem uso persistente. |
+| Alembic | IMPLEMENTED | `alembic.ini`, `alembic/env.py`, `alembic/versions/d4a1c7e9b203_create_journal_schema.py` | Cadeia válida, uma head `d4a1c7e9b203`, aplicada no PostgreSQL local; `alembic check` passou. |
+| PostgreSQL 16 | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/postgresql/`, models Journal | Imagem `pgvector/pgvector:pg16`; migrations e CRUD Journal foram exercitados no banco real, mas a stack completa não foi validada em conjunto. |
+| pgvector | PARTIAL | `pyproject.toml`, `docker-compose.infra.yml`, migration Journal, models `entry_embedding_model.py` e `sentence_embedding_model.py` | Extensão e colunas vetoriais persistentes existem; não há dimensão, índice, geração ou busca vetorial. |
 | Argon2 | IMPLEMENTED | `src/modules/auth/infrastructure/security/argon2id_password_hasher.py`, `src/modules/auth/infrastructure/security/configs/argon2/` | Adapter concreto de hash e verificação. |
 | JWT / PyJWT | PARTIAL | `src/modules/auth/infrastructure/security/token_service.py`, `src/modules/auth/application/services/auth_session/` | Tokens existem, mas access e refresh não têm tipo/audience distintos. |
 | RabbitMQ / aio-pika | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/`, `src/modules/internal_events/bootstrap/workers/publishers/rabbitmq/`, consumers em `src/modules/notification/` | Publisher, topologia, roteamento e consumo local foram conectados; smoke test do broker passou, sem envio SMTP externo. |
@@ -87,7 +93,7 @@ Verificações realizadas:
 | Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/neo4j/`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Neo4j 5.26 Community local respondeu via Bolt; pacote Python, settings, constraint Cypher, mapper, repository e UoW de `Theme` existem. A integração real do fluxo permanece não verificada. |
 | Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
 | Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 125 testes coletam; 118 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
+| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 151 testes coletam; 144 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
 | Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL, RabbitMQ e Neo4j locais foram iniciados/verificados em momentos distintos; API e workers completos ainda não foram executados juntos. |
 | CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
 | Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria, `src/modules/notification/infrastructure/email/ses/ses_notifier.py` | Logging básico e diagnóstico seguro de falhas SES; sem correlação completa, métricas, tracing, alertas ou health/readiness. |
@@ -102,19 +108,21 @@ Não existe `.env.example` ou equivalente. Há um `.env.dev` local ignorado pelo
 | Capacidade | Status | Evidência | Diagnóstico |
 |---|---|---|---|
 | Um único backend implantável | IMPLEMENTED | `Dockerfile`, `src/main/server/fast_api/run.py` | É um monólito no sentido de um processo/API principal. |
-| Modularidade por bounded context | PARTIAL | `src/modules/`, `src/shared/`, `src/main/` | Cinco módulos possuem fronteira física; Catalog possui uma fatia vertical completa do CRUD de temas. Shared Kernel técnico e composition root têm dependências direcionadas. |
-| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/catalog/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth possui as quatro camadas; Catalog usa as quatro camadas no CRUD de temas e Journal só possui Domain/Application. |
+| Modularidade por bounded context | PARTIAL | `src/modules/`, `src/shared/`, `src/main/` | Cinco módulos possuem fronteira física; Catalog e Journal possuem primeiras fatias verticais completas. Shared Kernel técnico e composition root têm dependências majoritariamente direcionadas. |
+| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/catalog/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth, o CRUD de Theme e o CRUD Journal usam as quatro camadas; os demais fluxos permanecem incompletos. |
 | Clean Architecture | PARTIAL | ports/use cases em `src/modules/*/application/` e `domain/`; adapters em `infrastructure/` | Há inversão em vários pontos, mas Domain ainda depende de configuração e semântica HTTP compartilhada. |
-| DDD | PARTIAL | entidades/VOs/eventos em `src/modules/auth/domain/` e `src/modules/internal_events/domain/` | Bounded modules físicos foram iniciados, mas agregados, contratos e isolamento de persistência ainda são incompletos. |
-| Composition root / DI | PARTIAL | `src/modules/auth/bootstrap/`, `src/modules/internal_events/bootstrap/`, `src/modules/notification/bootstrap/` | Composição é manual e ainda cria instâncias globais reutilizadas entre requests. |
-| API/BFF | PARTIAL | `src/modules/auth/presentation/routes.py`, `src/modules/catalog/presentation/routes.py`, `src/main/server/fast_api/server.py` | Auth e o CRUD administrativo de temas são expostos; não existe frontend nem API funcional para os outros módulos. |
+| DDD | PARTIAL | entidades/VOs/eventos em `src/modules/auth/domain/`, `src/modules/journal/domain/` e `src/modules/internal_events/domain/` | `JournalEntry` concentra invariantes de conteúdo, edição e exclusão; agregados e contratos dos pipelines derivados continuam incompletos. |
+| Composition root / DI | PARTIAL | bootstraps dos módulos e `src/main/server/fast_api/server.py` | Composição é manual. Journal cria UoW por dependency/request; partes de Auth ainda reutilizam instâncias globais mutáveis. |
+| API/BFF | PARTIAL | rotas Auth, Catalog e Journal; `src/main/server/fast_api/server.py` | Auth, Theme e Journal são expostos; não existe frontend nem API funcional de AI, Recommendation, Sharing ou Notification. |
 | Dependências acíclicas | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/`, `src/modules/catalog/` | Não há ciclo entre os cinco módulos físicos; Catalog depende somente da fronteira pública de Auth na autorização HTTP e persiste um ciclo interno nos models de Auth. |
 
 Dependências entre módulos observadas pelo AST após a separação física:
 
 - `notification -> auth.public, internal_events`;
-- `journal -> auth.public` apenas para o tipo público `UserId`;
-- `catalog -> auth.public` apenas na camada HTTP para principal/role;
+- `journal -> auth.public` para `UserId`/principal e `journal.presentation -> auth.presentation`
+  para a dependency FastAPI de autenticação;
+- `catalog -> auth.public` para principal/role e `catalog.presentation -> auth.presentation`
+  para o guard FastAPI;
 - `auth -> internal_events.public` e, na composição transacional existente, implementação de Outbox;
 - `internal_events` não importa Auth nem Notification.
 
@@ -134,9 +142,9 @@ com configuração compartilhada.
    `src/modules/auth/bootstrap/use_cases.py` e `src/modules/auth/presentation/routes.py`
    instanciam e reutilizam UoWs/use cases/controllers. `src/shared/infrastructure/persistence/postgresql/units_of_work/base_unit_of_work.py`
    mantém sessão mutável; requests concorrentes podem compartilhar estado.
-5. **Middleware de autenticação desconectado:** `src/modules/auth/presentation/adapters/fast_api_auth.py` não é
-   instalado na aplicação. Os imports locais inválidos desse serviço foram corrigidos apenas para refletir
-   a nova estrutura; o middleware continua sem uso nas rotas.
+5. **Adapter HTTP Auth importado entre módulos:** as rotas Journal e Catalog importam
+   `src/modules/auth/presentation/adapters/fast_api_auth.py`. A proteção funciona, mas a dependência cruza
+   a fronteira privada de Presentation do Auth em vez de uma composição HTTP externa aos módulos.
 6. **Exceção expõe internals em debug:** `src/main/server/fast_api/fast_api_exception_handler.py`
    pode devolver arquivo, linha e erro bruto; `DEBUG` tem default ativo em `src/shared/config/settings.py`.
 
@@ -177,20 +185,22 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 
 | Capacidade | Status | Evidência | Estado real |
 |---|---|---|---|
-| Entidade JournalEntry | PARTIAL | `src/modules/journal/domain/entities/journal_entry.py`, `src/modules/journal/domain/value_objects/` | Entidade rica existe, sem model/repository concreto/migration. |
-| Criar entrada | PARTIAL | `src/modules/journal/application/use_cases/create_entry/` | Cria entidade `DRAFT`, mas nunca chama repository; apenas faz commit. |
-| Port de repository/UoW | PARTIAL | `src/modules/journal/domain/ports/repositories/`, `src/modules/journal/domain/ports/units_of_work/` | Interfaces sem implementação. |
-| Endpoint Journal | NOT_STARTED | `src/modules/journal/`, `src/main/server/fast_api/server.py` | Não existe camada Presentation/router Journal e nada é incluído no servidor. |
-| Persistência Journal | NOT_STARTED | models em `src/modules/auth/`, `src/modules/internal_events/` e `alembic/versions/` | Nenhum model, repository, UoW concreto ou tabela Journal. |
-| Listar histórico | NOT_STARTED | `src/` inspecionado | Ausente. |
-| Detalhar entrada | NOT_STARTED | `src/` inspecionado | Ausente. |
-| Editar/reanalisar | NOT_STARTED | `src/` inspecionado | Ausente. |
-| Excluir entrada | NOT_STARTED | `src/` inspecionado | Ausente. |
-| Ownership/authorization | NOT_STARTED | caso de uso `create_entry`, rotas | DTO recebe `user_id` do cliente; não há identidade autenticada. |
-| Analysis persistida | NOT_STARTED | `src/` e migrations inspecionados | Campos parciais estão embutidos na entidade; não existe entidade/tabela Analysis. |
-| JournalSentence / SentenceTheme / SentencePassage | NOT_STARTED | `src/` inspecionado | Ausentes. |
-| EntryEmbedding / SentenceEmbedding | NOT_STARTED | `src/` inspecionado | O antigo placeholder vazio foi removido; não existe implementação. |
-| DRAFT | PARTIAL | `src/modules/journal/domain/value_objects/journal_entry_status.py`, caso de uso create | Existe no código, mas o contrato do fluxo e a passagem a `PENDING_ANALYSIS` não existem. |
+| Entidade JournalEntry | IMPLEMENTED | `src/modules/journal/domain/entities/journal_entry.py`, `src/modules/journal/domain/value_objects/`, `src/modules/journal/public/journal_entry_id.py`, testes Domain | Valida conteúdo, normaliza título, restringe edição a `DRAFT` e executa exclusão lógica. |
+| Criar entrada | IMPLEMENTED | `src/modules/journal/application/use_cases/create_entry/`, controller/validator/rota, repository e testes | Cria ULID, deriva o proprietário do principal autenticado, persiste `DRAFT` e commita. Eventos foram deliberadamente excluídos deste incremento. |
+| Port de repository/UoW | IMPLEMENTED | ports Domain, `infrastructure/persistence/postgresql/repositories/journal_entry_repository.py`, `units_of_work/journal_unit_of_work.py`, `bootstrap/` | Contratos possuem adapters concretos; um UoW novo é criado por dependency da rota. |
+| Endpoint Journal | IMPLEMENTED | `src/modules/journal/presentation/`, `src/modules/journal/bootstrap/`, `src/main/server/fast_api/server.py` | Cinco operações autenticadas são registradas no OpenAPI. |
+| Persistência de JournalEntry | IMPLEMENTED | model/mapper/repository/UoW em `src/modules/journal/infrastructure/persistence/postgresql/`, migration `d4a1c7e9b203` | Tabela e adapter do agregado usado no CRUD foram verificados no PostgreSQL real. As outras seis tabelas são classificadas separadamente abaixo. |
+| Listar histórico | IMPLEMENTED | caso de uso `list_entries/`, repository, controller e `GET /journal/entries` | Lista somente entradas ativas do usuário, ordenadas por criação, com `limit`/`offset`. |
+| Detalhar entrada | IMPLEMENTED | caso de uso `get_entry/`, repository, controller e `GET /journal/entries/{journal_entry_id}` | Busca composta por entrada, proprietário e `deleted_at IS NULL`; ausência e acesso de outro dono retornam o mesmo 404. |
+| Editar/reanalisar | PARTIAL | caso de uso `update_entry/`, entidade, repository e `PATCH /journal/entries/{journal_entry_id}` | Atualização parcial de título, conteúdo e tags está implementada apenas para `DRAFT`; transição para reanálise e evento ainda não existem. |
+| Excluir entrada | IMPLEMENTED | caso de uso `delete_entry/`, entidade, repository e `DELETE /journal/entries/{journal_entry_id}` | Marca `deleted_at`, `updated_at` e status `DELETED`; entradas excluídas deixam de aparecer nas consultas. |
+| Ownership/authorization | IMPLEMENTED | `src/modules/journal/presentation/routes.py`, controllers, repository e testes | Todas as rotas usam Bearer, ignoram qualquer dono no payload e limitam consultas/mutações pelo `user_id` autenticado. |
+| Analysis persistida | PARTIAL | `analysis_model.py`, migration Journal | Tabela 1:N com status, resultado, erro e timestamps existe; não há entidade, repository, caso de uso ou definição da versão vigente. |
+| JournalSentence / SentenceTheme / SentencePassage | PARTIAL | models homônimos e migration Journal | Estrutura relacional, constraints e FKs existem; não há repositories nem pipeline que escreva/consulte esses dados. IDs de Theme/Passage são referências lógicas ao Neo4j. |
+| EntryEmbedding / SentenceEmbedding | PARTIAL | models homônimos, migration Journal e extensão `vector` | Tabelas/colunas existem; dimensão, índice, modelo e adapters de geração/consulta ainda não foram definidos. |
+| DRAFT | IMPLEMENTED | status VO, entidade, create/update e migration | É o estado inicial da primeira fatia CRUD; o envio posterior para `PENDING_ANALYSIS` permanece fora deste incremento. |
+| Eventos Journal | NOT_STARTED | módulo Journal e Outbox inspecionados | Nenhum `JournalEntryCreated/Updated/Deleted` é emitido, conforme o recorte solicitado para este CRUD. |
+| Criptografia do conteúdo | NOT_STARTED | `JournalEntryModel.content_text` e migration | O texto privado é armazenado em `TEXT` sem criptografia de aplicação/campo. |
 | Versionamento de Analysis | BLOCKED | documentação e ausência em `src/` | Não há decisão sobre histórico/análise vigente. |
 
 ## 7. Demais módulos de negócio
@@ -203,10 +213,10 @@ Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
 | Análise de journals | NOT_STARTED | `src/` inspecionado |
 | Classificação por temas ativos | NOT_STARTED | `src/` inspecionado |
 | Extração por sentenças | NOT_STARTED | `src/` inspecionado |
-| Embeddings | NOT_STARTED | `src/` e migrations inspecionados |
+| Embeddings | PARTIAL | models/tabelas `entry_embeddings` e `sentence_embeddings`; geração e consulta ausentes |
 | Contexto semântico/histórico do usuário | BLOCKED | UC18 não possui modelo documental canônico nem implementação |
 | Processamento de obras/referências | NOT_STARTED | `src/` inspecionado |
-| Persistência de resultados | NOT_STARTED | models e migrations inspecionados |
+| Persistência de resultados | PARTIAL | models/migration Journal para Analysis, sentenças, associações e embeddings; adapters de escrita ausentes |
 | Tratamento de falhas de IA | NOT_STARTED | `src/` inspecionado |
 
 ### 7.2 Catalog / Knowledge
@@ -268,11 +278,17 @@ A aplicação importada expõe exatamente estas rotas de negócio:
 | `GET /catalog/themes/{theme_id}` | PARTIAL | rota, `GetThemeByIdController`, `GetThemeByIdUseCase`, exceção `ThemeNotFoundError` e testes unitários | Exige `ADMIN`, retorna o tema ou 404; falta teste HTTP/Neo4j real. |
 | `PATCH /catalog/themes/{theme_id}` | PARTIAL | rota/validator, `UpdateThemeController`, `UpdateThemeUseCase`, entidade/repository e testes unitários | Exige `ADMIN`, atualiza label, descrição e/ou estado, rejeita payload vazio/nulo e mantém o slug estável; falta teste HTTP/Neo4j real. |
 | `DELETE /catalog/themes/{theme_id}` | PARTIAL | rota, `DeleteThemeByIdController`, `DeleteThemeByIdUseCase`, repository e testes unitários | Exige `ADMIN`, retorna 204, valida existência e executa `DETACH DELETE`; falta teste HTTP/Neo4j real e decisão final sobre exclusão física com relações futuras. |
-| Demais endpoints planejados | NOT_STARTED | `src/main/server/fast_api/server.py`, módulos inspecionados | Journal não possui Presentation; não há AI, Recommendation, Sharing ou Notification API, nem operações de Author/Work/Passage no Catalog. |
+| `POST /journal/entries` | IMPLEMENTED | rota, validator, controller, create use case, UoW/repository e testes Journal | Exige Bearer, usa o usuário autenticado, aceita texto/título/tags e responde 201 com entrada `DRAFT`. |
+| `GET /journal/entries` | IMPLEMENTED | rota, controller, list use case, repository e testes Journal | Lista somente entradas ativas do usuário autenticado; aceita `limit` de 1 a 100 e `offset`. |
+| `GET /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, controller, get use case, repository e testes Journal | Retorna apenas entrada ativa pertencente ao usuário; outro proprietário é tratado como não encontrado. |
+| `PATCH /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, validator, controller, update use case, entidade/repository e testes Journal | Atualiza qualquer subconjunto de `title`, `content_text` e `context_tags` em uma entrada `DRAFT`; rejeita payload vazio. |
+| `DELETE /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, controller, delete use case, entidade/repository e testes Journal | Executa exclusão lógica e responde 204. |
+| Demais endpoints planejados | NOT_STARTED | `src/main/server/fast_api/server.py`, módulos inspecionados | Não há API de Analysis/temas sugeridos, AI, Recommendation, Sharing ou Notification, nem operações de Author/Work/Passage no Catalog. |
 
 DTOs e validators existem principalmente em `src/modules/auth/application/use_cases/*/dto.py` e
 `src/modules/auth/presentation/validators/`, mas login/reset não estão integrados ao schema FastAPI de modo a
-gerar contrato OpenAPI. `POST /auth/request-delete` e `PATCH /auth/user-info` anunciam `HTTPBearer` no OpenAPI; as demais rotas continuam sem security scheme explícito.
+gerar contrato OpenAPI. As cinco rotas Journal, `POST /auth/request-delete` e `PATCH /auth/user-info`
+anunciam `HTTPBearer` no OpenAPI; as demais rotas Auth continuam sem security scheme explícito.
 
 ## 9. Persistência e migrations
 
@@ -280,23 +296,24 @@ gerar contrato OpenAPI. `POST /auth/request-delete` e `PATCH /auth/user-info` an
 
 | Item | Status | Evidência | Estado real |
 |---|---|---|---|
-| Metadata SQLAlchemy | IMPLEMENTED | `src/shared/infrastructure/persistence/postgresql/configs/base.py`, models em `src/modules/auth/` e `src/modules/internal_events/` | Oito tabelas são registradas. |
+| Metadata SQLAlchemy | IMPLEMENTED | `src/shared/infrastructure/persistence/postgresql/configs/base.py`, models Auth/Internal Events/Journal e `alembic/env.py` | Quinze tabelas de aplicação são registradas: oito no schema padrão e sete em `journal_schema`. |
 | Tabela `users` | PARTIAL | `users_model.py`, migration `1ce1f1cd457b_bancos_agora_em_docker.py` | Auth parcial; campos divergentes do planejado. |
 | Tabela `auth_credentials` | PARTIAL | `auth_credentials_model.py`, mesma migration | Sem MFA/credential_type documentados. |
 | Tabela `auth_sessions` | PARTIAL | `auth_sessions_model.py`, mesma migration | Sem IP/user-agent; refresh token hash existe. |
 | Tabela `user_email_verifications` | PARTIAL | `user_email_verification_model.py`, mesma migration | Implementação adicional ao modelo consolidado, mas fluxo está quebrado. |
 | Tabela `passwords_reset` | PARTIAL | `reset_password_model.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Nome e modelo divergem da documentação. |
 | Tabela `outbox` | PARTIAL | `outbox_model.py`, migrations `631fd4384bca_criando_tabela_do_pattern_outbox_nao_.py` e `ca9163c93ce6_01_09_2026_atualizando_a_tabela_de_.py` | Suporta estados/retry, sem contrato documentado completo. |
-| Tabela `user_deletion_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_deletion_request_model.py`, mapper/repository correspondentes, migration `7b82d9e3a104_add_user_deletion_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; aplicação em PostgreSQL real ainda não verificada. |
-| Tabela `user_recovery_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_recovery_request_model.py`, mapper/repository correspondentes, migration `9c4f12a7e6d3_add_user_recovery_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; aplicação em PostgreSQL real ainda não verificada. |
-| Cadeia Alembic | IMPLEMENTED | `alembic/versions/` | Uma head `9c4f12a7e6d3`; `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py` é migration vazia. |
-| Execução em PostgreSQL real | NOT_VERIFIED | `docker-compose.infra.yml` | Docker CLI/Compose está disponível, mas daemon, container e conexão com o banco não foram verificados nesta análise. |
+| Tabela `user_deletion_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_deletion_request_model.py`, mapper/repository correspondentes, migration `7b82d9e3a104_add_user_deletion_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; a cadeia de migrations que a contém foi aplicada no PostgreSQL local. |
+| Tabela `user_recovery_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_recovery_request_model.py`, mapper/repository correspondentes, migration `9c4f12a7e6d3_add_user_recovery_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; a cadeia de migrations que a contém foi aplicada no PostgreSQL local. |
+| Tabelas Journal | PARTIAL | sete models em `src/modules/journal/infrastructure/persistence/postgresql/models/`, migration `d4a1c7e9b203` | `journal_entries` possui CRUD concreto; `analysis`, `journal_sentences`, `sentence_themes`, `sentence_passages`, `entry_embeddings` e `sentence_embeddings` possuem schema físico, mas não repositories/pipeline. |
+| Cadeia Alembic | IMPLEMENTED | `alembic/versions/` | Uma head `d4a1c7e9b203`, aplicada no PostgreSQL local; `alembic check` passou. A migration histórica `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py` continua vazia. |
+| Execução em PostgreSQL real | IMPLEMENTED | `docker-compose.infra.yml`, migration e repository Journal | Container respondeu, migrations chegaram à head e o CRUD do repository Journal passou em uma transação real revertida após o teste. |
 | `auth_schema` | NOT_STARTED | models/migrations | Todas as tabelas usam o schema padrão (`schema=None`). |
-| `journal_schema` | NOT_STARTED | models/migrations | Ausente. |
+| `journal_schema` | PARTIAL | models Journal e migration `d4a1c7e9b203` | Schema e as sete tabelas planejadas existem; somente `journal_entries` possui comportamento de aplicação. |
 | `recommendation_schema` | NOT_STARTED | models/migrations | Ausente. |
 | `sharing_schema` | NOT_STARTED | models/migrations | Ausente. |
 | `event_schema` | NOT_STARTED | models/migrations | Outbox usa schema padrão. |
-| Extensão/colunas/índices pgvector | NOT_STARTED | migrations/models | Nenhum `CREATE EXTENSION`, `VECTOR`, dimensão ou índice. |
+| Extensão/colunas/índices pgvector | PARTIAL | migration Journal; models de embedding | `CREATE EXTENSION vector` e duas colunas `VECTOR` existem. Dimensão e índice vetorial não foram definidos. |
 | Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/neo4j/`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Serviço local, driver, constraint Cypher, repository e UoW unitariamente testados; execução da constraint e criação de temas contra o Neo4j real continuam não verificadas. |
 | Relação PostgreSQL–Neo4j | NOT_STARTED | projeto inteiro | Ausente. |
 
@@ -380,23 +397,24 @@ Os mockups do TCC são documentação de produto, não frontend implementado.
 
 | Suite/verificação | Status | Evidência | Resultado |
 |---|---|---|---|
-| Sintaxe Python | IMPLEMENTED | arquivos sob `src/`, `tests/` e `alembic/` | `compileall` sem falhas após a atualização parcial de perfil. |
+| Sintaxe Python | IMPLEMENTED | arquivos sob `src/`, `tests/` e `alembic/` | `compileall` sem falhas após a implementação do Journal. |
 | Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | IMPLEMENTED | `tests/` | 125 testes coletados: 118 aprovados e sete erros de setup preexistentes. |
-| Testes Domain | PARTIAL | `tests/unit/auth/domain/` | Cobrem `UserRole`, parte do estado de exclusão e as regras de atualização parcial do perfil; demais domínios continuam sem cobertura. |
-| Integração repository/PostgreSQL | NOT_STARTED | `tests/` inspecionado | Nenhum teste de integração; o antigo diretório vazio foi removido. |
-| API/HTTP | NOT_STARTED | `tests/` inspecionado | Ausentes. |
+| Coleta pytest | IMPLEMENTED | `tests/` | 151 testes coletados: 144 aprovados e sete erros de setup Auth preexistentes. |
+| Testes Domain | PARTIAL | `tests/unit/auth/domain/`, `tests/unit/journal/domain/` | Journal cobre conteúdo, edição por estado e exclusão; Auth possui cobertura parcial e os demais domínios continuam incompletos. |
+| Integração repository/PostgreSQL | PARTIAL | smoke test manual do `JournalEntryRepository` contra PostgreSQL local | CRUD real e rollback passaram, mas o teste ainda não está automatizado na suite. |
+| API/HTTP | PARTIAL | `tests/unit/journal/presentation/` | Validators/controllers Journal estão cobertos; não há TestClient/E2E autenticado contra a aplicação e banco. |
 | Outbox/roteamento | PARTIAL | `tests/unit/internal_events/infrastructure/messaging/test_rabbitmq_outbox_dispatcher.py` | Dois testes aprovados cobrem roteamento por tipo e marcação `SENT`; idempotência permanece ausente. |
 | Exclusão lógica Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_deletion_service.py`, `tests/unit/auth/application/use_cases/test_user_deletion_use_cases.py`, testes de controller/mapper/repository | Doze testes aprovados cobrem emissão/substituição, confirmação, expiração, revogação/reuso, sessões, eventos e adapters HTTP/persistência. |
 | Recuperação Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_recovery_service.py`, `tests/unit/auth/application/use_cases/test_user_recovery_use_cases.py`, testes de controller/mapper/repository | Dezesseis testes novos cobrem emissão/substituição, anti-enumeração, confirmação, expiração, revogação/reuso, estado excluído e adapters HTTP/persistência. |
 | Atualização de perfil Auth | IMPLEMENTED | `tests/unit/auth/domain/test_user_info.py`, `tests/unit/auth/application/use_cases/test_update_user_info_use_case.py`, `tests/unit/auth/presentation/controllers/test_update_user_info_controller.py`, `tests/unit/auth/infrastructure/persistence/postgresql/repositories/test_user_repository_active_users.py` | Dezessete testes novos cobrem regras de domínio, atualização de subconjunto, identidade autenticada, validação do payload e allowlist de colunas no SQL. |
 | Notification handler/templates | IMPLEMENTED | `tests/unit/notification/` | Quinze testes aprovados cobrem os quatro tipos de evento, links, payload inválido, tipo desconhecido, templates SMTP/SES e diagnóstico SES sem vazamento de e-mail, código ou mensagem bruta da AWS. |
 | Catalog/Neo4j | PARTIAL | `tests/unit/catalog/`, `tests/unit/shared/infrastructure/persistence/neo4j/test_connection.py` | Trinta e oito testes aprovados cobrem CRUD de casos de uso, DTOs, validators, slug estável, conflitos, 404, repository, commit/rollback do UoW e configuração do driver; ainda não há teste HTTP ou integração com Neo4j real. |
+| Journal | IMPLEMENTED | `tests/unit/journal/` | Vinte e seis testes aprovados cobrem domínio, cinco casos de uso, ownership, validação HTTP, controllers, mapper, repository e metadata das sete tabelas. |
 | LLM contract | NOT_STARTED | `tests/` inspecionado | Ausentes. |
 | Frontend | NOT_STARTED | repositório | Frontend ausente. |
 | E2E | NOT_STARTED | `tests/` inspecionado | Nenhum teste E2E; o antigo diretório vazio foi removido. |
-| API import/OpenAPI | IMPLEMENTED | `src/main/server/fast_api/run.py` | Importação e enumeração de rotas tiveram sucesso com env temporário. |
-| Docker/PostgreSQL/brokers | PARTIAL | Compose e smoke tests locais | Neo4j respondeu via Bolt e RabbitMQ foi verificado anteriormente; PostgreSQL e a stack completa não foram revalidados nesta atualização. |
+| API import/OpenAPI | IMPLEMENTED | `src/main/server/fast_api/run.py`, router Journal | Importação e enumeração confirmaram POST/GET/PATCH/DELETE Journal com Bearer. |
+| Docker/PostgreSQL/brokers | PARTIAL | Compose e smoke tests locais | PostgreSQL executou migrations e CRUD Journal; Neo4j/RabbitMQ foram verificados anteriormente. A stack completa ainda não foi executada em conjunto. |
 
 O pacote de login agora exporta `LoginUseCaseImpl` sem o ciclo Application anterior. Fixtures e doubles
 continuam refletindo assinaturas antigas: ausência de UoW/Outbox, `AuthSessionResultDTO` sem `session_id`
@@ -409,31 +427,31 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 
 1. **Identidade do sistema:** documentação consolidada usa Reflecta; `pyproject.toml`, settings, título
    FastAPI, Compose e remetente SMTP ainda usam Individuum.
-2. **Arquitetura modular:** Auth, Journal, Internal Events e Notification possuem raízes verticais;
-   Shared Kernel técnico e `main` foram separados, mas somente Auth é substancial.
-3. **Mensageria:** SQS + Lambda + SES é o alvo decidido em 2026-08-31, mas o código operacional ainda
-   conecta Outbox, publisher e consumers via RabbitMQ/SMTP; o consumer SQS permanece apenas embrionário.
-4. **PostgreSQL:** os diagramas/glossário planejam cinco schemas; o código cria seis tabelas no schema
-   padrão e só cobre Auth/Outbox.
+2. **Arquitetura modular:** Auth, Journal, Catalog, Internal Events e Notification possuem raízes verticais;
+   Auth é o módulo mais amplo, enquanto Journal e Catalog possuem primeiras fatias verticais.
+3. **Mensageria:** SQS + Lambda + SES é o alvo decidido em 2026-08-31 e o dispatcher do Compose usa SNS,
+   mas consumers RabbitMQ/SMTP continuam declarados em paralelo; falta cutover/idempotência reproduzível.
+4. **PostgreSQL:** os diagramas/glossário planejam cinco schemas; o código mantém oito tabelas Auth/Outbox
+   no schema padrão e implementa somente `journal_schema` entre os schemas nomeados.
 5. **Identificadores:** documentação usa UUID; código e migrations usam ULID `String(26)`.
-6. **User/Auth:** campos, estados, credenciais, sessão e MFA documentados não correspondem aos models
-   atuais. O código adiciona verificação de e-mail própria, mas omite role/status/updated_at persistidos.
+6. **User/Auth:** campos, estados, credenciais, sessão e MFA documentados não correspondem integralmente
+   aos models atuais. O código adiciona verificação de e-mail própria; `role` e `deleted_at` são extensões vigentes.
 7. **Contrato de cadastro:** casos/documentação e validator não coincidem sobre campos e tamanho de
    senha; o código exige username, surname, data de nascimento e confirmação de senha.
-8. **Journal create:** planejado persiste `PENDING_ANALYSIS` e evento transacional; o caso de uso atual
-   cria `DRAFT`, não persiste e não publica evento.
-9. **Analysis:** planejada como entidade 1:N; o código apenas embute alguns campos de análise em
-   `JournalEntry`, sem tabela ou versão vigente.
+8. **Journal create:** o fluxo principal documentado persiste `PENDING_ANALYSIS` e evento transacional;
+   o CRUD atual persiste `DRAFT` deliberadamente e ainda não publica evento.
+9. **Analysis:** a tabela 1:N existe, mas não há entidade/repository/pipeline nem campo explícito que
+   determine a análise vigente.
 10. **Outbox:** planejado `OUTBOX_EVENTS`, `PROCESSED`, aggregate e `processed_at`; código usa `outbox`,
     `SENT`, não tem aggregate nem Processed Events.
 11. **Notification:** planejado SES e log de notificação; código usa SMTP Gmail e não persiste tentativas.
-12. **pgvector:** planejado para embeddings; há apenas dependência/imagem, sem extensão ou dados.
+12. **pgvector:** extensão e colunas existem, mas o modelo/dimensão, índice, geração e consulta ainda não.
 13. **Neo4j, S3 e IA:** Neo4j possui runtime local, driver, constraint e primeira fatia vertical de `Theme`,
     porém o modelo documentado usa UUID e o código usa ULID; S3 e IA continuam ausentes do código/infra real.
 14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
-15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 118 testes passam e sete
+15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 144 testes passam e sete
     testes antigos de Login/Logoff falham no setup.
-16. **Deploy/workers:** o Compose declara dispatcher RabbitMQ e dois workers Notification e depende
+16. **Deploy/workers:** o Compose declara dispatcher SNS e dois workers Notification RabbitMQ e depende
     de `.env.dev` não versionado; o fluxo Catalog/Neo4j ainda não foi validado de ponta a ponta.
 17. **OpenAPI/Auth:** documentação sugere contratos HTTP usuais; cinco rotas Auth não expõem
     body/parâmetros/security na spec, e login usa Basic Auth sem registrá-lo.
@@ -461,23 +479,25 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
    `USER`/`ADMIN`, a exclusão lógica por `deleted_at` e a propagação da role persistida no contexto autenticado já foram implementadas.
 2. SQS + Lambda + SES foi escolhido como alvo para notificações Auth; ainda é necessário implementar o
    consumer versionado, adapter SES, idempotência, falha parcial, deploy e cutover antes de remover RabbitMQ/SMTP.
-3. Confirmar sem ambiguidade o ciclo Journal: uso de DRAFT, transição para análise, edição/reanálise,
-   exclusão e análise vigente/versionada.
+3. O CRUD Journal adota `DRAFT` e exclusão lógica. Ainda é necessário decidir o comando de submissão,
+   transição para `PENDING_ANALYSIS`, política de edição/reanálise e análise vigente/versionada.
 4. Definir privacidade/segurança do LLM: provider, retenção, redaction, modelo, schema de saída e falhas.
-5. Definir embeddings: modelo, dimensão, versão, extensão/índice pgvector e cardinalidade assíncrona.
+5. Definir embeddings: modelo, dimensão, versão, índice pgvector e cardinalidade assíncrona; extensão e
+   colunas sem dimensão já existem.
 6. Definir contratos intermodulares para impedir acesso direto ao schema e evitar ciclo
    Catalog–Recommendation.
 7. Definir consistência e reconciliação entre PostgreSQL, Neo4j e S3, inclusive referências órfãs.
 8. Definir Consent e o modelo de identidade/entrega/auditoria do profissional.
 9. Definir chave e semântica de Processed Events por consumer.
-10. Confirmar journaling somente textual e tratar os artefatos multimídia como divergência em revisão
-    documental futura, não nesta alteração.
+10. Tratar os artefatos multimídia históricos como divergência documental; o incremento atual mantém
+    journaling somente textual.
 11. Confirmar se `Theme` poderá ser removido fisicamente quando possuir relações com Work/Passage ou se
     `is_active=false` deverá ser a única forma permitida de retirada do catálogo.
 
 ## 16. Riscos técnicos
 
-- **Corrupção/interferência concorrente:** UoWs globais guardam sessão/repositories mutáveis por request.
+- **Corrupção/interferência concorrente em Auth:** UoWs globais guardam sessão/repositories mutáveis por
+  request. O bootstrap Journal já cria um UoW por dependency.
 - **Fluxos Auth quebrados:** mapper, relógio, expiração e dependência de reset falham em caminhos normais.
 - **Proteção parcial:** `POST /auth/request-delete` e `PATCH /auth/user-info` usam Bearer, mas o middleware/guard Auth não está aplicado de forma uniforme às demais rotas protegidas planejadas.
 - **Refresh usado como access token:** tokens não distinguem propósito criptograficamente.
@@ -487,14 +507,16 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - **Exposição de segredos/PII:** códigos brutos de verificação/reset/exclusão/recuperação no Outbox e log integral do consumer;
   erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
 - **Configuração não reproduzível:** sem `.env.example` e com helper de URL do banco malformado.
-- **Rede de segurança insuficiente:** 118 testes unitários passam, mas não há integração/API/E2E/CI e os
+- **Rede de segurança insuficiente:** 144 testes unitários passam, mas não há suite persistente de
+  integração/API/E2E/CI e os
   sete testes antigos de Login/Logoff continuam quebrados no setup.
 - **Exclusão destrutiva futura no grafo:** o endpoint de exclusão de `Theme` usa `DETACH DELETE`; quando
   existirem relações com Work/Passage, ele também removerá essas relações sem histórico.
 - **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
   baseline definido no contexto.
 - **Escopo sensível sem controles:** journaling/LLM/export lidam com dados pessoais e de saúde sem política
-  técnica implementada de criptografia, retenção, acesso e auditoria.
+  técnica implementada de criptografia, retenção e auditoria. O CRUD aplica ownership, mas `content_text`
+  permanece em texto claro no PostgreSQL.
 
 ## 17. Dívidas técnicas observadas
 
@@ -510,21 +532,23 @@ diagnóstico **não decide automaticamente** se código ou documentação deve s
 - contratos OpenAPI incompletos e status documentado diferente do retorno;
 - remetente SMTP hardcoded;
 - Docker Compose declara o dispatcher do Outbox, mas depende de `.env.dev` local e não existe `.env.example` versionado;
+- colunas `VECTOR` do Journal não possuem dimensão nem índice até a escolha do modelo de embeddings;
+- o smoke test PostgreSQL do Journal ainda é manual e não faz parte da suite automatizada;
 - não há health checks da aplicação, CI, métricas ou tracing.
 
 ## 18. Menor próximo incremento vertical coerente
 
-**Não iniciado por esta refatoração.**
+**Não iniciado nesta entrega.**
 
-O menor incremento recomendado agora é tornar idempotente e reproduzível a entrega de notificações Auth no caminho
-**SNS -> SQS -> Lambda -> handler Notification -> SES**, reutilizando o `EmailEventHandler` já implementado.
-O corte deve incluir:
+O menor incremento vertical coerente após o CRUD é um comando autenticado de **submissão do rascunho
+para análise**, sem ainda integrar LLM. O corte mínimo deve:
 
-1. persistência de idempotência por `event_id` e consumidor;
-2. tratamento de lease/estado `PROCESSING` abandonado;
-3. testes do envelope dos quatro eventos de e-mail, duplicidade e falhas transitória/permanente;
-4. infraestrutura e pacote/deploy versionados a partir do repositório;
-5. teste de integração da Outbox ao SES e observabilidade de DLQ.
+1. localizar a entrada `DRAFT` pelo proprietário;
+2. alterar o status para `PENDING_ANALYSIS`;
+3. registrar `JournalEntryCreated` ou `JournalEntrySubmitted` na Outbox na mesma transação;
+4. impedir nova edição do conteúdo após a submissão;
+5. cobrir transação, ownership, idempotência do comando e contrato do evento.
 
-RabbitMQ/SMTP não devem ser removidos antes do teste ponta a ponta do novo caminho. O incremento não altera
-os nomes nem o payload canônico dos quatro eventos de e-mail Auth e não inicia Journal/IA.
+O nome final do evento precisa ser confirmado porque os artefatos atuais citam `JournalEntryCreated`,
+enquanto o CRUD já cria e persiste o rascunho antes da submissão. O consumer/LLM permanece fora desse
+incremento seguinte.

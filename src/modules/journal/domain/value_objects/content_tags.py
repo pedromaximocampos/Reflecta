@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import TypedDict, Dict, List
-
+from typing import TypedDict
 
 class TagCategory(str, Enum):
     PEOPLE = "people"
@@ -21,4 +20,4 @@ class ContentTagItem(TypedDict, total=False):
     approved: bool
 
 
-ContentTags = Dict[TagCategory, List[ContentTagItem]]
+ContentTags = dict[str, list[ContentTagItem]]

@@ -7,6 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import make_url
 from src.modules.auth.infrastructure.persistence.postgresql.models import *
 from src.modules.internal_events.infrastructure.persistence.postgresql.models import *
+from src.modules.journal.infrastructure.persistence.postgresql.models import *
 from alembic import context
 import os
 
@@ -60,6 +61,7 @@ def run_migrations_offline() -> None:
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        include_schemas=True,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -83,7 +85,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
         )
 
         with context.begin_transaction():

@@ -1,0 +1,1 @@
+"""Journal persistence adapters."""

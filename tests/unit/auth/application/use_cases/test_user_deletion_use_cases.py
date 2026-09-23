@@ -231,4 +231,3 @@ async def test_used_or_revoked_code_cannot_be_reused(state: str) -> None:
         await use_case.execute("used-code")
 
     assert uow.commits == 0
-

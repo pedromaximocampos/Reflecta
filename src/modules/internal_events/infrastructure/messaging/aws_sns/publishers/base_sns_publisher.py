@@ -33,4 +33,3 @@ class BaseSnsPublisher(IEventPublisher, ABC):
             Message=payload,
             MessageAttributes=message_attributes
         )
-

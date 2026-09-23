@@ -61,4 +61,3 @@ async def test_delete_passes_query_code_to_use_case() -> None:
 
     assert use_case.codes == ["confirmation-code"]
     assert response.status_code == 200
-

@@ -157,7 +157,7 @@ def get_settings() -> Settings:
     """
     Retorna uma instância única de Settings (singleton via cache).
     """
-    env = os.getenv("ENV")
+    env = os.getenv("ENV", "dev")
 
     env_file_map = {
         "dev": ".env.dev",

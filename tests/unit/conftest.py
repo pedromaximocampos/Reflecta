@@ -6,6 +6,8 @@ from src.modules.auth.application.services.auth_session import IAuthSessionServi
 from src.modules.auth.application.services.email_verification.iemail_verification_service import IEmailVerificationService
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
 from src.modules.auth.domain.ports.security.ipassword_hasher import IPasswordHasher
+from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuthUnitOfWork
+from src.modules.internal_events.public import IOutboxService
 from tests.support.utils.id_utils import new_id as gen_id
 
 from src.modules.auth.domain.entities.user import User, AuthCredentials
@@ -56,6 +58,23 @@ def mock_auth_session_service():
 @pytest.fixture
 def mock_email_verification_service():
     return AsyncMock(spec=IEmailVerificationService)
+
+
+@pytest.fixture
+def mock_outbox_service():
+    return AsyncMock(spec=IOutboxService)
+
+
+@pytest.fixture
+def mock_auth_unit_of_work(mock_user_repository):
+    uow = MagicMock(spec=IAuthUnitOfWork)
+    uow.users_repository = mock_user_repository
+    uow.user_email_verification_repository = AsyncMock()
+    uow.outbox_repository = AsyncMock()
+    uow.commit = AsyncMock()
+    uow.__aenter__ = AsyncMock(return_value=uow)
+    uow.__aexit__ = AsyncMock(return_value=None)
+    return uow
 
 
 

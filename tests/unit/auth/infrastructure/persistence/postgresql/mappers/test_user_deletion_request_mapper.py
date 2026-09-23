@@ -21,4 +21,3 @@ def test_round_trip_preserves_user_deletion_request() -> None:
     mapped = mapper.to_entity(mapper.to_model(entity))
 
     assert mapped == entity
-

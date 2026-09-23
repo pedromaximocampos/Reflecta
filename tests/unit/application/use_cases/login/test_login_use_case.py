@@ -1,5 +1,5 @@
 from src.modules.auth.application.use_cases.login import LoginOutput
-from src.shared.domain.errors.api_types import AuthError, NotFoundError
+from src.shared.domain.errors.api_types import AuthError
 from src.modules.auth.domain.exceptions.email_verification_exceptions import EmailVerificationException
 import pytest
 from unittest.mock import Mock
@@ -32,7 +32,7 @@ class TestLoginUseCaseImpl:
         # Assert – interações básicas
         login_ctx.user_repo.find_by_email.assert_called_once_with(login_ctx.user.email)
         login_ctx.password_hasher.verify.assert_called_once()
-        login_ctx.auth_session_service.create_session.assert_called_once_with(login_ctx.user)
+        login_ctx.auth_session_service.create_session.assert_called_once_with(login_ctx.user, login_ctx.uow)
         login_ctx.user.update_last_login.assert_called_once()
         login_ctx.user_repo.update_last_login_at.assert_called_once_with(login_ctx.user)
 
@@ -46,13 +46,17 @@ class TestLoginUseCaseImpl:
         login_ctx.user_repo.find_by_email.return_value = login_ctx.user
         login_ctx.password_hasher.verify.return_value = True
         login_ctx.user.is_email_verified = False
-        login_ctx.email_verification_service.ensure_active_verification_for_user.side_effect = EmailVerificationException()
+        login_ctx.email_verification_service.ensure_or_issue.return_value = None
 
         # Act & Assert
         with pytest.raises(EmailVerificationException):
             await login_ctx.use_case.execute(login_input)
 
         # Garante que nada “andou” depois da exceção
+        login_ctx.email_verification_service.ensure_or_issue.assert_awaited_once_with(
+            login_ctx.user,
+            login_ctx.uow.user_email_verification_repository,
+        )
         login_ctx.auth_session_service.create_session.assert_not_called()
         login_ctx.user_repo.update_auth_credentials.assert_not_called()
         login_ctx.user_repo.update_last_login_at.assert_not_called()
@@ -73,7 +77,7 @@ class TestLoginUseCaseImpl:
             await login_ctx.use_case.execute(login_input)
 
         # Garante que nada “andou” depois da exceção
-        login_ctx.email_verification_service.ensure_active_verification_for_user.assert_not_called()
+        login_ctx.email_verification_service.ensure_or_issue.assert_not_called()
         login_ctx.auth_session_service.create_session.assert_not_called()
         login_ctx.user_repo.update_auth_credentials.assert_not_called()
         login_ctx.user_repo.update_last_login_at.assert_not_called()
@@ -84,12 +88,12 @@ class TestLoginUseCaseImpl:
         login_ctx.user_repo.find_by_email.return_value = None
 
         # Act & Assert
-        with pytest.raises(NotFoundError):
+        with pytest.raises(AuthError):
             await login_ctx.use_case.execute(login_input)
 
         # Garante que nada “andou” depois da exceção
         login_ctx.password_hasher.verify.assert_not_called()
-        login_ctx.email_verification_service.ensure_active_verification_for_user.assert_not_called()
+        login_ctx.email_verification_service.ensure_or_issue.assert_not_called()
         login_ctx.auth_session_service.create_session.assert_not_called()
         login_ctx.user_repo.update_auth_credentials.assert_not_called()
         login_ctx.user_repo.update_last_login_at.assert_not_called()
@@ -121,6 +125,6 @@ class TestLoginUseCaseImpl:
         login_ctx.password_hasher.hash.assert_called_once_with(login_input.password)
         login_ctx.user.update_auth_credentials.assert_called_once()
         login_ctx.user_repo.update_auth_credentials.assert_called_once_with(login_ctx.user)
-        login_ctx.auth_session_service.create_session.assert_called_once_with(login_ctx.user)
+        login_ctx.auth_session_service.create_session.assert_called_once_with(login_ctx.user, login_ctx.uow)
         login_ctx.user.update_last_login.assert_called_once()
         login_ctx.user_repo.update_last_login_at.assert_called_once_with(login_ctx.user)

@@ -24,4 +24,3 @@ async def test_active_deletion_request_query_uses_user_id_value() -> None:
     assert user_id.value in statement.compile().params.values()
     assert str(user_id) not in statement.compile().params.values()
     assert request is None
-

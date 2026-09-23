@@ -14,13 +14,16 @@ def login_use_case_with_mocks(
     mock_system_clock,
     mock_auth_session_service,
     mock_email_verification_service,
+    mock_auth_unit_of_work,
+    mock_outbox_service,
 ) -> LoginUseCaseImpl:
     return LoginUseCaseImpl(
-        user_repository=mock_user_repository,
         password_hasher=mock_password_hasher,
         system_clock=mock_system_clock,
         auth_session_service=mock_auth_session_service,
         email_verification_service=mock_email_verification_service,
+        auth_unit_of_work=mock_auth_unit_of_work,
+        outbox_service=mock_outbox_service,
     )
 
 
@@ -40,6 +43,8 @@ def login_ctx(
     mock_system_clock: Mock,
     mock_auth_session_service: AsyncMock,
     mock_email_verification_service: AsyncMock,
+    mock_auth_unit_of_work: MagicMock,
+    mock_outbox_service: AsyncMock,
     mock_user: Mock,
 ) -> LoginTestContext:
     ctx = LoginTestContext(
@@ -54,4 +59,6 @@ def login_ctx(
     # Alias para compatibilidade com testes existentes
     ctx.auth_session = mock_auth_session_service
     ctx.email_verification = mock_email_verification_service
+    ctx.uow = mock_auth_unit_of_work
+    ctx.outbox_service = mock_outbox_service
     return ctx

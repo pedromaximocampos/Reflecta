@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, Mock
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from src.modules.auth.public import UserRole
 
 from src.modules.auth.application.services.auth_session import IAuthSessionService
 from src.modules.auth.application.services.email_verification.iemail_verification_service import IEmailVerificationService
@@ -124,6 +125,8 @@ def mock_user(mock_email, mock_auth_credentials, mock_user_id):
     mock.surname = "Doe"
     mock.username = "johndoe"
     mock.avatar_url = None
+    mock.role = UserRole.USER
+    mock.date_of_birth = date(2000, 1, 1)
     mock.is_email_verified = True
     mock.auth_credentials = mock_auth_credentials
     mock.last_login_at = None

@@ -43,9 +43,21 @@ class Settings(BaseSettings):
     # AWS
     AWS_PROFILE: Optional[str] = None
 
+    # AWS-S3
+    AWS_S3_REGION: str = "us-east-1"
+    AWS_S3_WORKS_BUCKET: str = ""
+
     # AWS-SQS
     AWS_SQS_REGION: Final[str]
     AWS_SQS_EMAILS_QUEUE_URL: Final[str]
+    AWS_SQS_WORK_INGESTIONS_QUEUE_URL: str = ""
+    AI_WORK_INGESTION_VISIBILITY_TIMEOUT_SECONDS: int = 300
+    AI_WORK_INGESTION_HEARTBEAT_INTERVAL_SECONDS: int = 120
+    AI_WORK_INGESTION_WAIT_TIME_SECONDS: int = 20
+    AI_WORK_INGESTION_CHUNK_MIN_TOKENS: int = 600
+    AI_WORK_INGESTION_CHUNK_MAX_TOKENS: int = 900
+    AI_WORK_INGESTION_CHUNK_OVERLAP_TOKENS: int = 150
+    AI_WORK_INGESTION_CHUNK_LEASE_SECONDS: int = 900
 
     # WORKERS
     BATCH_LIMIT: Final[int]
@@ -104,7 +116,7 @@ class Settings(BaseSettings):
     # Retries
     RABBITMQ_MAX_RETRIES: int = 5
 
-    FRONT_END_DOMAIN: str = "http://localhost:8000"
+    FRONT_END_DOMAIN: str = "http://localhost:5173"
 
     APP_NAME: str = "Individuum"
 
@@ -167,6 +179,6 @@ def get_settings() -> Settings:
 
     env_file = env_file_map.get(env)
 
-    settings =  Settings(_env_file=env_file)
+    settings = Settings(_env_file=(env_file, ".env.ai.local"))
     settings.configure_logging()
     return settings

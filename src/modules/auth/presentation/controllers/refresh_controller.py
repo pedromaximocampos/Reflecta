@@ -32,6 +32,8 @@ class RefreshController(IControllerInterface):
                     "name": refresh_result.user.name,
                     "surname": refresh_result.user.surname,
                     "avatar_url": refresh_result.user.avatar_url,
+                    "role": refresh_result.user.role.value,
+                    "date_of_birth": refresh_result.user.date_of_birth.isoformat(),
                 }
             }
             refresh_cookie = Cookie(

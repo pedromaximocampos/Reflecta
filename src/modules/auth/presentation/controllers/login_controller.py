@@ -4,7 +4,7 @@ from src.modules.auth.public.email import Email
 from src.shared.presentation.http_types import HttpRequest, HttpResponse, Cookie
 from src.shared.presentation.interfaces.controller_interface import IControllerInterface
 from src.modules.auth.application.use_cases.login.ilogin_use_case import ILoginUseCase
-from basicauth import decode
+from basicauth import DecodeError, decode
 from src.shared.domain.errors.api_types import BadRequestError
 
 class LoginController(IControllerInterface):
@@ -47,6 +47,8 @@ class LoginController(IControllerInterface):
                     "name": login_output.name,
                     "surname": login_output.surname,
                     "avatar_url": login_output.avatar_url,
+                    "role": login_output.role.value,
+                    "date_of_birth": login_output.date_of_birth.isoformat(),
                 }
             },
             cookies=cookies
@@ -54,7 +56,10 @@ class LoginController(IControllerInterface):
 
     @classmethod
     def _decode_basic_auth(cls, authorization_header: str) -> tuple[str, str]:
-        username, password = decode(authorization_header)
+        try:
+            username, password = decode(authorization_header)
+        except (DecodeError, TypeError, ValueError):
+            raise BadRequestError("Credenciais inválidas")
 
         if username is None or password is None:
             raise BadRequestError("Credenciais inválidas")

@@ -105,4 +105,6 @@ class LoginUseCaseImpl(ILoginUseCase):
             username=user.username,
             surname=user.surname,
             avatar_url=user.avatar_url,
+            role=user.role,
+            date_of_birth=user.date_of_birth,
         )

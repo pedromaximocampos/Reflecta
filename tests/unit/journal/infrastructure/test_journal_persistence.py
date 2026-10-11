@@ -122,3 +122,17 @@ async def test_repository_rejects_unknown_update_fields() -> None:
 
     with pytest.raises(ValueError, match="Invalid journal fields"):
         await repository.update(make_entry(), frozenset({"status"}))
+
+
+@pytest.mark.asyncio
+async def test_repository_update_requires_draft_at_write_time() -> None:
+    # The entry may have been analyzed after the application read the draft.
+    session = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = JournalEntryMapper().to_model(make_entry())
+    session.execute.return_value = result
+    repository = JournalEntryRepository(session, JournalEntryMapper())
+    await repository.update(make_entry(), frozenset({"content_text"}))
+    statement = session.execute.await_args.args[0]
+    assert "journal_entries.status =" in str(statement)
+    assert "draft" in statement.compile().params.values()

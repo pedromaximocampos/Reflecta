@@ -1,7 +1,11 @@
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, Request, Query
+from fastapi.responses import RedirectResponse
 from src.modules.auth.public import AuthenticatedPrincipal
 from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
 from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
+from src.shared.config.settings import get_settings
 from src.modules.auth.bootstrap.controllers import (
     get_delete_user_controller,
     get_email_verification_controller,
@@ -77,6 +81,16 @@ async def auth_verify_email(
 async def auth_reset_password(request: Request):
     """ Auth User reset password endpoint"""
     return await adapter_fastapi_request(request, _RESET_PASSWORD_CONTROLLER.handle_request)
+
+
+@auth_router.get("/reset-password")
+async def auth_reset_password_page(code: str = Query(..., min_length=1)):
+    """Redirect password-reset links from the API host to the frontend page."""
+    frontend_url = get_settings().FRONT_END_DOMAIN.rstrip("/")
+    return RedirectResponse(
+        url=f"{frontend_url}/auth/reset-password?{urlencode({'code': code})}",
+        status_code=307,
+    )
 
 
 @auth_router.post("/request-reset-password")

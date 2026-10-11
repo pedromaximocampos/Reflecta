@@ -103,6 +103,7 @@ class JournalEntryRepository(IJournalEntryRepository):
                 JournalEntryModel.id == journal_entry.id.value,
                 JournalEntryModel.user_id == journal_entry.user_id.value,
                 JournalEntryModel.deleted_at.is_(None),
+                JournalEntryModel.status == "draft",
             )
             .values(**values)
             .returning(JournalEntryModel)

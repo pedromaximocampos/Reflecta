@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Architecture](https://img.shields.io/badge/architecture-modular%20monolith-4B5563)
-![Tests](https://img.shields.io/badge/tests-151%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-287%20passing-brightgreen)
 
 > **Work in progress:** Reflecta is actively being developed as a Software Engineering capstone project. The repository already contains working vertical slices, but it is not yet a production-ready application.
 
@@ -52,9 +52,24 @@ Journal entries are text-only in the current scope. Audio and image journaling a
 
 - administrator-protected Theme CRUD;
 - deterministic, unique, and stable slugs;
-- Neo4j repository and Unit of Work abstractions;
+- work and author creation in Neo4j;
+- PDF ingestion requests backed by PostgreSQL and Amazon S3;
+- AI-suggested passage persistence and human review workflows;
+- passage editing, approval, rejection, activation, and deactivation;
+- Neo4j repositories and Unit of Work abstractions;
 - constraints and transaction handling for graph persistence;
 - separation between the Catalog module and consumers of catalog knowledge.
+
+### AI processing
+
+- PDF text extraction, Unicode normalization, and boundary-aware chunking;
+- durable per-chunk processing state in PostgreSQL;
+- Inbox Pattern for idempotent SQS event consumption;
+- SQS visibility and processing-lease heartbeats;
+- structured OpenAI Responses API output validated against active catalog themes;
+- literal quote, page, offset, and theme validation before graph persistence;
+- retryable chunk processing without repeating successfully completed chunks;
+- journal analysis submission, worker execution, and structured result persistence.
 
 ### Events and notifications
 
@@ -86,14 +101,15 @@ src/
 ├── main/                    # FastAPI application entry point
 ├── modules/
 │   ├── auth/                # Identity, sessions, roles, and account lifecycle
-│   ├── journal/             # Private text entries and future analysis data
-│   ├── catalog/             # Curated knowledge graph
+│   ├── journal/             # Private text entries and analysis data
+│   ├── catalog/             # Curated themes, works, authors, and passages
+│   ├── ai_processing/       # Journal interpretation and work ingestion
 │   ├── internal_events/     # Outbox, routing, and publishers
 │   └── notification/        # Event handlers and email delivery
 └── shared/                  # Cross-cutting contracts and infrastructure
 ```
 
-Planned modules include AI Processing, Recommendation, and Sharing / Professional. They are documented but are not yet complete implementations.
+Recommendation and Sharing / Professional remain planned modules without complete implementations.
 
 ## Main processing flows
 
@@ -109,20 +125,31 @@ Use case
                                 └── Amazon SES
 ```
 
-### Planned journal analysis
+### Work ingestion and passage curation
+
+```text
+Admin uploads a PDF
+  └── Amazon S3 + PostgreSQL ingestion + Outbox event
+        └── Amazon SNS → Amazon SQS
+              └── AI Processing worker
+                    ├── PDF extraction and normalized text
+                    ├── resumable chunks and Inbox idempotency
+                    ├── OpenAI structured passage suggestions
+                    └── Neo4j passages pending human review
+```
+
+### Journal analysis
 
 ```text
 Journal draft
   └── submit for analysis
-        └── Outbox event
-              └── AI Processing module
-                    ├── structured analysis
-                    ├── themes and sentence segmentation
-                    ├── pgvector embeddings
-                    └── curated Catalog references from Neo4j
+        └── AI Processing worker
+              ├── structured OpenAI analysis
+              ├── validation against active catalog themes
+              └── persisted analysis and entry state transition
 ```
 
-The second flow represents the target architecture and is not fully implemented yet.
+Journal submission and structured analysis are implemented as an initial vertical slice. Sentence-level processing, embeddings, and contextual passage matching remain future increments.
 
 ## Technology stack
 
@@ -135,17 +162,22 @@ The second flow represents the target architecture and is not fully implemented 
 | Knowledge graph | Neo4j |
 | Authentication | JWT, Argon2 |
 | Async messaging | Transactional Outbox, Amazon SNS, Amazon SQS, RabbitMQ |
+| AI | OpenAI Responses API, strict JSON Schema validation, HTTPX |
+| Document processing | pypdf, normalized text, boundary-aware chunking |
+| Object storage | Amazon S3 |
 | Notifications | AWS Lambda, Amazon SES, SMTP |
 | Infrastructure | Docker, Docker Compose |
 | Testing | pytest, pytest-asyncio |
 
 ## API surface
 
-The current API exposes 16 paths across three modules:
+The current API exposes 25 paths and 37 HTTP operations across three public modules:
 
 - `/auth`: authentication, verification, password reset, profile, deletion, and recovery;
-- `/journal/entries`: authenticated Journal CRUD;
-- `/catalog/themes`: administrator-protected Theme CRUD.
+- `/journal/entries`: authenticated Journal CRUD plus analysis submission and retrieval;
+- `/catalog/themes`: administrator-protected Theme CRUD;
+- `/catalog/works`: work creation and PDF ingestion;
+- `/catalog/passages`: passage listing, editing, review, and availability management.
 
 After starting the API, the generated documentation is available at:
 
@@ -229,6 +261,12 @@ docker compose -f docker-compose.api_workers.yml up --build
 
 AWS-backed workers require valid IAM permissions and configured SNS, SQS, Lambda, and SES resources.
 
+To include the AI workers declared under the Compose profile:
+
+```bash
+docker compose -f docker-compose.api_workers.yml --profile ai up --build
+```
+
 ## Tests
 
 Run the complete suite with:
@@ -240,10 +278,10 @@ uv run pytest -q
 Current verified result:
 
 ```text
-151 passed
+287 passed
 ```
 
-The suite covers domain rules, application use cases, authentication, account lifecycle, notification handlers, adapters, Catalog/Neo4j behavior, Journal persistence mapping, controllers, and validation.
+The suite covers domain rules, application use cases, authentication, account lifecycle, notification handlers, Catalog/Neo4j behavior, Journal persistence, S3 adapters, Inbox idempotency, SQS consumption, PDF chunking, OpenAI contracts, controllers, and validation.
 
 The repository still needs broader automated integration, API, and end-to-end coverage.
 
@@ -254,21 +292,24 @@ The repository still needs broader automated integration, API, and end-to-end co
 - Auth and account lifecycle;
 - administrator authorization for Catalog operations;
 - Theme CRUD backed by Neo4j;
+- work and author creation backed by Neo4j;
+- PDF upload and ingestion state backed by S3 and PostgreSQL;
+- resumable AI processing with durable chunks and Inbox idempotency;
+- passage suggestion, explanation, review, and lifecycle management;
 - Journal draft CRUD backed by PostgreSQL;
+- initial structured Journal analysis pipeline;
 - Outbox persistence and event dispatch infrastructure;
 - email event handling and AWS/local notification adapters;
 - Docker-based PostgreSQL, Neo4j, and RabbitMQ infrastructure.
 
 ### In progress or planned
 
-- journal submission and analysis state transitions;
-- LLM provider integration and validated structured outputs;
 - embeddings generation and similarity search;
-- work/PDF ingestion through Amazon S3;
-- curated works, authors, and passages in the knowledge graph;
+- sentence-level Journal processing and contextual passage matching;
+- work listing/editing and ingestion-status API endpoints;
 - recommendation generation;
 - controlled sharing with healthcare professionals;
-- consumer idempotency and Processed Events persistence;
+- generalized consumer idempotency outside the AI ingestion Inbox;
 - operational monitoring and failure recovery;
 - frontend application;
 - CI/CD and production deployment.

@@ -1,5 +1,5 @@
 # src/presentation/exception_handler.py
-from typing import Tuple, Type
+import logging
 from src.shared.domain.errors.domain_error import DomainError
 from src.shared.presentation.http_types.http_response import HttpResponse
 from src.shared.config.settings import get_settings
@@ -7,6 +7,7 @@ from src.shared.config.settings import get_settings
 import traceback, sys
 
 _settings = get_settings()
+_logger = logging.getLogger(__name__)
 
 class ExceptionHandler:
     # tuple de TIPOS (classes), sem duplicatas
@@ -42,6 +43,7 @@ class ExceptionHandler:
             )
             return http_response
 
+        _logger.exception("Unhandled exception while processing API request")
         return HttpResponse(
             status_code=500,
             body={

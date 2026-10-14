@@ -4,6 +4,7 @@ from src.modules.auth.presentation.routes import auth_router
 from src.modules.catalog.presentation.routes import catalog_router
 from src.modules.journal.presentation.routes import journal_router
 from src.shared.config.constants import API_VERSION
+from src.shared.config.settings import get_settings
 from src.main.server.fast_api.fast_api_exception_handler import add_exception_handlers
 
 def create_fast_api_app() -> FastAPI:
@@ -18,7 +19,7 @@ def create_fast_api_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # em produção, restringir
+        allow_origins=[get_settings().FRONT_END_DOMAIN.rstrip("/")],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

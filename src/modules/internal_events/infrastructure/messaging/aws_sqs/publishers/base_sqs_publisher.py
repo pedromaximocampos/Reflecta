@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC
 from typing import Optional
 
-from modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
+from src.modules.internal_events.infrastructure.messaging.helpers.aws_pub_helper import AwsPubHelper
 from src.modules.internal_events.application.ports.messaging.ievent_publisher import IEventPublisher
 from src.modules.internal_events.domain.entities.outbox_event import OutboxEvent
 from src.modules.internal_events.infrastructure.messaging.aws_sqs.clients.sqs_clients import make_sqs_client
@@ -37,4 +37,3 @@ class BaseSQSPublisher(IEventPublisher, ABC):   # ABC a classe nao pode ser inst
             kwargs["MessageAttributes"] = AwsPubHelper.to_attributes(attributes)
 
         self.__client.send_message(**kwargs)
-

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import Response
 
 from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
@@ -34,6 +34,38 @@ from src.modules.journal.presentation.validators.journal_entry import (
 from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
 
 journal_router = APIRouter(prefix="/journal", tags=["Journal"])
+
+
+def get_analysis_gateway():
+    from src.modules.journal.infrastructure.persistence.postgresql.analysis_gateway import JournalAnalysisGateway
+    from src.shared.infrastructure.persistence.postgresql.provider import individuum_mvp_provider
+    return JournalAnalysisGateway(individuum_mvp_provider)
+
+
+@journal_router.get("/entries/{journal_entry_id}/analysis")
+async def get_journal_analysis(
+    journal_entry_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_analysis_gateway),
+):
+    return await gateway.get_analysis(journal_entry_id, current_user.user_id.value)
+
+
+@journal_router.post("/entries/{journal_entry_id}/analysis", status_code=202)
+async def submit_journal_analysis(
+    journal_entry_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_analysis_gateway),
+):
+    from datetime import datetime, timezone
+    from src.modules.journal.public.analysis import AnalysisConflictError
+    try:
+        await gateway.submit(journal_entry_id, current_user.user_id.value, now=datetime.now(timezone.utc))
+    except AnalysisConflictError:
+        raise HTTPException(status_code=409, detail="Entry already analyzed.") from None
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Entry must contain between 1 and 10000 characters.") from None
+    return {"entry_id": journal_entry_id, "status": "pending_analysis"}
 
 
 @journal_router.post(

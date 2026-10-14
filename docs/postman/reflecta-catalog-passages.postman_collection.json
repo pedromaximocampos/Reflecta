@@ -1,0 +1,263 @@
+{
+  "info": {
+    "_postman_id": "bd56df83-54b3-4f5f-9e38-8ccf28ae45de",
+    "name": "Reflecta - Catalog, AI Ingestion and Passage Review",
+    "description": "Fluxo administrativo do Catalog. Execute as pastas em ordem. Preencha admin_email e admin_password antes do login. A chave OpenAI não pertence ao Postman; ela fica somente em .env.ai.local no backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "admin_email", "value": ""},
+    {"key": "admin_password", "value": ""},
+    {"key": "access_token", "value": ""},
+    {"key": "test_suffix", "value": ""},
+    {"key": "theme_id", "value": ""},
+    {"key": "work_id", "value": ""},
+    {"key": "passage_id", "value": ""},
+    {"key": "ingestion_id", "value": ""},
+    {"key": "ai_passage_to_approve_id", "value": ""},
+    {"key": "ai_passage_to_reject_id", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "1 - Preparar catálogo",
+      "item": [
+        {
+          "name": "1.1 - Login do administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login retornou 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.expect(body.user.role).to.eql('ADMIN');",
+                  "pm.collectionVariables.set('access_token', body.access_token);",
+                  "pm.collectionVariables.set('test_suffix', Date.now().toString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {"key": "username", "value": "{{admin_email}}", "type": "string"},
+                {"key": "password", "value": "{{admin_password}}", "type": "string"}
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/auth/login",
+            "description": "O login usa HTTP Basic. O teste salva automaticamente o access_token para as próximas requisições."
+          }
+        },
+        {
+          "name": "1.2 - Criar temas ativos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Temas criados', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.themes.length).to.be.greaterThan(0);",
+                  "pm.collectionVariables.set('theme_id', body.themes[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"themes\": [\n    {\n      \"label\": \"Virtude Teste {{test_suffix}}\",\n      \"description\": \"Agir de acordo com princípios éticos e excelência moral.\",\n      \"is_active\": true\n    },\n    {\n      \"label\": \"Disciplina Teste {{test_suffix}}\",\n      \"description\": \"Constância na prática e no desenvolvimento pessoal.\",\n      \"is_active\": true\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/catalog/themes"
+          }
+        },
+        {
+          "name": "1.3 - Criar obra e autor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Obra criada', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('work_id', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Obra de Teste {{test_suffix}}\",\n  \"synopsis\": \"Obra temporária para validar o fluxo do catálogo.\",\n  \"type\": \"book\",\n  \"language\": \"pt-BR\",\n  \"author\": {\n    \"name\": \"Autor de Teste {{test_suffix}}\",\n    \"description\": \"Autor temporário utilizado pelo Postman.\"\n  }\n}"
+            },
+            "url": "{{base_url}}/catalog/works"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - CRUD manual de passagens",
+      "item": [
+        {
+          "name": "2.1 - Criar passagem manual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Passagem manual criada como APPROVED', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().status).to.eql('APPROVED');",
+                  "});",
+                  "pm.collectionVariables.set('passage_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"work_id\": \"{{work_id}}\",\n  \"locator\": \"cap. 1\",\n  \"short_text\": \"A disciplina transforma uma intenção correta em uma prática constante.\",\n  \"paraphrase\": \"A constância converte intenção em comportamento.\",\n  \"interpretation_note\": \"Passagem criada manualmente pelo administrador.\",\n  \"priority\": 2,\n  \"start_page\": 1,\n  \"end_page\": 1,\n  \"themes\": [\n    {\n      \"theme_id\": \"{{theme_id}}\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/catalog/passages"
+          }
+        },
+        {
+          "name": "2.2 - Consultar passagem por ID",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem encontrada', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('passage_id')); "]}}],
+          "request": {"method": "GET", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}"}
+        },
+        {
+          "name": "2.3 - Listar passagens aprovadas da obra",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Lista filtrada retornou passagem', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().total).to.be.greaterThan(0);", "});"]}}],
+          "request": {"method": "GET", "header": [], "url": "{{base_url}}/catalog/passages?status=APPROVED&work_id={{work_id}}"}
+        },
+        {
+          "name": "2.4 - Atualizar conteúdo, prioridade e remover páginas",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem atualizada', () => {", "  pm.response.to.have.status(200);", "  const body = pm.response.json();", "  pm.expect(body.priority).to.eql(4);", "  pm.expect(body.start_page).to.eql(null);", "});"]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paraphrase\": \"A constância transforma intenção em hábito.\",\n  \"interpretation_note\": \"Conteúdo revisado pelo administrador.\",\n  \"priority\": 4,\n  \"start_page\": null,\n  \"end_page\": null,\n  \"themes\": [\n    {\n      \"theme_id\": \"{{theme_id}}\",\n      \"confidence\": 0.95\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/catalog/passages/{{passage_id}}"
+          }
+        },
+        {
+          "name": "2.5 - Ativar passagem",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem ACTIVE', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().status).to.eql('ACTIVE');", "});"]}}],
+          "request": {"method": "POST", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}/activate"}
+        },
+        {
+          "name": "2.6 - Desativar passagem",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem INACTIVE', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().status).to.eql('INACTIVE');", "});"]}}],
+          "request": {"method": "POST", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}/deactivate"}
+        },
+        {
+          "name": "2.7 - Reativar antes da exclusão lógica",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem reativada', () => pm.response.to.have.status(200));"]}}],
+          "request": {"method": "POST", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}/activate"}
+        },
+        {
+          "name": "2.8 - Excluir logicamente",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Exclusão lógica retornou 204', () => pm.response.to.have.status(204));"]}}],
+          "request": {"method": "DELETE", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}"}
+        },
+        {
+          "name": "2.9 - Confirmar estado INACTIVE após exclusão",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Passagem foi preservada como INACTIVE', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().status).to.eql('INACTIVE');", "});"]}}],
+          "request": {"method": "GET", "header": [], "url": "{{base_url}}/catalog/passages/{{passage_id}}"}
+        }
+      ]
+    },
+    {
+      "name": "3 - Ingestão com IA e revisão",
+      "description": "Requer .env.ai.local configurado, S3/SNS/SQS disponíveis e o worker de ingestão em execução.",
+      "item": [
+        {
+          "name": "3.1 - Solicitar ingestão do PDF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ingestão aceita', () => pm.response.to.have.status(202));",
+                  "pm.collectionVariables.set('ingestion_id', pm.response.json().ingestion_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "document", "type": "file", "src": []}
+              ]
+            },
+            "url": "{{base_url}}/catalog/works/{{work_id}}/ingestions",
+            "description": "Selecione manualmente um PDF pequeno no campo document antes de enviar. A resposta 202 apenas aceita a ingestão; o processamento ocorre no worker."
+          }
+        },
+        {
+          "name": "3.2 - Listar sugestões pendentes da ingestão",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta de pendências respondeu', () => pm.response.to.have.status(200));",
+                  "const passages = pm.response.json().passages || [];",
+                  "if (passages.length > 0) pm.collectionVariables.set('ai_passage_to_approve_id', passages[0].id);",
+                  "if (passages.length > 1) pm.collectionVariables.set('ai_passage_to_reject_id', passages[1].id);",
+                  "console.log('Sugestões pendentes encontradas:', passages.length);"
+                ]
+              }
+            }
+          ],
+          "request": {"method": "GET", "header": [], "url": "{{base_url}}/catalog/passages?status=PENDING_REVIEW&ingestion_id={{ingestion_id}}"}
+        },
+        {
+          "name": "3.3 - Aprovar sugestão da IA",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Sugestão aprovada', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().status).to.eql('APPROVED');", "});"]}}],
+          "request": {"method": "POST", "header": [], "url": "{{base_url}}/catalog/passages/{{ai_passage_to_approve_id}}/approve"}
+        },
+        {
+          "name": "3.4 - Rejeitar outra sugestão da IA",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Sugestão rejeitada', () => {", "  pm.response.to.have.status(200);", "  pm.expect(pm.response.json().status).to.eql('REJECTED');", "});"]}}],
+          "request": {"method": "POST", "header": [], "url": "{{base_url}}/catalog/passages/{{ai_passage_to_reject_id}}/reject", "description": "Se a IA gerar somente uma sugestão, teste aprovação ou rejeição, não ambas sobre a mesma passagem. Para testar a outra decisão, processe outra ingestão ou escolha outro ID pendente."}
+        }
+      ]
+    }
+  ]
+}

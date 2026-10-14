@@ -1,554 +1,302 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria realizada em 2026-08-29, com atualização focal em 2026-09-18 após a implementação e
-> verificação do schema PostgreSQL e do CRUD básico do Journal.
+> Auditoria focal atualizada em 2026-10-14 após a sincronização do backend desenvolvido na branch
+> `feature/atividade-a3-pedro` do repositório acadêmico com este repositório privado.
 >
-> O arquivo solicitado como `IMPLEMENTATION_STATUS.md` existe neste repositório com o nome
-> `reflecta_IMPLEMENTATION_STATUS.md`. Os arquivos operacionais e de contexto seguem a mesma
-> convenção: `reflecta_AGENTS.md` e `reflecta_PROJECT_CONTEXT.md`.
->
-> Este documento usa código, migrations, configuração e execução como evidência. TCC,
-> diagramas, casos de uso, glossário e `reflecta_PROJECT_CONTEXT.md` representam o planejado,
-> não provam implementação.
+> Este documento registra somente capacidades comprovadas por código, migrations, testes ou execução.
+> Diagramas e documentação de produto continuam sendo referência do planejado, não evidência de implementação.
 
-## 1. Legenda e escopo da verificação
+## 1. Legenda
 
-- `IMPLEMENTED`: implementação concreta encontrada e coerente no escopo indicado.
-- `PARTIAL`: há código ou estrutura relevante, mas o fluxo está incompleto, desconectado ou quebrado.
-- `NOT_STARTED`: o repositório foi inspecionado e não contém implementação relevante.
-- `BLOCKED`: depende de decisão ou contrato ainda não definido para poder ser concluído coerentemente.
-- `NOT_VERIFIED`: há configuração ou código, mas o comportamento real não pôde ser executado no ambiente da auditoria.
+- `IMPLEMENTED`: implementação concreta e verificada no escopo indicado.
+- `PARTIAL`: existe implementação relevante, mas o fluxo ainda possui lacunas ou validação externa pendente.
+- `NOT_STARTED`: não foi encontrada implementação relevante.
+- `BLOCKED`: depende de decisão ou contrato ainda não definido.
+- `NOT_VERIFIED`: existe código/configuração, mas a integração real não foi exercitada nesta auditoria.
 
-Verificações realizadas:
+## 2. Verificações desta atualização
 
-- leitura integral, nesta ordem, de `reflecta_AGENTS.md`, `reflecta_PROJECT_CONTEXT.md` e deste arquivo;
-- inventário inicial de 372 arquivos do projeto, excluindo `.git`;
-- leitura do código, configurações, dependências, migrations, testes, Docker/Compose, documentação,
-  seis diagramas `.puml`, sete diagramas `.mmd`, glossário e as 116 páginas do TCC;
-- parsing estático dos arquivos Python atuais: **sem erro de sintaxe**;
-- inspeção do grafo de imports: **um ciclo interno em Auth** e nenhum ciclo entre os cinco módulos físicos;
-- comparação AST de 215 arquivos Python rastreados afetados pela reorganização: **nenhuma mudança de
-  corpo executável além de imports**;
-- inspeção Alembic: histórico linear e uma única head `d4a1c7e9b203`;
-- importação da aplicação FastAPI e geração do OpenAPI com variáveis de processo de auditoria: **sucesso**;
-- execução de `pytest -q`: **144 testes aprovados e sete erros de setup Auth** causados
-  por fixtures antigas de Login/Logoff incompatíveis com os construtores atuais;
-- testes focais de recuperação, repositories relacionados e Notification: **34 aprovados**;
-- testes focais da atualização parcial de perfil e do repository de usuário: **23 aprovados**;
-- testes focais do Journal: **26 aprovados**, cobrindo entidade, casos de uso, ownership, validators,
-  controllers, mapper, repository e o registro das sete tabelas no metadata;
-- migration `d4a1c7e9b203_create_journal_schema.py` aplicada com sucesso no PostgreSQL local;
-  `alembic check` não encontrou operações pendentes;
-- smoke test real do repository Journal no PostgreSQL executou create, get, list, update e exclusão
-  lógica com sucesso e reverteu a transação de teste;
-- publicação RabbitMQ, consumo e execução de handler com notifier falso em topologia temporária: **sucesso**; a topologia de
-  teste foi removida após a verificação;
-- container Neo4j 5.26 Community iniciado pelo Compose, portas HTTP/Bolt publicadas e consulta
-  `RETURN 1` executada via `cypher-shell`: **sucesso**;
-- testes focais de Catalog/Neo4j: **38 aprovados**, cobrindo casos de uso, DTOs, validators, repository,
-  UoW e configuração de conexão; importação da aplicação e geração do OpenAPI confirmaram as cinco
-  operações de `/catalog/themes` com Bearer;
-- importação/OpenAPI confirmou as cinco operações autenticadas de `/journal/entries`;
-- API em container e entrega SMTP externa continuam não verificadas nesta atualização.
+- 829 arquivos rastreados do backend acadêmico foram comparados por SHA-256 após a sincronização;
+- `uv sync`: 73 pacotes resolvidos; `pypdf` e stubs S3 adicionados ao ambiente;
+- `pytest -q`: **287 testes aprovados**, com oito avisos de depreciação Pydantic;
+- `compileall`: código de `src`, `tests` e `alembic` compilado sem erro;
+- Alembic: cadeia linear, uma head `a3d9e7f4b612`, banco local na head;
+- `alembic check`: nenhuma nova operação de upgrade detectada;
+- FastAPI/OpenAPI: aplicação importada e **25 paths / 37 operações HTTP** gerados;
+- `git diff --check`: nenhum erro de whitespace; somente avisos de conversão LF/CRLF no Windows;
+- o fluxo equivalente da branch acadêmica sincronizada foi exercitado manualmente com S3, SNS, SQS,
+  OpenAI e Neo4j reais; a execução externa não foi repetida a partir desta cópia privada após a sincronização.
 
-## 2. Resumo executivo
+## 3. Resumo executivo
 
 | Área | Status | Estado real |
 |---|---|---|
-| Backend/API | PARTIAL | FastAPI expõe doze rotas Auth, cinco operações administrativas de `/catalog/themes` e cinco operações autenticadas de `/journal/entries`; AI, Recommendation, Sharing e Notification não possuem API funcional. |
-| Monólito modular | PARTIAL | Bounded contexts estão em `src/modules/`, componentes técnicos em `src/shared/` e a composição final em `src/main/`; permanecem violações internas e fluxos incompletos. |
-| Clean Architecture / DDD | PARTIAL | Há entidades, portas, casos de uso e adapters, com violações e ciclos de dependência. |
-| Auth Module | PARTIAL | É o único módulo substancial. Exclusão e recuperação possuem casos de uso e testes unitários, mas ainda não foram verificadas de ponta a ponta com PostgreSQL e AWS reais. |
-| Journal Module | PARTIAL | O CRUD textual vertical está implementado com ownership, exclusão lógica, PostgreSQL e API. O schema planejado existe, mas análise, eventos, repositories derivados e pipeline de IA ainda não foram iniciados. |
-| AI Processing | NOT_STARTED | Nenhum port, provider, schema, worker ou persistência de IA. |
-| Recommendation | NOT_STARTED | Não existe código do módulo; o antigo placeholder vazio foi removido. |
-| Catalog / Knowledge | PARTIAL | `Theme` possui CRUD administrativo vertical, slug determinístico e estável, repository/UoW Neo4j e transações explícitas; faltam integração com Neo4j real e Author/Work/Passage/relações. |
-| Sharing / Professional | NOT_STARTED | Nenhuma implementação. |
-| Notification | PARTIAL | Handler, DTO e adapters SMTP/SES atendem verificação, reset, exclusão e recuperação; o consumer Lambda/SQS existe, mas idempotência persistente ainda não foi implementada. |
-| Internal Events / Outbox | PARTIAL | Dispatcher SNS está conectado ao Outbox e ao Compose; faltam idempotência, recuperação de eventos presos em `PROCESSING` e alinhamento dos consumers locais. |
-| PostgreSQL | PARTIAL | Oito tabelas Auth/Outbox no schema padrão e sete tabelas em `journal_schema`; migrations até a head atual foram aplicadas no banco local. Os demais schemas planejados ainda não existem. |
-| pgvector | PARTIAL | Extensão e duas colunas `VECTOR` do Journal existem; dimensão, índice, geração e consulta vetorial continuam pendentes. |
-| Neo4j | PARTIAL | O serviço local `neo4j_dev` respondeu via Bolt; driver, settings, constraint Cypher, mapper, repository e UoW de `Theme` existem e têm testes unitários, mas a integração do fluxo com o banco real ainda não foi verificada. |
-| Frontend | NOT_STARTED | Não existe aplicação frontend no repositório. |
-| Testes automatizados | PARTIAL | 151 testes coletam: 144 passam e sete testes antigos de Login/Logoff falham no setup por fixtures desatualizadas. |
+| Backend/API | PARTIAL | FastAPI expõe Auth, CRUD Journal, análise de Journal, catálogo de temas, criação/ingestão de obras e curadoria de passagens. |
+| Monólito modular | PARTIAL | Módulos físicos em `src/modules`, shared técnico em `src/shared` e composição em `src/main`; ainda existem acoplamentos de Presentation e dívidas antigas em Auth. |
+| Clean Architecture / DDD | PARTIAL | Entidades, VOs, ports, casos de uso, repositories, UoWs e adapters estão separados nos fluxos recentes; nem todo código legado segue o mesmo rigor. |
+| Auth | PARTIAL | Cadastro, login, refresh/logoff, verificação, reset, exclusão lógica, recuperação, perfil e role existem; faltam E2E automatizado e distinção criptográfica entre access/refresh token. |
+| Journal | PARTIAL | CRUD com ownership e exclusão lógica está implementado; submissão/consulta de análise e worker existem, mas o pipeline futuro de sentenças, embeddings e referências continua incompleto. |
+| AI Processing | PARTIAL | Interpretação de Journal e ingestão de PDF com extração, normalização, chunks, OpenAI, validação de citação, retry, Inbox e persistência de estado estão implementadas e o fluxo de obras foi exercitado manualmente; faltam E2E automatizado e operação reproduzível. |
+| Catalog / Knowledge | PARTIAL | CRUD de temas, criação de obra/autor, solicitação de ingestão e CRUD/revisão de passagens existem; faltam listagem/edição de obras e endpoint público de status da ingestão. |
+| Recommendation | NOT_STARTED | Não existe módulo funcional. |
+| Sharing / Professional | NOT_STARTED | Não existe módulo funcional. |
+| Notification | PARTIAL | Handler unificado, SMTP, SES e consumer Lambda/SQS existem; idempotência persistente e deploy reproduzível permanecem pendentes. |
+| Internal Events | PARTIAL | Outbox, dispatcher SNS/SQS/RabbitMQ e retries existem; recovery de eventos presos e processed events gerais continuam incompletos. |
+| Frontend | NOT_STARTED | Não existe aplicação frontend neste repositório. |
 
-## 3. Stack real encontrada
+## 4. Stack real
 
-| Item | Status | Evidência | Observação |
-|---|---|---|---|
-| Python >=3.12; runtime Docker 3.14 | IMPLEMENTED | `pyproject.toml`, `Dockerfile` | O projeto aceita Python 3.12 ou superior e a imagem do backend executa Python 3.14. |
-| FastAPI / Uvicorn | IMPLEMENTED | `pyproject.toml`, `src/main/server/fast_api/server.py`, `src/main/server/fast_api/run.py` | Aplicação importada com sucesso durante a auditoria. |
-| Pydantic / pydantic-settings | IMPLEMENTED | `pyproject.toml`, `src/shared/config/settings.py`, `src/modules/auth/presentation/validators/` | Há warnings de configuração Pydantic legada. |
-| SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | `pyproject.toml`, `src/shared/infrastructure/persistence/postgresql/connection.py`, models nos módulos Auth/Internal Events | Stack de persistência efetiva. |
-| Alembic | IMPLEMENTED | `alembic.ini`, `alembic/env.py`, `alembic/versions/d4a1c7e9b203_create_journal_schema.py` | Cadeia válida, uma head `d4a1c7e9b203`, aplicada no PostgreSQL local; `alembic check` passou. |
-| PostgreSQL 16 | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/postgresql/`, models Journal | Imagem `pgvector/pgvector:pg16`; migrations e CRUD Journal foram exercitados no banco real, mas a stack completa não foi validada em conjunto. |
-| pgvector | PARTIAL | `pyproject.toml`, `docker-compose.infra.yml`, migration Journal, models `entry_embedding_model.py` e `sentence_embedding_model.py` | Extensão e colunas vetoriais persistentes existem; não há dimensão, índice, geração ou busca vetorial. |
-| Argon2 | IMPLEMENTED | `src/modules/auth/infrastructure/security/argon2id_password_hasher.py`, `src/modules/auth/infrastructure/security/configs/argon2/` | Adapter concreto de hash e verificação. |
-| JWT / PyJWT | PARTIAL | `src/modules/auth/infrastructure/security/token_service.py`, `src/modules/auth/application/services/auth_session/` | Tokens existem, mas access e refresh não têm tipo/audience distintos. |
-| RabbitMQ / aio-pika | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/`, `src/modules/internal_events/bootstrap/workers/publishers/rabbitmq/`, consumers em `src/modules/notification/` | Publisher, topologia, roteamento e consumo local foram conectados; smoke test do broker passou, sem envio SMTP externo. |
-| AWS SNS/SQS / boto3 | PARTIAL | publishers em `src/modules/internal_events/infrastructure/messaging/aws_sns/` e `aws_sqs/`; consumer em `src/modules/notification/infrastructure/messaging/aws/sqs/`; bootstraps AWS de ambos os módulos | O dispatcher do Compose publica no SNS e o Lambda processa lotes SQS com `batchItemFailures`; ainda não há idempotência persistente nem deploy reproduzível. |
-| SMTP / aiosmtplib | PARTIAL | `src/modules/notification/infrastructure/email/smtp/` | Implementação Gmail/SMTP; entrega externa não verificada. |
-| SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py` | Adapter SESv2 e composição Lambda existem; falhas registram código, status HTTP e request ID sem payload/PII. Não há infraestrutura como código ou teste externo automatizado. |
-| S3 | NOT_STARTED | Repositório inteiro inspecionado | `boto3` é usado apenas para SQS. |
-| Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/neo4j/`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Neo4j 5.26 Community local respondeu via Bolt; pacote Python, settings, constraint Cypher, mapper, repository e UoW de `Theme` existem. A integração real do fluxo permanece não verificada. |
-| Provider de LLM | NOT_STARTED | `pyproject.toml`, `src/` | Nenhum SDK, port ou adapter de IA. |
-| Frontend | NOT_STARTED | raiz do repositório | Sem manifesto, fonte, build ou assets de aplicação web. |
-| Pytest / pytest-asyncio | PARTIAL | `pyproject.toml`, `tests/` | 151 testes coletam; 144 passam e sete fixtures antigas de Login/Logoff causam erro no setup. |
-| Docker / Compose | PARTIAL | `Dockerfile`, `docker-compose.infra.yml`, `docker-compose.api_workers.yml` | Daemon, PostgreSQL, RabbitMQ e Neo4j locais foram iniciados/verificados em momentos distintos; API e workers completos ainda não foram executados juntos. |
-| CI/CD | NOT_STARTED | raiz do repositório | Nenhum workflow/pipeline encontrado. |
-| Observabilidade | PARTIAL | `src/main/server/fast_api/server.py`, workers de mensageria, `src/modules/notification/infrastructure/email/ses/ses_notifier.py` | Logging básico e diagnóstico seguro de falhas SES; sem correlação completa, métricas, tracing, alertas ou health/readiness. |
-
-Não existe `.env.example` ou equivalente. Há um `.env.dev` local ignorado pelo Git, referenciado por
-`src/shared/config/settings.py` e `docker-compose.api_workers.yml`; portanto, um novo colaborador ainda não possui um contrato versionado de configuração.
-
-## 4. Arquitetura real
-
-### 4.1 Estrutura e fronteiras
-
-| Capacidade | Status | Evidência | Diagnóstico |
-|---|---|---|---|
-| Um único backend implantável | IMPLEMENTED | `Dockerfile`, `src/main/server/fast_api/run.py` | É um monólito no sentido de um processo/API principal. |
-| Modularidade por bounded context | PARTIAL | `src/modules/`, `src/shared/`, `src/main/` | Cinco módulos possuem fronteira física; Catalog e Journal possuem primeiras fatias verticais completas. Shared Kernel técnico e composition root têm dependências majoritariamente direcionadas. |
-| Separação Domain/Application/Infrastructure/Presentation | PARTIAL | `src/modules/auth/`, `src/modules/journal/`, `src/modules/catalog/`, `src/modules/internal_events/`, `src/modules/notification/` | Auth, o CRUD de Theme e o CRUD Journal usam as quatro camadas; os demais fluxos permanecem incompletos. |
-| Clean Architecture | PARTIAL | ports/use cases em `src/modules/*/application/` e `domain/`; adapters em `infrastructure/` | Há inversão em vários pontos, mas Domain ainda depende de configuração e semântica HTTP compartilhada. |
-| DDD | PARTIAL | entidades/VOs/eventos em `src/modules/auth/domain/`, `src/modules/journal/domain/` e `src/modules/internal_events/domain/` | `JournalEntry` concentra invariantes de conteúdo, edição e exclusão; agregados e contratos dos pipelines derivados continuam incompletos. |
-| Composition root / DI | PARTIAL | bootstraps dos módulos e `src/main/server/fast_api/server.py` | Composição é manual. Journal cria UoW por dependency/request; partes de Auth ainda reutilizam instâncias globais mutáveis. |
-| API/BFF | PARTIAL | rotas Auth, Catalog e Journal; `src/main/server/fast_api/server.py` | Auth, Theme e Journal são expostos; não existe frontend nem API funcional de AI, Recommendation, Sharing ou Notification. |
-| Dependências acíclicas | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/`, `src/modules/catalog/` | Não há ciclo entre os cinco módulos físicos; Catalog depende somente da fronteira pública de Auth na autorização HTTP e persiste um ciclo interno nos models de Auth. |
-
-Dependências entre módulos observadas pelo AST após a separação física:
-
-- `notification -> auth.public, internal_events`;
-- `journal -> auth.public` para `UserId`/principal e `journal.presentation -> auth.presentation`
-  para a dependency FastAPI de autenticação;
-- `catalog -> auth.public` para principal/role e `catalog.presentation -> auth.presentation`
-  para o guard FastAPI;
-- `auth -> internal_events.public` e, na composição transacional existente, implementação de Outbox;
-- `internal_events` não importa Auth nem Notification.
-
-Não há ciclo entre módulos. `src/shared/` não
-importa módulos nem `main`, e os módulos não importam `main`. Ainda existe acoplamento do Domain de Auth
-com configuração compartilhada.
-
-### 4.2 Violações arquiteturais comprovadas
-
-1. **Domain depende de configuração:** `src/modules/auth/domain/value_objects/password_plain.py` importa
-   `src/shared/config/settings.py`; regras do domínio ficam acopladas ao ambiente.
-2. **Domain contém transporte HTTP:** `src/shared/domain/errors/domain_error.py` e
-   `src/shared/domain/errors/api_types/` carregam status/tipos de API dentro do domínio compartilhado.
-3. **Ciclo Infrastructure:** `src/modules/auth/infrastructure/persistence/postgresql/models/__init__.py`
-   reexporta models que importam o próprio pacote, formando ciclo interno entre o `__init__` e os models Auth.
-4. **Unit of Work global e mutável:** `src/modules/auth/bootstrap/units_of_work.py`,
-   `src/modules/auth/bootstrap/use_cases.py` e `src/modules/auth/presentation/routes.py`
-   instanciam e reutilizam UoWs/use cases/controllers. `src/shared/infrastructure/persistence/postgresql/units_of_work/base_unit_of_work.py`
-   mantém sessão mutável; requests concorrentes podem compartilhar estado.
-5. **Adapter HTTP Auth importado entre módulos:** as rotas Journal e Catalog importam
-   `src/modules/auth/presentation/adapters/fast_api_auth.py`. A proteção funciona, mas a dependência cruza
-   a fronteira privada de Presentation do Auth em vez de uma composição HTTP externa aos módulos.
-6. **Exceção expõe internals em debug:** `src/main/server/fast_api/fast_api_exception_handler.py`
-   pode devolver arquivo, linha e erro bruto; `DEBUG` tem default ativo em `src/shared/config/settings.py`.
-
-## 5. Auth Module
-
-| Capacidade | Status | Evidência | Estado real |
-|---|---|---|---|
-| User/AuthCredentials model | PARTIAL | `src/modules/auth/domain/entities/user.py`, `src/modules/auth/domain/value_objects/user_role.py`, `src/modules/auth/infrastructure/persistence/postgresql/models/users_model.py`, `src/modules/auth/infrastructure/persistence/postgresql/mappers/user_mapper.py`, migrations `1ce1f1cd457b_bancos_agora_em_docker.py` e `48f1a9d4c2b7_add_user_role_and_soft_delete.py` | Entidade, model e mapper preservam `role` e `deleted_at`; migration ainda não foi executada contra PostgreSQL nesta atualização e permanecem divergências históricas de schema/identificador/campos. |
-| Cadastro | PARTIAL | `src/modules/auth/application/use_cases/signup/`, `src/modules/auth/presentation/controllers/sign_up_controller.py`, `src/modules/auth/presentation/routes.py` | Fluxo substancial; não há teste de cadastro nem E2E e a cadeia de verificação por e-mail não fecha. |
-| Login | PARTIAL | `src/modules/auth/application/use_cases/login/`, `src/modules/auth/presentation/controllers/login_controller.py`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_repository.py` | Mapper e consultas estão alinhados; os testes antigos de Login ainda não instanciam o UoW atual e não há teste E2E automatizado. Usuários com `deleted_at` deixam de ser retornados pelo repository. |
-| Password hashing | IMPLEMENTED | `src/modules/auth/domain/ports/security/ipassword_hasher.py`, `src/modules/auth/infrastructure/security/argon2id_password_hasher.py` | Argon2id concreto com verify/rehash. |
-| Geração/validação JWT | PARTIAL | `src/modules/auth/application/ports/token/`, `src/modules/auth/infrastructure/security/token_service.py` | Primitiva existe; access/refresh são indistinguíveis por claim/tipo. |
-| Sessões e refresh | PARTIAL | `src/modules/auth/domain/entities/auth_session.py`, `src/modules/auth/application/services/auth_session/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/auth_sessions_repository.py` | Persistência existe; refresh usa atributo inexistente `_clock`. |
-| Logoff | PARTIAL | `src/modules/auth/application/use_cases/logoff/`, `src/modules/auth/presentation/controllers/logoff_controller.py` | Estrutura existe; os dois testes coletam, mas falham no setup por ausência do UoW na fixture. |
-| Solicitar reset de senha | PARTIAL | `src/modules/auth/application/use_cases/request_password_reset/`, `src/modules/auth/application/services/reset_password_service/`, `tests/unit/auth/application/services/test_password_reset_service.py` | Service persiste pelo repository recebido e o teste focal passa; o fluxo HTTP/mensageria não possui cobertura E2E automatizada. |
-| Efetivar reset de senha | PARTIAL | `src/modules/auth/application/use_cases/reset_password/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/reset_password_repository.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Estrutura/persistência existem, sem cobertura automatizada completa do endpoint ao banco. |
-| Verificação de e-mail | PARTIAL | `src/modules/auth/domain/entities/email_verification.py`, `src/modules/auth/application/use_cases/verify_email/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_email_verification_repository.py`, `tests/unit/auth/application/services/test_email_verification_service.py` | Repository/service e testes focais existem; falta cobertura E2E automatizada com banco e entrega assíncrona. |
-| Perfil | PARTIAL | `src/modules/auth/domain/entities/user.py`, `src/modules/auth/application/use_cases/update_user_info/`, `src/modules/auth/infrastructure/persistence/postgresql/repositories/user_repository.py`, `src/modules/auth/presentation/controllers/update_user_info_controller.py`, `src/modules/auth/presentation/validators/update_user_info.py`, `src/modules/auth/presentation/routes.py`, testes em `tests/unit/auth/` | `PATCH /auth/user-info` exige Bearer, deriva o usuário do token e permite atualizar parcialmente apenas `name`, `surname`, `date_of_birth` e `avatar_url`. O repository restringe o SQL ao subconjunto realmente enviado e a usuários ativos. Permanece `PARTIAL` por ausência de teste HTTP/PostgreSQL real e porque upload/remoção de avatar no S3 não fazem parte deste incremento. |
-| Avatar/S3 | NOT_STARTED | `src/` inspecionado | Nenhuma implementação S3. |
-| Exclusão/anonimização | PARTIAL | `src/modules/auth/application/use_cases/request_delete/`, `src/modules/auth/application/use_cases/delete/`, `src/modules/auth/application/services/user_deletion/`, `src/modules/auth/domain/entities/user_deletion_request.py`, `src/modules/auth/infrastructure/persistence/postgresql/`, `src/modules/auth/presentation/controllers/request_delete_controller.py`, `src/modules/auth/presentation/controllers/delete_user_controller.py`, `src/modules/auth/presentation/routes.py`, migration `7b82d9e3a104_add_user_deletion_requests.py`, testes em `tests/unit/auth/` | Solicitação autenticada, código com hash/expiração/uso único, confirmação, `deleted_at`, revogação das sessões e eventos Outbox estão implementados e cobertos unitariamente. Permanece `PARTIAL` por ausência de teste PostgreSQL/API/AWS de ponta a ponta e de consumers de `auth.user.deleted` nos demais módulos. |
-| Recuperação da conta | PARTIAL | `src/modules/auth/application/use_cases/request_recovery/`, `src/modules/auth/application/use_cases/recovery/`, `src/modules/auth/application/services/user_recovery/`, entidade/eventos/ports de recuperação, model/mapper/repository, controllers/rotas, migration `9c4f12a7e6d3_add_user_recovery_requests.py`, testes em `tests/unit/auth/` | Solicitação pública com resposta anti-enumeração, emissão de código com hash/expiração/uso único, restauração de `deleted_at` e eventos Outbox estão cobertos unitariamente. Permanece `PARTIAL` por ausência de teste PostgreSQL/API/AWS de ponta a ponta, prazo máximo de recuperação e consumers intermodulares de `auth.user.recovered`. |
-| Exportação geral da conta | NOT_STARTED | `src/` inspecionado | Nenhum job/caso de uso/endpoint. |
-| Admin authorization | PARTIAL | `src/modules/auth/domain/value_objects/user_role.py`, `src/modules/auth/public/authenticated_principal.py`, `src/modules/auth/application/services/http_request_auth/`, `src/modules/auth/presentation/services/fast_api_auth_service.py`, `src/modules/auth/presentation/adapters/fast_api_auth.py`, `src/modules/catalog/presentation/routes.py`, migration `48f1a9d4c2b7_add_user_role_and_soft_delete.py` | O contexto autenticado carrega a role persistida e `require_role(UserRole.ADMIN)` protege as cinco operações de `/catalog/themes`; faltam testes HTTP de acesso permitido/negado, diferenciar access/refresh token e implementar bootstrap/alteração administrativa de papel. |
-| MFA | NOT_STARTED | `src/` inspecionado | Nenhuma implementação. |
-
-Falhas concretas que impedem considerar os casos Auth como `IMPLEMENTED`:
-
-- `src/modules/auth/application/services/auth_session/auth_session_service_impl.py` usa `self._clock`, mas o
-  atributo criado é `self.__system_clock`;
-- o login de usuário ainda não verificado emite evento e depois lança exceção antes do commit,
-  levando o UoW a rollback;
-- `src/modules/auth/domain/value_objects/password_plain.py` referencia `PASSWORD_MIN_LENGTH`, nome inexistente
-  em settings, no caminho de erro de senha curta;
-- o validator HTTP aceita senha de 8 caracteres, enquanto o domínio exige 12;
-- a autenticação Bearer está instalada em `POST /auth/request-delete` e `PATCH /auth/user-info`, mas ainda não protege todas as rotas que exigiriam contexto autenticado.
-
-## 6. Journal Module
-
-| Capacidade | Status | Evidência | Estado real |
-|---|---|---|---|
-| Entidade JournalEntry | IMPLEMENTED | `src/modules/journal/domain/entities/journal_entry.py`, `src/modules/journal/domain/value_objects/`, `src/modules/journal/public/journal_entry_id.py`, testes Domain | Valida conteúdo, normaliza título, restringe edição a `DRAFT` e executa exclusão lógica. |
-| Criar entrada | IMPLEMENTED | `src/modules/journal/application/use_cases/create_entry/`, controller/validator/rota, repository e testes | Cria ULID, deriva o proprietário do principal autenticado, persiste `DRAFT` e commita. Eventos foram deliberadamente excluídos deste incremento. |
-| Port de repository/UoW | IMPLEMENTED | ports Domain, `infrastructure/persistence/postgresql/repositories/journal_entry_repository.py`, `units_of_work/journal_unit_of_work.py`, `bootstrap/` | Contratos possuem adapters concretos; um UoW novo é criado por dependency da rota. |
-| Endpoint Journal | IMPLEMENTED | `src/modules/journal/presentation/`, `src/modules/journal/bootstrap/`, `src/main/server/fast_api/server.py` | Cinco operações autenticadas são registradas no OpenAPI. |
-| Persistência de JournalEntry | IMPLEMENTED | model/mapper/repository/UoW em `src/modules/journal/infrastructure/persistence/postgresql/`, migration `d4a1c7e9b203` | Tabela e adapter do agregado usado no CRUD foram verificados no PostgreSQL real. As outras seis tabelas são classificadas separadamente abaixo. |
-| Listar histórico | IMPLEMENTED | caso de uso `list_entries/`, repository, controller e `GET /journal/entries` | Lista somente entradas ativas do usuário, ordenadas por criação, com `limit`/`offset`. |
-| Detalhar entrada | IMPLEMENTED | caso de uso `get_entry/`, repository, controller e `GET /journal/entries/{journal_entry_id}` | Busca composta por entrada, proprietário e `deleted_at IS NULL`; ausência e acesso de outro dono retornam o mesmo 404. |
-| Editar/reanalisar | PARTIAL | caso de uso `update_entry/`, entidade, repository e `PATCH /journal/entries/{journal_entry_id}` | Atualização parcial de título, conteúdo e tags está implementada apenas para `DRAFT`; transição para reanálise e evento ainda não existem. |
-| Excluir entrada | IMPLEMENTED | caso de uso `delete_entry/`, entidade, repository e `DELETE /journal/entries/{journal_entry_id}` | Marca `deleted_at`, `updated_at` e status `DELETED`; entradas excluídas deixam de aparecer nas consultas. |
-| Ownership/authorization | IMPLEMENTED | `src/modules/journal/presentation/routes.py`, controllers, repository e testes | Todas as rotas usam Bearer, ignoram qualquer dono no payload e limitam consultas/mutações pelo `user_id` autenticado. |
-| Analysis persistida | PARTIAL | `analysis_model.py`, migration Journal | Tabela 1:N com status, resultado, erro e timestamps existe; não há entidade, repository, caso de uso ou definição da versão vigente. |
-| JournalSentence / SentenceTheme / SentencePassage | PARTIAL | models homônimos e migration Journal | Estrutura relacional, constraints e FKs existem; não há repositories nem pipeline que escreva/consulte esses dados. IDs de Theme/Passage são referências lógicas ao Neo4j. |
-| EntryEmbedding / SentenceEmbedding | PARTIAL | models homônimos, migration Journal e extensão `vector` | Tabelas/colunas existem; dimensão, índice, modelo e adapters de geração/consulta ainda não foram definidos. |
-| DRAFT | IMPLEMENTED | status VO, entidade, create/update e migration | É o estado inicial da primeira fatia CRUD; o envio posterior para `PENDING_ANALYSIS` permanece fora deste incremento. |
-| Eventos Journal | NOT_STARTED | módulo Journal e Outbox inspecionados | Nenhum `JournalEntryCreated/Updated/Deleted` é emitido, conforme o recorte solicitado para este CRUD. |
-| Criptografia do conteúdo | NOT_STARTED | `JournalEntryModel.content_text` e migration | O texto privado é armazenado em `TEXT` sem criptografia de aplicação/campo. |
-| Versionamento de Analysis | BLOCKED | documentação e ausência em `src/` | Não há decisão sobre histórico/análise vigente. |
-
-## 7. Demais módulos de negócio
-
-### 7.1 AI Processing
-
-| Capacidade | Status | Evidência |
+| Tecnologia | Status | Evidência |
 |---|---|---|
-| LLM port/provider/structured output | NOT_STARTED | `pyproject.toml` e `src/` inspecionados |
-| Análise de journals | NOT_STARTED | `src/` inspecionado |
-| Classificação por temas ativos | NOT_STARTED | `src/` inspecionado |
-| Extração por sentenças | NOT_STARTED | `src/` inspecionado |
-| Embeddings | PARTIAL | models/tabelas `entry_embeddings` e `sentence_embeddings`; geração e consulta ausentes |
-| Contexto semântico/histórico do usuário | BLOCKED | UC18 não possui modelo documental canônico nem implementação |
-| Processamento de obras/referências | NOT_STARTED | `src/` inspecionado |
-| Persistência de resultados | PARTIAL | models/migration Journal para Analysis, sentenças, associações e embeddings; adapters de escrita ausentes |
-| Tratamento de falhas de IA | NOT_STARTED | `src/` inspecionado |
+| Python >= 3.12 / Docker Python 3.14 | IMPLEMENTED | `pyproject.toml`, `Dockerfile` |
+| FastAPI / Uvicorn | IMPLEMENTED | `src/main/server/fast_api/` |
+| Pydantic / pydantic-settings | IMPLEMENTED | validators dos módulos e `src/shared/config/settings.py` |
+| SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | persistência PostgreSQL em `src/shared` e módulos |
+| Alembic | IMPLEMENTED | `alembic/`; head `a3d9e7f4b612` aplicada localmente |
+| PostgreSQL 16 / pgvector | PARTIAL | Compose, schemas/tabelas e colunas vector; busca vetorial ainda não implementada |
+| Neo4j 5.26 / driver assíncrono | IMPLEMENTED | providers compartilhados, UoW e repositories Catalog |
+| AWS S3 / boto3 | PARTIAL | adapters Catalog e AI Processing, testes unitários e upload/leitura reais exercitados; bucket e políticas permanecem fora do repositório |
+| AWS SNS/SQS | PARTIAL | dispatcher Outbox, publishers, consumer, retry e DLQ exercitados manualmente; recursos cloud permanecem fora do repositório |
+| OpenAI Responses API / httpx | PARTIAL | análise estruturada de chunks e validação de respostas exercitadas com o provedor real; faltam E2E automatizado, métricas e limites operacionais |
+| RabbitMQ / aio-pika | PARTIAL | caminho local legado/transicional continua no código e Compose |
+| Amazon SES | PARTIAL | notifier e Lambda de e-mail existem; infraestrutura cloud não é versionada como IaC |
+| Pytest / pytest-asyncio | IMPLEMENTED | 287 testes aprovados |
+| CI/CD | NOT_STARTED | nenhum workflow encontrado |
 
-### 7.2 Catalog / Knowledge
+## 5. Arquitetura real
 
-| Capacidade | Status | Evidência |
+Estrutura vigente:
+
+```text
+src/
+  modules/
+    auth/
+    journal/
+    catalog/
+    ai_processing/
+    internal_events/
+    notification/
+  shared/
+  main/
+```
+
+Os fluxos mais recentes usam:
+
+`Presentation -> Application -> Domain <- Infrastructure`
+
+Evidências:
+
+- use cases e DTOs: `src/modules/*/application/`;
+- entidades, VOs, eventos e ports: `src/modules/*/domain/`;
+- PostgreSQL, Neo4j, S3, SQS e OpenAI: `src/modules/*/infrastructure/`;
+- rotas/controllers/validators: `src/modules/*/presentation/`;
+- composição: `src/modules/*/bootstrap/` e `src/main/`.
+
+Violações/dívidas ainda observáveis:
+
+1. rotas Journal e Catalog importam a dependency FastAPI privada de Auth;
+2. erros compartilhados ainda carregam semântica HTTP dentro de `shared.domain`;
+3. `Settings` mantém configuração Pydantic depreciada;
+4. partes legadas de Auth ainda usam composição global e possuem riscos de concorrência;
+5. `DEBUG` pode expor detalhes internos quando habilitado;
+6. não há transação distribuída entre PostgreSQL, S3 e Neo4j; compensação/reconciliação permanece necessária.
+
+## 6. Persistência
+
+### PostgreSQL — PARTIAL
+
+Implementado:
+
+- tabelas Auth e Outbox no schema legado padrão;
+- `journal_schema` com entries, analyses, sentenças, associações e embeddings;
+- `catalog_schema.work_ingestions`;
+- `ai_processing_schema.work_ingestion_chunks`;
+- `ai_processing_schema.inbox_events`;
+- repositories e UoWs para os fluxos recentes.
+
+Migrations recentes:
+
+- `b81f4e2a9c07_create_catalog_work_ingestions.py`;
+- `f6c2a91d4e08_create_ai_processing_chunks.py`;
+- `a3d9e7f4b612_create_ai_processing_inbox.py`.
+
+### Neo4j — IMPLEMENTED
+
+- constraints para Theme, Work, Author e Passage;
+- repositories de Theme, Work e Passage;
+- relações `WRITTEN_BY`, `BELONGS_TO` e `RELATES_TO`;
+- passagens carregam origem, localização, explicação, status, offsets e temas associados.
+- persistência e consulta de passagens candidatas foram exercitadas manualmente no Neo4j local.
+
+### S3 — PARTIAL
+
+- Catalog envia o PDF original;
+- AI Processing lê o original e persiste texto normalizado/chunks;
+- ports e adapters ficam fora do domínio;
+- falhas são convertidas em exceções de aplicação.
+- upload do PDF, leitura do original e gravação do texto normalizado foram exercitados manualmente
+  no bucket de desenvolvimento.
+
+## 7. Eventos e processamento assíncrono
+
+### Outbox — PARTIAL
+
+- solicitação de ingestão persiste `WorkIngestion` e `catalog.work_ingestion.requested` na mesma transação;
+- dispatcher publica eventos no SNS;
+- filtros SNS/SQS e DLQ são configuração externa;
+- evento só deve ser marcado como enviado após publicação aceita.
+
+### Inbox de AI Processing — IMPLEMENTED
+
+- claim atômico por `event_id`/consumer;
+- lease, heartbeat, tentativas, estado de falha e conclusão;
+- deduplicação de entrega `at-least-once`;
+- migration e testes automatizados.
+
+### Consumer de ingestão — PARTIAL
+
+- long polling SQS;
+- parser de mensagem;
+- visibility heartbeat durante processamento;
+- mensagem só é removida após sucesso;
+- falha deixa a mensagem disponível para retry/DLQ;
+- recursos AWS, políticas e redrive não são declarados por IaC no repositório.
+
+## 8. IA
+
+### Análise de obras — PARTIAL
+
+Fluxo implementado:
+
+1. recebe evento SQS de ingestão;
+2. aplica Inbox/idempotência;
+3. baixa o PDF do S3;
+4. extrai e normaliza texto;
+5. cria chunks com sobreposição e metadados de página/offset;
+6. persiste chunks e seus estados no PostgreSQL;
+7. envia cada chunk ao OpenAI com schema estrito;
+8. valida tema permitido, citação literal, páginas e offsets;
+9. descarta sugestão individual inválida sem perder sugestões válidas;
+10. persiste passagens candidatas no Neo4j como `PENDING_REVIEW`;
+11. retoma somente chunks pendentes/falhos em nova entrega;
+12. move a ingestão para revisão ou falha conforme resultado.
+
+Validação contra citações inventadas:
+
+1. o schema estruturado exige que o provedor retorne a citação em `exact_text`;
+2. o adapter procura primeiro uma correspondência literal dentro do texto original do chunk;
+3. quando a extração do PDF introduz espaços, quebras ou hifenização de fim de linha, uma representação
+   canônica é usada somente para localizar a origem, preservando os offsets do texto-fonte;
+4. o `short_text` persistido é recortado do próprio `chunk_text` pelos offsets encontrados, e não copiado
+   cegamente da resposta do modelo;
+5. temas inexistentes, citações não localizadas e duplicatas são descartados individualmente com códigos
+   como `invalid_theme`, `quote_not_found` e `duplicate_quote`;
+6. `paraphrase` e `interpretation_note` continuam sendo conteúdo interpretativo gerado pela IA e ficam
+   sujeitos à revisão humana antes da ativação da passagem.
+
+Evidências principais:
+
+- `src/modules/ai_processing/application/use_cases/process_work_ingestion/`;
+- `src/modules/ai_processing/infrastructure/analysis/openai_work_passage_analyzer.py`;
+- `src/modules/ai_processing/infrastructure/document/`;
+- `src/modules/ai_processing/infrastructure/messaging/aws_sqs/`;
+- `src/modules/ai_processing/infrastructure/persistence/postgresql/`;
+- `src/modules/catalog/infrastructure/persistence/neo4j/repositories/passage_repository.py`;
+- `tests/unit/ai_processing/infrastructure/analysis/test_openai_work_passage_analyzer.py`;
+- `tests/unit/ai_processing/`.
+
+### Análise de Journal — PARTIAL
+
+- submissão autenticada e consulta do resultado existem;
+- worker PostgreSQL seleciona entradas pendentes;
+- OpenAI retorna saída estruturada com temas do catálogo ativo;
+- análise é persistida atomicamente com a mudança de status;
+- ainda faltam o pipeline completo de sentenças, passagens contextuais e embeddings.
+
+## 9. API existente
+
+### Auth
+
+- login, cadastro, refresh, logoff;
+- verificação e reset de senha;
+- solicitação/confirmação de exclusão lógica;
+- solicitação/confirmação de recuperação;
+- atualização parcial de perfil.
+
+### Journal
+
+- CRUD autenticado de `/journal/entries`;
+- `POST /journal/entries/{id}/analysis`;
+- `GET /journal/entries/{id}/analysis`.
+
+### Catalog
+
+- CRUD de `/catalog/themes`;
+- `POST /catalog/works`;
+- `POST /catalog/works/{work_id}/ingestions` com PDF;
+- criação/listagem/detalhe/edição/remoção de passagens;
+- aprovação, rejeição, ativação e desativação de passagens;
+- filtros de passagem por status, obra e ingestão;
+- respostas de passagem incluem `theme_id`, `label` e `confidence`.
+
+Lacunas HTTP relevantes:
+
+- não existe listagem/detalhe/edição de obras;
+- não existe endpoint de consulta do estado/erro da ingestão;
+- não existe paginação de passagens;
+- não existe API operacional para DLQ/reprocessamento.
+
+## 10. Testes
+
+| Área | Status | Evidência |
 |---|---|---|
-| Fronteira física do módulo | PARTIAL | `src/modules/catalog/domain/`, `application/`, `infrastructure/`, `presentation/`, `bootstrap/`, `public/` |
-| Neo4j runtime local | IMPLEMENTED | `docker-compose.infra.yml`; container `reflecta-neo4j-dev` respondeu a `RETURN 1` via Bolt |
-| Neo4j driver/settings/adapter | PARTIAL | `pyproject.toml`, `src/shared/infrastructure/persistence/neo4j/`, `src/modules/catalog/infrastructure/persistence/neo4j/`, testes em `tests/unit/catalog/` e `tests/unit/shared/infrastructure/persistence/neo4j/` | Driver, settings, conexão, constraint, mapper, repository e UoW de `Theme` existem e têm cobertura unitária; não há teste de integração com Neo4j real. |
-| Theme | PARTIAL | `src/modules/catalog/domain/entities/theme.py`, casos de uso em `src/modules/catalog/application/use_cases/`, persistência em `src/modules/catalog/infrastructure/persistence/neo4j/`, rota `src/modules/catalog/presentation/routes.py`, testes em `tests/unit/catalog/` | Criação em lote, busca por ID, listagem, atualização parcial, ativação/desativação e exclusão física estão compostas e protegidas por `ADMIN`. Atualização preserva o slug; faltam testes HTTP e integração com Neo4j real. |
-| Author / Work / Passage | NOT_STARTED | `src/modules/catalog/` inspecionado; somente diretórios/arquivos vazios fora do fluxo preliminar de Theme |
-| Relações RELATES_TO / BELONGS_TO / WRITTEN_BY | NOT_STARTED | `src/` inspecionado |
-| CRUD e revisão administrativa | PARTIAL | O fluxo vertical de `Theme` expõe `POST`, `GET` lista, `GET` por ID, `PATCH` e `DELETE`; escritas usam commit explícito e falhas usam rollback do UoW. Não há paginação/filtros nem confirmação de exclusão física quando futuras relações existirem. |
-| PDF/capa S3 e ingestão | NOT_STARTED | `src/` inspecionado |
-| Estados de processamento de Work | BLOCKED | documentação contradiz o próprio enum `CatalogStatus` |
+| Auth | IMPLEMENTED unitariamente | `tests/unit/auth/`, testes legados login/logoff atualizados |
+| Journal | IMPLEMENTED unitariamente | domínio, CRUD, gateway de análise e persistência |
+| Catalog | IMPLEMENTED unitariamente | temas, obras, ingestão, passagens, validators e repositories |
+| AI Processing | IMPLEMENTED unitariamente | Inbox, chunks, documentos, S3, SQS, OpenAI, worker e casos de uso |
+| Notification | IMPLEMENTED unitariamente | handlers, templates, SES e payloads |
+| API E2E real | NOT_STARTED | não existe suíte persistente com FastAPI + PostgreSQL + Neo4j + AWS |
+| Integrações cloud | PARTIAL | fluxo de obras validado manualmente com S3, SNS, SQS/DLQ e OpenAI; configuração ainda é externa e não há suíte E2E reproduzível |
 
-### 7.3 Recommendation
+Resultado atual: **287 passed, 8 warnings**.
 
-| Capacidade | Status | Evidência |
-|---|---|---|
-| Entidade Recommendation | NOT_STARTED | `src/` inspecionado; o antigo placeholder vazio foi removido |
-| Engine/geração assíncrona | NOT_STARTED | `src/` inspecionado |
-| Consulta Journal/Catalog por contrato | NOT_STARTED | `src/` inspecionado |
-| Explainability/reason | NOT_STARTED | `src/` inspecionado |
-| Viewed/save/dismiss | NOT_STARTED | `src/` inspecionado |
+Validação funcional manual já observada no fluxo de obras:
 
-### 7.4 Sharing / Professional
+- criação e manutenção de temas administrativos;
+- criação de obra e autor;
+- upload de PDF real para o S3;
+- publicação Outbox -> SNS -> SQS e consumo assíncrono;
+- extração do PDF em 25 chunks no documento exercitado;
+- retomada a partir de chunks pendentes/falhos após nova entrega da mensagem;
+- respostas estruturadas reais da OpenAI;
+- descarte de sugestão cuja citação não existe no chunk (`quote_not_found`);
+- persistência de passagens `PENDING_REVIEW` no Neo4j;
+- listagem de passagens com citação literal, paráfrase, justificativa e label do tema.
 
-| Capacidade | Status | Evidência |
-|---|---|---|
-| SharedExport e seleção de período | NOT_STARTED | `src/` e migrations inspecionados |
-| Token/hash/expiração/revogação | NOT_STARTED | `src/` inspecionado |
-| Resumo/export S3 | NOT_STARTED | `src/` inspecionado |
-| Acesso público profissional | NOT_STARTED | rotas inspecionadas |
-| ProfessionalActivity | NOT_STARTED | `src/` inspecionado |
-| Consentimento | BLOCKED | documentação traz service/repository, mas não define entidade canônica |
-| Identidade, envio e auditoria de acesso profissional | BLOCKED | mockup e modelo de dados são incompatíveis |
+Aprovação e rejeição possuem implementação e testes automatizados, mas a execução manual desses dois
+comandos não foi registrada nesta atualização.
 
-## 8. Backend/API
+## 11. Divergências e riscos atuais
 
-A aplicação importada expõe exatamente estas rotas de negócio:
+1. documentação histórica ainda usa UUID, enquanto o código usa ULID textual;
+2. Auth/Outbox permanecem no schema padrão, enquanto o modelo planejado separa schemas;
+3. o repositório preserva RabbitMQ/SMTP junto do caminho alvo SNS/SQS/Lambda/SES;
+4. infraestrutura AWS foi configurada manualmente e não possui IaC reproduzível;
+5. a ausência de endpoint de status impede o frontend de distinguir processamento, zero resultados e falha;
+6. a ingestão cruza PostgreSQL, S3, SQS e Neo4j sem transação distribuída;
+7. passagens são persistidas progressivamente; falha posterior exige retomada/reconciliação correta;
+8. custos e rate limits do provedor de IA precisam de limites operacionais;
+9. conteúdo privado do Journal exige política explícita de retenção, redaction e observabilidade;
+10. não há CI, métricas, tracing, health/readiness ou testes E2E automatizados.
 
-| Método e rota | Status | Evidência | Observação |
-|---|---|---|---|
-| `POST /auth/signup` | PARTIAL | `src/modules/auth/presentation/routes.py`, `src/modules/auth/presentation/controllers/sign_up_controller.py` | Única rota com request body documentado no OpenAPI; resposta real 201, spec gerada anuncia 200/422. |
-| `POST /auth/login` | PARTIAL | mesmos paths, `login_controller.py` | Usa Basic Auth fora do contrato OpenAPI e falha na consulta via mapper. |
-| `POST /auth/logoff` | PARTIAL | `logoff_controller.py` | Sem security scheme no OpenAPI. |
-| `POST /auth/refresh` | PARTIAL | `refresh_controller.py` | Depende de cookie; service contém erro `_clock`. |
-| `POST /auth/request-reset-password` | PARTIAL | `request_reset_password_controller.py` | Não declara body no OpenAPI e o service recebe dependência incompatível. |
-| `POST /auth/reset-password` | PARTIAL | `reset_password_controller.py` | Não declara body no OpenAPI. |
-| `GET /auth/verify-email` | PARTIAL | `verify_email_controller.py` | Declara `code` em query; repository/service possuem erros. |
-| `POST /auth/request-delete` | PARTIAL | `src/modules/auth/presentation/routes.py`, `request_delete_controller.py`, caso de uso `request_delete/` | Exige Bearer, deriva o usuário do contexto autenticado e grava solicitação + evento na mesma UoW; falta teste HTTP/PostgreSQL/AWS de ponta a ponta. |
-| `DELETE /auth/delete` | PARTIAL | `src/modules/auth/presentation/routes.py`, `delete_user_controller.py`, caso de uso `delete/` | Consome código de uso único, marca exclusão lógica, encerra sessões e grava evento; falta teste de integração real. |
-| `POST /auth/request-recovery` | PARTIAL | `src/modules/auth/presentation/routes.py`, `request_recovery_controller.py`, caso de uso `request_recovery/` | Público; recebe e-mail validado e responde genericamente. Só conta excluída gera código/evento. Falta teste HTTP/PostgreSQL/AWS de ponta a ponta. |
-| `POST /auth/recovery` | PARTIAL | `src/modules/auth/presentation/routes.py`, `recovery_controller.py`, caso de uso `recovery/` | Consome código de uso único, restaura `deleted_at` e grava evento sem criar sessão. Falta teste de integração real. |
-| `PATCH /auth/user-info` | PARTIAL | `src/modules/auth/presentation/routes.py`, `update_user_info_controller.py`, caso de uso `update_user_info/`, `user_repository.py` | Exige Bearer no OpenAPI, usa o `user_id` autenticado e aceita de um a quatro campos de perfil. Há cobertura unitária de domínio, caso de uso, controller, validator e escopo do SQL; falta teste HTTP/PostgreSQL real. |
-| `POST /catalog/themes` | PARTIAL | `src/modules/catalog/presentation/routes.py`, controller/validator, caso de uso `create_themes/`, bootstrap e UoW/repository Neo4j | Exige Bearer com papel `ADMIN`, aceita lote não vazio e responde 201; OpenAPI e unidades internas foram verificados, mas falta teste HTTP e Neo4j real. |
-| `GET /catalog/themes` | PARTIAL | rota, `GetAllThemesController`, `GetAllThemesUseCase`, UoW/repository e testes unitários | Exige `ADMIN`, lista temas ativos e inativos e aceita resultado vazio; falta teste HTTP/Neo4j real. |
-| `GET /catalog/themes/{theme_id}` | PARTIAL | rota, `GetThemeByIdController`, `GetThemeByIdUseCase`, exceção `ThemeNotFoundError` e testes unitários | Exige `ADMIN`, retorna o tema ou 404; falta teste HTTP/Neo4j real. |
-| `PATCH /catalog/themes/{theme_id}` | PARTIAL | rota/validator, `UpdateThemeController`, `UpdateThemeUseCase`, entidade/repository e testes unitários | Exige `ADMIN`, atualiza label, descrição e/ou estado, rejeita payload vazio/nulo e mantém o slug estável; falta teste HTTP/Neo4j real. |
-| `DELETE /catalog/themes/{theme_id}` | PARTIAL | rota, `DeleteThemeByIdController`, `DeleteThemeByIdUseCase`, repository e testes unitários | Exige `ADMIN`, retorna 204, valida existência e executa `DETACH DELETE`; falta teste HTTP/Neo4j real e decisão final sobre exclusão física com relações futuras. |
-| `POST /journal/entries` | IMPLEMENTED | rota, validator, controller, create use case, UoW/repository e testes Journal | Exige Bearer, usa o usuário autenticado, aceita texto/título/tags e responde 201 com entrada `DRAFT`. |
-| `GET /journal/entries` | IMPLEMENTED | rota, controller, list use case, repository e testes Journal | Lista somente entradas ativas do usuário autenticado; aceita `limit` de 1 a 100 e `offset`. |
-| `GET /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, controller, get use case, repository e testes Journal | Retorna apenas entrada ativa pertencente ao usuário; outro proprietário é tratado como não encontrado. |
-| `PATCH /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, validator, controller, update use case, entidade/repository e testes Journal | Atualiza qualquer subconjunto de `title`, `content_text` e `context_tags` em uma entrada `DRAFT`; rejeita payload vazio. |
-| `DELETE /journal/entries/{journal_entry_id}` | IMPLEMENTED | rota, controller, delete use case, entidade/repository e testes Journal | Executa exclusão lógica e responde 204. |
-| Demais endpoints planejados | NOT_STARTED | `src/main/server/fast_api/server.py`, módulos inspecionados | Não há API de Analysis/temas sugeridos, AI, Recommendation, Sharing ou Notification, nem operações de Author/Work/Passage no Catalog. |
+## 12. Menor próximo incremento coerente
 
-DTOs e validators existem principalmente em `src/modules/auth/application/use_cases/*/dto.py` e
-`src/modules/auth/presentation/validators/`, mas login/reset não estão integrados ao schema FastAPI de modo a
-gerar contrato OpenAPI. As cinco rotas Journal, `POST /auth/request-delete` e `PATCH /auth/user-info`
-anunciam `HTTPBearer` no OpenAPI; as demais rotas Auth continuam sem security scheme explícito.
+Para a entrega administrativa atual, o menor incremento vertical é um endpoint autenticado:
 
-## 9. Persistência e migrations
+```text
+GET /catalog/work-ingestions/{ingestion_id}
+```
 
-### 9.1 Estado real do PostgreSQL
-
-| Item | Status | Evidência | Estado real |
-|---|---|---|---|
-| Metadata SQLAlchemy | IMPLEMENTED | `src/shared/infrastructure/persistence/postgresql/configs/base.py`, models Auth/Internal Events/Journal e `alembic/env.py` | Quinze tabelas de aplicação são registradas: oito no schema padrão e sete em `journal_schema`. |
-| Tabela `users` | PARTIAL | `users_model.py`, migration `1ce1f1cd457b_bancos_agora_em_docker.py` | Auth parcial; campos divergentes do planejado. |
-| Tabela `auth_credentials` | PARTIAL | `auth_credentials_model.py`, mesma migration | Sem MFA/credential_type documentados. |
-| Tabela `auth_sessions` | PARTIAL | `auth_sessions_model.py`, mesma migration | Sem IP/user-agent; refresh token hash existe. |
-| Tabela `user_email_verifications` | PARTIAL | `user_email_verification_model.py`, mesma migration | Implementação adicional ao modelo consolidado, mas fluxo está quebrado. |
-| Tabela `passwords_reset` | PARTIAL | `reset_password_model.py`, migration `0633c30be51a_colocando_tabela_de_reset_de_password_.py` | Nome e modelo divergem da documentação. |
-| Tabela `outbox` | PARTIAL | `outbox_model.py`, migrations `631fd4384bca_criando_tabela_do_pattern_outbox_nao_.py` e `ca9163c93ce6_01_09_2026_atualizando_a_tabela_de_.py` | Suporta estados/retry, sem contrato documentado completo. |
-| Tabela `user_deletion_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_deletion_request_model.py`, mapper/repository correspondentes, migration `7b82d9e3a104_add_user_deletion_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; a cadeia de migrations que a contém foi aplicada no PostgreSQL local. |
-| Tabela `user_recovery_requests` | PARTIAL | `src/modules/auth/infrastructure/persistence/postgresql/models/user_recovery_request_model.py`, mapper/repository correspondentes, migration `9c4f12a7e6d3_add_user_recovery_requests.py` | Modela hash, expiração, confirmação, revogação e uma única solicitação ativa por usuário; a cadeia de migrations que a contém foi aplicada no PostgreSQL local. |
-| Tabelas Journal | PARTIAL | sete models em `src/modules/journal/infrastructure/persistence/postgresql/models/`, migration `d4a1c7e9b203` | `journal_entries` possui CRUD concreto; `analysis`, `journal_sentences`, `sentence_themes`, `sentence_passages`, `entry_embeddings` e `sentence_embeddings` possuem schema físico, mas não repositories/pipeline. |
-| Cadeia Alembic | IMPLEMENTED | `alembic/versions/` | Uma head `d4a1c7e9b203`, aplicada no PostgreSQL local; `alembic check` passou. A migration histórica `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py` continua vazia. |
-| Execução em PostgreSQL real | IMPLEMENTED | `docker-compose.infra.yml`, migration e repository Journal | Container respondeu, migrations chegaram à head e o CRUD do repository Journal passou em uma transação real revertida após o teste. |
-| `auth_schema` | NOT_STARTED | models/migrations | Todas as tabelas usam o schema padrão (`schema=None`). |
-| `journal_schema` | PARTIAL | models Journal e migration `d4a1c7e9b203` | Schema e as sete tabelas planejadas existem; somente `journal_entries` possui comportamento de aplicação. |
-| `recommendation_schema` | NOT_STARTED | models/migrations | Ausente. |
-| `sharing_schema` | NOT_STARTED | models/migrations | Ausente. |
-| `event_schema` | NOT_STARTED | models/migrations | Outbox usa schema padrão. |
-| Extensão/colunas/índices pgvector | PARTIAL | migration Journal; models de embedding | `CREATE EXTENSION vector` e duas colunas `VECTOR` existem. Dimensão e índice vetorial não foram definidos. |
-| Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/shared/infrastructure/persistence/neo4j/`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Serviço local, driver, constraint Cypher, repository e UoW unitariamente testados; execução da constraint e criação de temas contra o Neo4j real continuam não verificadas. |
-| Relação PostgreSQL–Neo4j | NOT_STARTED | projeto inteiro | Ausente. |
-
-Os identificadores persistidos são strings ULID de 26 caracteres, não UUID. O downgrade da migration
-que adiciona o valor `PROCESSING` ao enum do outbox não remove esse valor.
-
-`src/shared/config/settings.py` monta `database_url` usando `POSTGRES_PORT` também na posição do host; essa URL
-é inválida para a configuração nominal e aumenta o risco de falha fora do caminho atual de conexão.
-
-## 10. Eventos, Outbox e workers
-
-| Capacidade | Status | Evidência | Estado real |
-|---|---|---|---|
-| Entidade/model/tabela Outbox | PARTIAL | `src/modules/internal_events/domain/entities/outbox_event.py`, `src/modules/internal_events/infrastructure/persistence/postgresql/models/outbox_model.py`, migrations Outbox | Estrutura real existe e diverge do contrato documentado. |
-| Escrita transacional Auth + Outbox | PARTIAL | `src/modules/internal_events/application/services/outbox_service_impl.py`, `src/modules/auth/infrastructure/persistence/postgresql/units_of_work/auth_unit_of_work_impl.py`, casos signup/reset/exclusão | Exclusão grava solicitação/estado e evento na mesma UoW; os demais fluxos ainda possuem lacunas e não há teste PostgreSQL de integração. |
-| Claim concorrente | IMPLEMENTED | `src/modules/internal_events/infrastructure/persistence/postgresql/repositories/outbox_repository.py` | Usa `FOR UPDATE SKIP LOCKED`, marca `PROCESSING` e incrementa tentativas. |
-| Retry/backoff | PARTIAL | `src/modules/internal_events/infrastructure/strategies/exponential_retry.py`, `src/modules/internal_events/infrastructure/messaging/workers/outbox_dispatcher_worker.py` | Backoff existe; evento abandonado em `PROCESSING` não é recuperado após crash. |
-| Dispatcher | PARTIAL | `src/modules/internal_events/infrastructure/messaging/workers/outbox_dispatcher_worker.py`, `src/modules/internal_events/bootstrap/workers/publishers/sns/sns_outbox_dispatcher.py`, `docker-compose.api_workers.yml` | Worker neutro de broker está composto com publisher SNS no Compose; ciclo automatizado com PostgreSQL/AWS ainda não foi revalidado nesta atualização. |
-| Event Router | IMPLEMENTED | `src/modules/internal_events/infrastructure/messaging/routing/event_router.py`, `src/modules/internal_events/bootstrap/event_router.py` | A rota SNS genérica aceita os eventos da Outbox; rotas legadas específicas para RabbitMQ/SQS permanecem no código. |
-| Topologia RabbitMQ | IMPLEMENTED | `src/modules/internal_events/infrastructure/messaging/rabbitmq/topology.py` | Declara exchange direta, filas principais, retry e DLQ; publicação/retirada de mensagem foi verificada localmente. |
-| RabbitMQ publishers | PARTIAL | `src/modules/internal_events/infrastructure/messaging/rabbitmq/publishers/`, `src/modules/internal_events/bootstrap/rabbitmq/publishers.py` | Os dois publishers antigos existem, mas o dispatcher efetivo no Compose foi alterado para SNS e não há publisher RabbitMQ para exclusão. |
-| RabbitMQ e-mail consumers | PARTIAL | `src/modules/notification/infrastructure/messaging/rabbitmq/consumers/`, `src/modules/notification/bootstrap/workers/rabbitmq/` | Os dois adapters de fila delegam ao mesmo `EmailEventHandler`; execução com SMTP real e idempotência não foram verificadas nesta auditoria. |
-| Consumer Lambda/SQS | PARTIAL | `src/modules/notification/infrastructure/messaging/aws/sqs/lambda_sqs_emails_consumer.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py` | Processa raw delivery, converte `event_type`, usa handler/SES e retorna falhas parciais por item; faltam idempotência, testes do entrypoint e deploy reproduzível. |
-| Processed Events | NOT_STARTED | models/migrations/repositories | Nenhuma tabela ou repository. |
-| Idempotência por consumer | NOT_STARTED | workers/repositories | Nenhum registro/deduplicação. |
-| Visibilidade operacional de falhas | NOT_STARTED | rotas/observabilidade | Falhas só ficam consultáveis diretamente no banco. |
-| JournalAnalysisWorker | NOT_STARTED | `src/` inspecionado | Ausente. |
-| EmbeddingWorker | NOT_STARTED | `src/` inspecionado | Ausente. |
-| WorkIngestionWorker | NOT_STARTED | `src/` inspecionado | Ausente. |
-| ReferenceMatchingWorker | NOT_STARTED | `src/` inspecionado | Ausente. |
-| RecommendationWorker | NOT_STARTED | `src/` inspecionado | Ausente. |
-
-Eventos concretos encontrados:
-
-- `emails.verification.requested` — `src/modules/auth/domain/events/emails/verification_requested.py`;
-- `emails.password_reset.requested` — `src/modules/auth/domain/events/emails/password_reset_requested.py`;
-- `emails.user_deletion.requested` — `src/modules/auth/domain/events/emails/user_deletion_requested.py`;
-- `auth.user.deleted` — `src/modules/auth/domain/events/user_account_deleted.py`;
-- `emails.recovery_user.requested` — `src/modules/auth/domain/events/emails/user_recovery_requested.py`;
-- `auth.user.recovered` — `src/modules/auth/domain/events/user_account_recovered.py`.
-
-Não há eventos Journal. Os códigos brutos de verificação/reset/exclusão são colocados no payload do Outbox; o
-consumer RabbitMQ registra o corpo integral da mensagem, criando risco de exposição de dados sensíveis.
-
-`docker-compose.api_workers.yml` inicia o dispatcher SNS da Outbox e ainda inicia os dois consumers RabbitMQ.
-Esses consumers locais não recebem mensagens publicadas no SNS; o caminho AWS depende do trigger SQS/Lambda configurado fora do Compose.
-
-## 11. Notification e integrações externas
-
-| Capacidade | Status | Evidência | Estado real |
-|---|---|---|---|
-| Email port/DTO unificados | IMPLEMENTED | `src/modules/notification/application/ports/notifiers/dto.py`, `iemail_notifier.py` | Um `EmailDTO` usa `link` genérico e `EmailKind`; o token bruto não atravessa o port do notifier. |
-| Handler de eventos de e-mail | IMPLEMENTED | `src/modules/notification/application/handlers/email_event_handler.py`, `src/modules/notification/application/ports/handlers/iemail_event_handler.py` | Mapeia quatro `event_type`, valida payload e constrói os links sem depender de RabbitMQ/SQS. |
-| SMTP adapter/templates | PARTIAL | `src/modules/notification/infrastructure/email/smtp/smtp_email_notifier.py`, `src/modules/notification/infrastructure/email/templates/` | Um adapter renderiza os quatro templates e envia de forma assíncrona; entrega externa não foi verificada nesta atualização. |
-| NotificationWorker | PARTIAL | `src/modules/notification/bootstrap/workers/`, `src/modules/notification/infrastructure/messaging/aws/sqs/lambda_sqs_emails_consumer.py` | RabbitMQ e Lambda/SQS chegam ao handler unificado, mas o Compose mistura dispatcher SNS com consumers RabbitMQ e não há idempotência. |
-| TemplateRenderer independente | NOT_STARTED | `src/modules/notification/infrastructure/email/smtp/` | Templates estão embutidos nos adapters. |
-| NotificationLog | NOT_STARTED | models/migrations/repositories | Ausente. |
-| SES | PARTIAL | `src/modules/notification/infrastructure/email/ses/ses_notifier.py`, `src/modules/notification/bootstrap/aws/lambda_emails.py`, testes SES | Adapter e composição Lambda existem e têm testes unitários; envio externo não foi revalidado nesta atualização. |
-| S3 | NOT_STARTED | projeto inteiro | Ausente. |
-| Neo4j | PARTIAL | `docker-compose.infra.yml`, `src/modules/catalog/infrastructure/persistence/neo4j/` | Infraestrutura local e adapter unitário de `Theme` existem; integração do UoW/Catalog com Neo4j real ainda está ausente. |
-| Provedor de IA | NOT_STARTED | projeto inteiro | Ausente. |
-| RabbitMQ local | IMPLEMENTED | Compose/config/topologia | Container, conexão, declaração de topologia, publicação e retirada de mensagem verificados localmente. |
-| SQS externo | NOT_VERIFIED | config/adapter | Nenhuma credencial/queue real foi usada. |
-| SMTP externo | NOT_VERIFIED | config/adapter | Nenhum e-mail real foi enviado. |
-
-## 12. Frontend
-
-| Tela/fluxo | Status | Evidência |
-|---|---|---|
-| Cadastro e login | NOT_STARTED | nenhum projeto frontend no repositório |
-| Perfil/privacidade | NOT_STARTED | nenhum projeto frontend no repositório |
-| Journal e histórico | NOT_STARTED | nenhum projeto frontend no repositório |
-| Análise e recomendações | NOT_STARTED | nenhum projeto frontend no repositório |
-| Compartilhamento/atividades | NOT_STARTED | nenhum projeto frontend no repositório |
-| Administração | NOT_STARTED | nenhum projeto frontend no repositório |
-| Integração frontend–backend | NOT_STARTED | nenhum cliente/SDK/configuração frontend |
-
-Os mockups do TCC são documentação de produto, não frontend implementado.
-
-## 13. Testes e verificabilidade
-
-| Suite/verificação | Status | Evidência | Resultado |
-|---|---|---|---|
-| Sintaxe Python | IMPLEMENTED | arquivos sob `src/`, `tests/` e `alembic/` | `compileall` sem falhas após a implementação do Journal. |
-| Unitários Application/Auth | PARTIAL | `tests/unit/application/use_cases/login/`, `tests/unit/application/use_cases/logoff/` | Sete testes escritos: cinco login e dois logoff; estão desatualizados. |
-| Coleta pytest | IMPLEMENTED | `tests/` | 151 testes coletados: 144 aprovados e sete erros de setup Auth preexistentes. |
-| Testes Domain | PARTIAL | `tests/unit/auth/domain/`, `tests/unit/journal/domain/` | Journal cobre conteúdo, edição por estado e exclusão; Auth possui cobertura parcial e os demais domínios continuam incompletos. |
-| Integração repository/PostgreSQL | PARTIAL | smoke test manual do `JournalEntryRepository` contra PostgreSQL local | CRUD real e rollback passaram, mas o teste ainda não está automatizado na suite. |
-| API/HTTP | PARTIAL | `tests/unit/journal/presentation/` | Validators/controllers Journal estão cobertos; não há TestClient/E2E autenticado contra a aplicação e banco. |
-| Outbox/roteamento | PARTIAL | `tests/unit/internal_events/infrastructure/messaging/test_rabbitmq_outbox_dispatcher.py` | Dois testes aprovados cobrem roteamento por tipo e marcação `SENT`; idempotência permanece ausente. |
-| Exclusão lógica Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_deletion_service.py`, `tests/unit/auth/application/use_cases/test_user_deletion_use_cases.py`, testes de controller/mapper/repository | Doze testes aprovados cobrem emissão/substituição, confirmação, expiração, revogação/reuso, sessões, eventos e adapters HTTP/persistência. |
-| Recuperação Auth | IMPLEMENTED | `tests/unit/auth/application/services/test_user_recovery_service.py`, `tests/unit/auth/application/use_cases/test_user_recovery_use_cases.py`, testes de controller/mapper/repository | Dezesseis testes novos cobrem emissão/substituição, anti-enumeração, confirmação, expiração, revogação/reuso, estado excluído e adapters HTTP/persistência. |
-| Atualização de perfil Auth | IMPLEMENTED | `tests/unit/auth/domain/test_user_info.py`, `tests/unit/auth/application/use_cases/test_update_user_info_use_case.py`, `tests/unit/auth/presentation/controllers/test_update_user_info_controller.py`, `tests/unit/auth/infrastructure/persistence/postgresql/repositories/test_user_repository_active_users.py` | Dezessete testes novos cobrem regras de domínio, atualização de subconjunto, identidade autenticada, validação do payload e allowlist de colunas no SQL. |
-| Notification handler/templates | IMPLEMENTED | `tests/unit/notification/` | Quinze testes aprovados cobrem os quatro tipos de evento, links, payload inválido, tipo desconhecido, templates SMTP/SES e diagnóstico SES sem vazamento de e-mail, código ou mensagem bruta da AWS. |
-| Catalog/Neo4j | PARTIAL | `tests/unit/catalog/`, `tests/unit/shared/infrastructure/persistence/neo4j/test_connection.py` | Trinta e oito testes aprovados cobrem CRUD de casos de uso, DTOs, validators, slug estável, conflitos, 404, repository, commit/rollback do UoW e configuração do driver; ainda não há teste HTTP ou integração com Neo4j real. |
-| Journal | IMPLEMENTED | `tests/unit/journal/` | Vinte e seis testes aprovados cobrem domínio, cinco casos de uso, ownership, validação HTTP, controllers, mapper, repository e metadata das sete tabelas. |
-| LLM contract | NOT_STARTED | `tests/` inspecionado | Ausentes. |
-| Frontend | NOT_STARTED | repositório | Frontend ausente. |
-| E2E | NOT_STARTED | `tests/` inspecionado | Nenhum teste E2E; o antigo diretório vazio foi removido. |
-| API import/OpenAPI | IMPLEMENTED | `src/main/server/fast_api/run.py`, router Journal | Importação e enumeração confirmaram POST/GET/PATCH/DELETE Journal com Bearer. |
-| Docker/PostgreSQL/brokers | PARTIAL | Compose e smoke tests locais | PostgreSQL executou migrations e CRUD Journal; Neo4j/RabbitMQ foram verificados anteriormente. A stack completa ainda não foi executada em conjunto. |
-
-O pacote de login agora exporta `LoginUseCaseImpl` sem o ciclo Application anterior. Fixtures e doubles
-continuam refletindo assinaturas antigas: ausência de UoW/Outbox, `AuthSessionResultDTO` sem `session_id`
-e construtores incompatíveis com os casos de uso atuais. Por isso os sete testes Auth falham no setup.
-
-## 14. Divergências entre código e documentação
-
-Estas divergências permanecem abertas; o código foi usado apenas como evidência do estado atual. Este
-diagnóstico **não decide automaticamente** se código ou documentação deve ser modificado.
-
-1. **Identidade do sistema:** documentação consolidada usa Reflecta; `pyproject.toml`, settings, título
-   FastAPI, Compose e remetente SMTP ainda usam Individuum.
-2. **Arquitetura modular:** Auth, Journal, Catalog, Internal Events e Notification possuem raízes verticais;
-   Auth é o módulo mais amplo, enquanto Journal e Catalog possuem primeiras fatias verticais.
-3. **Mensageria:** SQS + Lambda + SES é o alvo decidido em 2026-08-31 e o dispatcher do Compose usa SNS,
-   mas consumers RabbitMQ/SMTP continuam declarados em paralelo; falta cutover/idempotência reproduzível.
-4. **PostgreSQL:** os diagramas/glossário planejam cinco schemas; o código mantém oito tabelas Auth/Outbox
-   no schema padrão e implementa somente `journal_schema` entre os schemas nomeados.
-5. **Identificadores:** documentação usa UUID; código e migrations usam ULID `String(26)`.
-6. **User/Auth:** campos, estados, credenciais, sessão e MFA documentados não correspondem integralmente
-   aos models atuais. O código adiciona verificação de e-mail própria; `role` e `deleted_at` são extensões vigentes.
-7. **Contrato de cadastro:** casos/documentação e validator não coincidem sobre campos e tamanho de
-   senha; o código exige username, surname, data de nascimento e confirmação de senha.
-8. **Journal create:** o fluxo principal documentado persiste `PENDING_ANALYSIS` e evento transacional;
-   o CRUD atual persiste `DRAFT` deliberadamente e ainda não publica evento.
-9. **Analysis:** a tabela 1:N existe, mas não há entidade/repository/pipeline nem campo explícito que
-   determine a análise vigente.
-10. **Outbox:** planejado `OUTBOX_EVENTS`, `PROCESSED`, aggregate e `processed_at`; código usa `outbox`,
-    `SENT`, não tem aggregate nem Processed Events.
-11. **Notification:** planejado SES e log de notificação; código usa SMTP Gmail e não persiste tentativas.
-12. **pgvector:** extensão e colunas existem, mas o modelo/dimensão, índice, geração e consulta ainda não.
-13. **Neo4j, S3 e IA:** Neo4j possui runtime local, driver, constraint e primeira fatia vertical de `Theme`,
-    porém o modelo documentado usa UUID e o código usa ULID; S3 e IA continuam ausentes do código/infra real.
-14. **Frontend:** TCC contém interfaces/mockups; não há frontend no repositório.
-15. **Testes:** TCC descreve cenários e uma matriz ampla; atualmente, 144 testes passam e sete
-    testes antigos de Login/Logoff falham no setup.
-16. **Deploy/workers:** o Compose declara dispatcher SNS e dois workers Notification RabbitMQ e depende
-    de `.env.dev` não versionado; o fluxo Catalog/Neo4j ainda não foi validado de ponta a ponta.
-17. **OpenAPI/Auth:** documentação sugere contratos HTTP usuais; cinco rotas Auth não expõem
-    body/parâmetros/security na spec, e login usa Basic Auth sem registrá-lo.
-
-### Divergências internas da própria documentação
-
-- o escopo atual é journaling textual, mas o TCC ainda mostra áudio/imagem e S3 para mídia;
-- `ConsentService/Repository` existe no componente Sharing sem entidade/tabela Consent;
-- casos administrativos exigem autorização efetiva; o CRUD de temas usa o guard `ADMIN`, mas faltam testes HTTP do acesso e access/refresh token continuam sem propósito distinguível;
-- UC18 exige histórico contextual sem entidade persistente correspondente;
-- identidade, e-mail, envio e auditoria de acesso do profissional não cabem em `SharedExport`;
-- atividade profissional não tem campo para a anotação pessoal mostrada no TCC;
-- `CatalogStatus` não comporta `PROCESSING/FAILED` usados em outros artefatos;
-- `PROCESSED_EVENTS` tem PK somente `event_id`, incompatível com idempotência por vários consumers;
-- cardinalidade de embeddings é opcional no diagrama de classes e obrigatória no DER;
-- NotificationLog é opcional no componente, mas obrigatório no glossário/TCC;
-- macroarquitetura omite conexões de AI/Catalog/Notification ao PostgreSQL e AI como produtor de evento;
-- `password_salt`, DRAFT, confirmação/rejeição de tema e cardinalidades do grafo são inconsistentes entre
-  classes, DER, glossário, casos de uso ou mockups.
-
-## 15. Decisões pendentes e bloqueadores
-
-1. Concluir o baseline canônico de Auth: schemas e UUID versus ULID, campos ainda divergentes de
-   User/Credentials/Session, prioridade de MFA, bootstrap do primeiro administrador e alteração de papel. A representação
-   `USER`/`ADMIN`, a exclusão lógica por `deleted_at` e a propagação da role persistida no contexto autenticado já foram implementadas.
-2. SQS + Lambda + SES foi escolhido como alvo para notificações Auth; ainda é necessário implementar o
-   consumer versionado, adapter SES, idempotência, falha parcial, deploy e cutover antes de remover RabbitMQ/SMTP.
-3. O CRUD Journal adota `DRAFT` e exclusão lógica. Ainda é necessário decidir o comando de submissão,
-   transição para `PENDING_ANALYSIS`, política de edição/reanálise e análise vigente/versionada.
-4. Definir privacidade/segurança do LLM: provider, retenção, redaction, modelo, schema de saída e falhas.
-5. Definir embeddings: modelo, dimensão, versão, índice pgvector e cardinalidade assíncrona; extensão e
-   colunas sem dimensão já existem.
-6. Definir contratos intermodulares para impedir acesso direto ao schema e evitar ciclo
-   Catalog–Recommendation.
-7. Definir consistência e reconciliação entre PostgreSQL, Neo4j e S3, inclusive referências órfãs.
-8. Definir Consent e o modelo de identidade/entrega/auditoria do profissional.
-9. Definir chave e semântica de Processed Events por consumer.
-10. Tratar os artefatos multimídia históricos como divergência documental; o incremento atual mantém
-    journaling somente textual.
-11. Confirmar se `Theme` poderá ser removido fisicamente quando possuir relações com Work/Passage ou se
-    `is_active=false` deverá ser a única forma permitida de retirada do catálogo.
-
-## 16. Riscos técnicos
-
-- **Corrupção/interferência concorrente em Auth:** UoWs globais guardam sessão/repositories mutáveis por
-  request. O bootstrap Journal já cria um UoW por dependency.
-- **Fluxos Auth quebrados:** mapper, relógio, expiração e dependência de reset falham em caminhos normais.
-- **Proteção parcial:** `POST /auth/request-delete` e `PATCH /auth/user-info` usam Bearer, mas o middleware/guard Auth não está aplicado de forma uniforme às demais rotas protegidas planejadas.
-- **Refresh usado como access token:** tokens não distinguem propósito criptograficamente.
-- **Perda de eventos:** crash após marcar `PROCESSING` deixa evento sem mecanismo de reclaim.
-- **Entrega ainda não comprovada de ponta a ponta:** RabbitMQ foi conectado, mas SMTP real, payload completo,
-  retry e idempotência do consumer ainda não foram exercitados juntos.
-- **Exposição de segredos/PII:** códigos brutos de verificação/reset/exclusão/recuperação no Outbox e log integral do consumer;
-  erros detalhados em debug; `HttpRequest.__repr__` inclui headers/body.
-- **Configuração não reproduzível:** sem `.env.example` e com helper de URL do banco malformado.
-- **Rede de segurança insuficiente:** 144 testes unitários passam, mas não há suite persistente de
-  integração/API/E2E/CI e os
-  sete testes antigos de Login/Logoff continuam quebrados no setup.
-- **Exclusão destrutiva futura no grafo:** o endpoint de exclusão de `Theme` usa `DETACH DELETE`; quando
-  existirem relações com Work/Passage, ele também removerá essas relações sem histórico.
-- **Migrações precoces divergentes:** expandir sobre tabelas/schema/ids atuais pode encarecer a correção do
-  baseline definido no contexto.
-- **Escopo sensível sem controles:** journaling/LLM/export lidam com dados pessoais e de saúde sem política
-  técnica implementada de criptografia, retenção e auditoria. O CRUD aplica ownership, mas `content_text`
-  permanece em texto claro no PostgreSQL.
-
-## 17. Dívidas técnicas observadas
-
-- README contém apenas o título `Individuum_MVP`;
-- arquivo `.env.dev` referenciado, sem exemplo versionado;
-- migration vazia `4c9d09eb81e5_criando_tabela_do_pattern_outbox.py`;
-- downgrade incompleto do enum Outbox;
-- imports por `__init__` e wildcard gerando ciclos;
-- tabela `passwords_reset` mantém nomenclatura divergente;
-- settings Pydantic com configuração depreciada e defaults inseguros;
-- CORS `*` combinado com credentials;
-- objetos de composição criados no import da rota;
-- contratos OpenAPI incompletos e status documentado diferente do retorno;
-- remetente SMTP hardcoded;
-- Docker Compose declara o dispatcher do Outbox, mas depende de `.env.dev` local e não existe `.env.example` versionado;
-- colunas `VECTOR` do Journal não possuem dimensão nem índice até a escolha do modelo de embeddings;
-- o smoke test PostgreSQL do Journal ainda é manual e não faz parte da suite automatizada;
-- não há health checks da aplicação, CI, métricas ou tracing.
-
-## 18. Menor próximo incremento vertical coerente
-
-**Não iniciado nesta entrega.**
-
-O menor incremento vertical coerente após o CRUD é um comando autenticado de **submissão do rascunho
-para análise**, sem ainda integrar LLM. O corte mínimo deve:
-
-1. localizar a entrada `DRAFT` pelo proprietário;
-2. alterar o status para `PENDING_ANALYSIS`;
-3. registrar `JournalEntryCreated` ou `JournalEntrySubmitted` na Outbox na mesma transação;
-4. impedir nova edição do conteúdo após a submissão;
-5. cobrir transação, ownership, idempotência do comando e contrato do evento.
-
-O nome final do evento precisa ser confirmado porque os artefatos atuais citam `JournalEntryCreated`,
-enquanto o CRUD já cria e persiste o rascunho antes da submissão. O consumer/LLM permanece fora desse
-incremento seguinte.
+Ele deve retornar status, tentativas, timestamps e um erro sanitizado. Isso permite ao frontend distinguir
+`pending`, `processing`, `pending_review`, `completed` e `failed` sem consultar diretamente o banco ou
+inferir estado apenas pela presença de passagens. O incremento ainda não foi iniciado.

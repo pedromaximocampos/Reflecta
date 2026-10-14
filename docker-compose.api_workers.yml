@@ -1,4 +1,42 @@
 services:
+  worker_work_ingestion:
+    profiles: [ai]
+    env_file:
+      - .env.dev
+      - path: .env.ai.local
+        required: false
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: individuum-worker-work-ingestion
+    command: uv run python -m src.modules.ai_processing.bootstrap.workers.sqs.work_ingestion
+    environment:
+      ENV: dev
+      DEBUG: "1"
+      POSTGRES_HOST: postgres_dev
+      NEO4J_URI: neo4j://neo4j_dev:7687
+    volumes:
+      - "${USERPROFILE}/.aws:/root/.aws:ro"
+    networks:
+      - individuum-net
+    restart: unless-stopped
+
+  worker_journal_analysis:
+    profiles: [ai]
+    env_file:
+      - .env.dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: individuum-worker-journal-analysis
+    command: uv run python -m src.modules.ai_processing.worker
+    environment:
+      ENV: dev
+      POSTGRES_HOST: postgres_dev
+      NEO4J_URI: neo4j://neo4j_dev:7687
+    networks:
+      - individuum-net
+    restart: unless-stopped
   # Nome do container que estou criando no caso individuum-api
   api:
     ## Arquivo de ambiente
@@ -44,6 +82,7 @@ services:
       ENV: dev
       DEBUG: "1"
       POSTGRES_HOST: postgres_dev
+      AWS_PROFILE:
 
     networks:
       - individuum-net

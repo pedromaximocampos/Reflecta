@@ -1,6 +1,6 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria focal atualizada em 2026-10-10 após a sincronização do backend desenvolvido na branch
+> Auditoria focal atualizada em 2026-10-14 após a sincronização do backend desenvolvido na branch
 > `feature/atividade-a3-pedro` do repositório acadêmico com este repositório privado.
 >
 > Este documento registra somente capacidades comprovadas por código, migrations, testes ou execução.
@@ -24,7 +24,8 @@
 - `alembic check`: nenhuma nova operação de upgrade detectada;
 - FastAPI/OpenAPI: aplicação importada e **25 paths / 37 operações HTTP** gerados;
 - `git diff --check`: nenhum erro de whitespace; somente avisos de conversão LF/CRLF no Windows;
-- integrações AWS e chamada real ao OpenAI não foram reexecutadas neste repositório durante esta atualização.
+- o fluxo equivalente da branch acadêmica sincronizada foi exercitado manualmente com S3, SNS, SQS,
+  OpenAI e Neo4j reais; a execução externa não foi repetida a partir desta cópia privada após a sincronização.
 
 ## 3. Resumo executivo
 
@@ -35,7 +36,7 @@
 | Clean Architecture / DDD | PARTIAL | Entidades, VOs, ports, casos de uso, repositories, UoWs e adapters estão separados nos fluxos recentes; nem todo código legado segue o mesmo rigor. |
 | Auth | PARTIAL | Cadastro, login, refresh/logoff, verificação, reset, exclusão lógica, recuperação, perfil e role existem; faltam E2E automatizado e distinção criptográfica entre access/refresh token. |
 | Journal | PARTIAL | CRUD com ownership e exclusão lógica está implementado; submissão/consulta de análise e worker existem, mas o pipeline futuro de sentenças, embeddings e referências continua incompleto. |
-| AI Processing | PARTIAL | Interpretação de Journal e ingestão de PDF com extração, normalização, chunks, OpenAI, retry local, Inbox e persistência de estado estão implementadas; operação externa não foi revalidada nesta auditoria. |
+| AI Processing | PARTIAL | Interpretação de Journal e ingestão de PDF com extração, normalização, chunks, OpenAI, validação de citação, retry, Inbox e persistência de estado estão implementadas e o fluxo de obras foi exercitado manualmente; faltam E2E automatizado e operação reproduzível. |
 | Catalog / Knowledge | PARTIAL | CRUD de temas, criação de obra/autor, solicitação de ingestão e CRUD/revisão de passagens existem; faltam listagem/edição de obras e endpoint público de status da ingestão. |
 | Recommendation | NOT_STARTED | Não existe módulo funcional. |
 | Sharing / Professional | NOT_STARTED | Não existe módulo funcional. |
@@ -54,9 +55,9 @@
 | Alembic | IMPLEMENTED | `alembic/`; head `a3d9e7f4b612` aplicada localmente |
 | PostgreSQL 16 / pgvector | PARTIAL | Compose, schemas/tabelas e colunas vector; busca vetorial ainda não implementada |
 | Neo4j 5.26 / driver assíncrono | IMPLEMENTED | providers compartilhados, UoW e repositories Catalog |
-| AWS S3 / boto3 | PARTIAL | adapters Catalog e AI Processing com testes unitários; integração externa não revalidada nesta atualização |
-| AWS SNS/SQS | PARTIAL | dispatcher Outbox, publishers e consumer de ingestão; recursos cloud permanecem fora do repositório |
-| OpenAI Responses API / httpx | PARTIAL | adapters de análise estruturada com testes; credencial e chamada externa não revalidadas nesta atualização |
+| AWS S3 / boto3 | PARTIAL | adapters Catalog e AI Processing, testes unitários e upload/leitura reais exercitados; bucket e políticas permanecem fora do repositório |
+| AWS SNS/SQS | PARTIAL | dispatcher Outbox, publishers, consumer, retry e DLQ exercitados manualmente; recursos cloud permanecem fora do repositório |
+| OpenAI Responses API / httpx | PARTIAL | análise estruturada de chunks e validação de respostas exercitadas com o provedor real; faltam E2E automatizado, métricas e limites operacionais |
 | RabbitMQ / aio-pika | PARTIAL | caminho local legado/transicional continua no código e Compose |
 | Amazon SES | PARTIAL | notifier e Lambda de e-mail existem; infraestrutura cloud não é versionada como IaC |
 | Pytest / pytest-asyncio | IMPLEMENTED | 287 testes aprovados |
@@ -119,12 +120,13 @@ Migrations recentes:
 - `f6c2a91d4e08_create_ai_processing_chunks.py`;
 - `a3d9e7f4b612_create_ai_processing_inbox.py`.
 
-### Neo4j — IMPLEMENTED no código / NOT_VERIFIED externamente nesta atualização
+### Neo4j — IMPLEMENTED
 
 - constraints para Theme, Work, Author e Passage;
 - repositories de Theme, Work e Passage;
 - relações `WRITTEN_BY`, `BELONGS_TO` e `RELATES_TO`;
 - passagens carregam origem, localização, explicação, status, offsets e temas associados.
+- persistência e consulta de passagens candidatas foram exercitadas manualmente no Neo4j local.
 
 ### S3 — PARTIAL
 
@@ -132,6 +134,8 @@ Migrations recentes:
 - AI Processing lê o original e persiste texto normalizado/chunks;
 - ports e adapters ficam fora do domínio;
 - falhas são convertidas em exceções de aplicação.
+- upload do PDF, leitura do original e gravação do texto normalizado foram exercitados manualmente
+  no bucket de desenvolvimento.
 
 ## 7. Eventos e processamento assíncrono
 
@@ -177,6 +181,19 @@ Fluxo implementado:
 11. retoma somente chunks pendentes/falhos em nova entrega;
 12. move a ingestão para revisão ou falha conforme resultado.
 
+Validação contra citações inventadas:
+
+1. o schema estruturado exige que o provedor retorne a citação em `exact_text`;
+2. o adapter procura primeiro uma correspondência literal dentro do texto original do chunk;
+3. quando a extração do PDF introduz espaços, quebras ou hifenização de fim de linha, uma representação
+   canônica é usada somente para localizar a origem, preservando os offsets do texto-fonte;
+4. o `short_text` persistido é recortado do próprio `chunk_text` pelos offsets encontrados, e não copiado
+   cegamente da resposta do modelo;
+5. temas inexistentes, citações não localizadas e duplicatas são descartados individualmente com códigos
+   como `invalid_theme`, `quote_not_found` e `duplicate_quote`;
+6. `paraphrase` e `interpretation_note` continuam sendo conteúdo interpretativo gerado pela IA e ficam
+   sujeitos à revisão humana antes da ativação da passagem.
+
 Evidências principais:
 
 - `src/modules/ai_processing/application/use_cases/process_work_ingestion/`;
@@ -184,6 +201,8 @@ Evidências principais:
 - `src/modules/ai_processing/infrastructure/document/`;
 - `src/modules/ai_processing/infrastructure/messaging/aws_sqs/`;
 - `src/modules/ai_processing/infrastructure/persistence/postgresql/`;
+- `src/modules/catalog/infrastructure/persistence/neo4j/repositories/passage_repository.py`;
+- `tests/unit/ai_processing/infrastructure/analysis/test_openai_work_passage_analyzer.py`;
 - `tests/unit/ai_processing/`.
 
 ### Análise de Journal — PARTIAL
@@ -237,9 +256,25 @@ Lacunas HTTP relevantes:
 | AI Processing | IMPLEMENTED unitariamente | Inbox, chunks, documentos, S3, SQS, OpenAI, worker e casos de uso |
 | Notification | IMPLEMENTED unitariamente | handlers, templates, SES e payloads |
 | API E2E real | NOT_STARTED | não existe suíte persistente com FastAPI + PostgreSQL + Neo4j + AWS |
-| Integrações cloud | NOT_VERIFIED | dependem da conta e recursos externos |
+| Integrações cloud | PARTIAL | fluxo de obras validado manualmente com S3, SNS, SQS/DLQ e OpenAI; configuração ainda é externa e não há suíte E2E reproduzível |
 
 Resultado atual: **287 passed, 8 warnings**.
+
+Validação funcional manual já observada no fluxo de obras:
+
+- criação e manutenção de temas administrativos;
+- criação de obra e autor;
+- upload de PDF real para o S3;
+- publicação Outbox -> SNS -> SQS e consumo assíncrono;
+- extração do PDF em 25 chunks no documento exercitado;
+- retomada a partir de chunks pendentes/falhos após nova entrega da mensagem;
+- respostas estruturadas reais da OpenAI;
+- descarte de sugestão cuja citação não existe no chunk (`quote_not_found`);
+- persistência de passagens `PENDING_REVIEW` no Neo4j;
+- listagem de passagens com citação literal, paráfrase, justificativa e label do tema.
+
+Aprovação e rejeição possuem implementação e testes automatizados, mas a execução manual desses dois
+comandos não foi registrada nesta atualização.
 
 ## 11. Divergências e riscos atuais
 

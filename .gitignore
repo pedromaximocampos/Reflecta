@@ -226,3 +226,5 @@ reflecta-lambda.zip
 
 # Local preparation notes (not part of the public portfolio)
 INTERVIEW_CONTEXT.md
+/.env.ai.example
+/frontend/.env.example

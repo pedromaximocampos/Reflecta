@@ -81,9 +81,7 @@ class UpdatePassageController(IControllerInterface):
             UpdatePassageInputDTO(
                 passage_id=_passage_id(request),
                 locator=body.get("locator"),
-                short_text=body.get("short_text"),
                 paraphrase=body.get("paraphrase"),
-                interpretation_note=body.get("interpretation_note"),
                 priority=body.get("priority"),
                 themes=(
                     _theme_inputs(body["themes"])

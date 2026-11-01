@@ -81,18 +81,31 @@ class _Themes:
 
 
 class _Works:
-    def __init__(self, work):
+    def __init__(self, work, passages):
         self.work = work
+        self.passages = passages
+        self.status_syncs = 0
 
     async def get_work_by_id(self, work_id):
         return self.work if self.work.id == work_id else None
+
+    async def sync_status_from_active_passages(self, work_id, updated_at):
+        assert self.work.id == work_id
+        self.work.status = (
+            CatalogStatus.ACTIVE
+            if self.passages.passage.status is CatalogStatus.ACTIVE
+            else CatalogStatus.INACTIVE
+        )
+        self.work.updated_at = updated_at
+        self.status_syncs += 1
+        return self.work
 
 
 class _GraphUow:
     def __init__(self, passage=None):
         self.passage_repository = _Passages(passage)
         self.theme_repository = _Themes(_theme())
-        self.work_repository = _Works(_work())
+        self.work_repository = _Works(_work(), self.passage_repository)
         self.commits = 0
 
     async def __aenter__(self):
@@ -214,8 +227,11 @@ async def test_create_manual_passage_starts_approved() -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_passage_replaces_content_and_themes() -> None:
-    graph = _GraphUow(_passage())
+async def test_update_passage_replaces_only_editable_content_and_themes() -> None:
+    original = _passage()
+    original_short_text = original.short_text
+    original_interpretation_note = original.interpretation_note
+    graph = _GraphUow(original)
     use_case = UpdatePassageUseCase(graph, _Clock())
 
     result = await use_case.execute(
@@ -228,6 +244,8 @@ async def test_update_passage_replaces_content_and_themes() -> None:
     )
 
     assert result.paraphrase == "Paráfrase revisada."
+    assert result.short_text == original_short_text
+    assert result.interpretation_note == original_interpretation_note
     assert result.priority == 4
     assert result.themes[0].label == "Virtude"
     assert result.themes[0].confidence == 0.95
@@ -336,6 +354,33 @@ async def test_pending_passage_cannot_be_activated_before_approval() -> None:
 
 
 @pytest.mark.asyncio
+async def test_activating_first_passage_activates_its_work() -> None:
+    graph = _GraphUow(_passage(CatalogStatus.APPROVED))
+    use_case = SetPassageAvailabilityUseCase(graph, _Clock())
+
+    result = await use_case.execute(_passage().id, active=True)
+
+    assert result.status == CatalogStatus.ACTIVE.value
+    assert graph.work_repository.work.status is CatalogStatus.ACTIVE
+    assert graph.work_repository.status_syncs == 1
+    assert graph.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_deactivating_last_active_passage_deactivates_its_work() -> None:
+    graph = _GraphUow(_passage(CatalogStatus.ACTIVE))
+    graph.work_repository.work.status = CatalogStatus.ACTIVE
+    use_case = SetPassageAvailabilityUseCase(graph, _Clock())
+
+    result = await use_case.execute(_passage().id, active=False)
+
+    assert result.status == CatalogStatus.INACTIVE.value
+    assert graph.work_repository.work.status is CatalogStatus.INACTIVE
+    assert graph.work_repository.status_syncs == 1
+    assert graph.commits == 1
+
+
+@pytest.mark.asyncio
 async def test_delete_is_logical_and_rejects_pending_candidate() -> None:
     graph = _GraphUow(_passage())
     sql = _SqlUow(_ingestion())
@@ -345,3 +390,16 @@ async def test_delete_is_logical_and_rejects_pending_candidate() -> None:
 
     assert graph.passage_repository.passage.status is CatalogStatus.REJECTED
     assert sql.work_ingestion_repository.ingestion.status is WorkIngestionStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_retiring_last_active_passage_deactivates_its_work() -> None:
+    graph = _GraphUow(_passage(CatalogStatus.ACTIVE))
+    graph.work_repository.work.status = CatalogStatus.ACTIVE
+    use_case = DeletePassageUseCase(graph, _SqlUow(_ingestion()), _Clock())
+
+    await use_case.execute(_passage().id)
+
+    assert graph.passage_repository.passage.status is CatalogStatus.INACTIVE
+    assert graph.work_repository.work.status is CatalogStatus.INACTIVE
+    assert graph.work_repository.status_syncs == 1

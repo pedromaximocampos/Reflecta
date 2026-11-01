@@ -34,6 +34,16 @@ class SequentialUlidGenerator:
         return next(self._values)
 
 
+class SequentialColorGenerator:
+    def __init__(self, *values: str) -> None:
+        self._values = iter(values)
+
+    def generate(self, used_colors: set[str]) -> str:
+        color = next(self._values)
+        assert color not in used_colors
+        return color
+
+
 class FakeCatalogUnitOfWork:
     def __init__(self) -> None:
         self.theme_repository = AsyncMock()
@@ -59,6 +69,7 @@ def make_use_case(uow: FakeCatalogUnitOfWork) -> CreateThemesUseCase:
         ),
         clock=FixedClock(datetime(2026, 9, 18, 12, 0, tzinfo=timezone.utc)),
         slug_generator=SlugGenerator(),
+        color_generator=SequentialColorGenerator("#12ABEF", "#F04F78"),
     )
 
 
@@ -66,6 +77,7 @@ def make_use_case(uow: FakeCatalogUnitOfWork) -> CreateThemesUseCase:
 async def test_execute_persists_batch_and_commits_once() -> None:
     uow = FakeCatalogUnitOfWork()
     uow.theme_repository.get_theme_by_slug.return_value = None
+    uow.theme_repository.list_theme_colors.return_value = {"#44CC88"}
     uow.theme_repository.create_many_themes.side_effect = lambda themes: themes
     use_case = make_use_case(uow)
     input_dto = CreateThemesInputDTO(
@@ -90,9 +102,13 @@ async def test_execute_persists_batch_and_commits_once() -> None:
         "autoconhecimento",
     ]
     assert persisted[0].created_at == persisted[1].created_at
+    assert persisted[0].color == "#12ABEF"
+    assert persisted[1].color == "#F04F78"
+    assert output.to_dict()["themes"][0]["color"] == "#12ABEF"
     uow.commit.assert_awaited_once_with()
     assert uow.enter_count == 1
     assert uow.theme_repository.get_theme_by_slug.await_count == 2
+    uow.theme_repository.list_theme_colors.assert_awaited_once_with()
     assert output.to_dict()["themes"][0]["id"] == "01THEME0000000000000000000"
     assert output.to_dict()["themes"][0]["slug"] == "saude-mental"
 
@@ -149,6 +165,7 @@ async def test_execute_rejects_empty_batch_before_opening_uow() -> None:
 async def test_execute_does_not_commit_when_repository_fails() -> None:
     uow = FakeCatalogUnitOfWork()
     uow.theme_repository.get_theme_by_slug.return_value = None
+    uow.theme_repository.list_theme_colors.return_value = set()
     uow.theme_repository.create_many_themes.side_effect = ThemeAlreadyExistsError(
         "saude-mental"
     )

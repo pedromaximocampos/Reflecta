@@ -1,56 +1,65 @@
-# src/presentation/exception_handler.py
 import logging
+import sys
+import traceback
+
+from src.shared.config.settings import get_settings
 from src.shared.domain.errors.domain_error import DomainError
 from src.shared.presentation.http_types.http_response import HttpResponse
-from src.shared.config.settings import get_settings
-
-import traceback, sys
 
 _settings = get_settings()
 _logger = logging.getLogger(__name__)
 
+_UNEXPECTED_ERROR_BODY = {
+    "errors": [
+        {
+            "title": "UnexpectedError",
+            "status": 500,
+            "data": "Não foi possível concluir a solicitação. Tente novamente.",
+            "details": None,
+        }
+    ],
+    "meta": {},
+}
+
+
 class ExceptionHandler:
-    # tuple de TIPOS (classes), sem duplicatas
-
-
     @staticmethod
     def handle_exception(e: Exception) -> HttpResponse:
+        if not isinstance(e, DomainError) or e.status_code >= 500:
+            _logger.error(
+                "Unhandled exception while processing API request",
+                exc_info=(type(e), e, e.__traceback__),
+            )
+            return HttpResponse(
+                status_code=500,
+                body=_UNEXPECTED_ERROR_BODY,
+            )
+
         meta = {}
-
         if _settings.DEBUG:
-            exc_type, exc_value, exc_tb = sys.exc_info()  # informações da exceção
+            _, _, exc_tb = sys.exc_info()
             if exc_tb:
-                tb = traceback.extract_tb(sys.exc_info()[2]) # pega a traceback
+                tb = traceback.extract_tb(exc_tb)
                 if tb:
-                    filename, lineno, func, text = tb[-1]         # último frame
-                    trace  = f"Erro em {filename}, linha {lineno}, função {func}: {text}"
-
+                    filename, lineno, func, text = tb[-1]
+                    trace = (
+                        f"Erro em {filename}, linha {lineno}, "
+                        f"função {func}: {text}"
+                    )
                     meta["trace"] = trace
                     meta["raw_error"] = str(e)
 
-        if isinstance(e, DomainError):
-            http_response = HttpResponse(
-                status_code=e.status_code,
-                body={
-                    "errors": [{
+        return HttpResponse(
+            status_code=e.status_code,
+            body={
+                "errors": [
+                    {
                         "title": e.name,
                         "status": e.status_code,
                         "data": e.message,
                         "details": getattr(e, "details", None),
-                    }],
-                    "meta": meta,
-                },
-            )
-            return http_response
-
-        _logger.exception("Unhandled exception while processing API request")
-        return HttpResponse(
-            status_code=500,
-            body={
-                "errors": [{
-                    "title": "Internal Server Error",
-                    "status": 500,
-                }],
-                "meta": meta
-            }
+                    }
+                ],
+                "meta": meta,
+            },
         )

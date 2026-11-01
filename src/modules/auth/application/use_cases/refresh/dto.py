@@ -7,3 +7,4 @@ class RefreshResultDTO:
     access_token: str
     refresh_token: str
     user: User
+    avatar_url: str | None = None

@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "Reflecta — Compartilhamento de análise contextual",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Use accessToken do titular e contextAnalysisId obtido no histórico. O destinatário usa somente contextShareToken. Não exporte tokens reais. O acesso expira em 72 horas. Nenhuma chamada envia o link para terceiros."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Confirmar conteúdo e gerar link",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/journal/context-analyses/{{contextAnalysisId}}/shares",
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"confirmed\": true }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Antes de executar, consulte a análise no histórico e confira seu conteúdo. Informe contextAnalysisId de análise própria com período de 7 dias e ao menos 5 entradas."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) { const data = pm.response.json(); pm.environment.set(\"contextShareId\", data.id); pm.environment.set(\"contextShareToken\", data.token); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Listar links da análise",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/context-analyses/{{contextAnalysisId}}/shares"
+      }
+    },
+    {
+      "name": "3. Consultar como destinatário, sem login",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/shared/context-analysis/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"token\": \"{{contextShareToken}}\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "4. Revogar acesso",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/journal/context-analyses/{{contextAnalysisId}}/shares/{{contextShareId}}"
+      }
+    }
+  ]
+}

@@ -115,9 +115,7 @@ class UpdatePassageUseCase:
             passage.update(
                 now=self._clock.now(),
                 locator=data.locator,
-                short_text=data.short_text,
                 paraphrase=data.paraphrase,
-                interpretation_note=data.interpretation_note,
                 priority=data.priority,
                 themes=themes,
                 start_page=data.start_page,
@@ -190,12 +188,17 @@ class SetPassageAvailabilityUseCase:
             passage = await uow.passage_repository.get_by_id(passage_id)
             if passage is None:
                 raise PassageNotFoundError(passage_id.value)
+            now = self._clock.now()
             if active:
                 await _ensure_active_passage_themes(uow, passage)
-                passage.activate(now=self._clock.now())
+                passage.activate(now=now)
             else:
-                passage.deactivate(now=self._clock.now())
+                passage.deactivate(now=now)
             updated = await uow.passage_repository.update(passage)
+            await uow.work_repository.sync_status_from_active_passages(
+                updated.work_id,
+                now,
+            )
             output = await _passage_output(uow, updated)
             await uow.commit()
         return output
@@ -219,8 +222,13 @@ class DeletePassageUseCase:
             passage = await uow.passage_repository.get_by_id(passage_id)
             if passage is None:
                 raise PassageNotFoundError(passage_id.value)
-            passage.retire(now=self._clock.now())
+            now = self._clock.now()
+            passage.retire(now=now)
             updated = await uow.passage_repository.update(passage)
+            await uow.work_repository.sync_status_from_active_passages(
+                updated.work_id,
+                now,
+            )
             ingestion_id = updated.ingestion_id
             if ingestion_id is not None:
                 pending = await uow.passage_repository.count_pending_by_ingestion(

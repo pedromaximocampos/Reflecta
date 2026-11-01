@@ -31,7 +31,6 @@ def test_update_info_changes_only_values_that_were_provided() -> None:
         {"surname": "   "},
         {"date_of_birth": date(2026, 9, 14)},
         {"date_of_birth": date(2026, 9, 15)},
-        {"avatar_url": "   "},
     ],
 )
 def test_update_info_rejects_invalid_changes(changes) -> None:
@@ -39,3 +38,24 @@ def test_update_info_rejects_invalid_changes(changes) -> None:
 
     with pytest.raises(InvalidUserInfoError):
         user.update_info(today=date(2026, 9, 14), **changes)
+
+
+def test_replace_and_remove_avatar_manage_durable_reference() -> None:
+    user = UserBuilder().with_avatar_url("https://legacy.example/avatar.png").build()
+
+    user.replace_avatar("users/user-id/avatar/avatar.webp")
+
+    assert user.avatar_object_key == "users/user-id/avatar/avatar.webp"
+    assert user.avatar_url is None
+
+    user.remove_avatar()
+
+    assert user.avatar_object_key is None
+    assert user.avatar_url is None
+
+
+def test_replace_avatar_rejects_empty_object_key() -> None:
+    user = UserBuilder().build()
+
+    with pytest.raises(InvalidUserInfoError):
+        user.replace_avatar("   ")

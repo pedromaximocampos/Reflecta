@@ -81,9 +81,7 @@ class Passage:
         *,
         now: datetime,
         locator: str | None = None,
-        short_text: str | None = None,
         paraphrase: str | None = None,
-        interpretation_note: str | None = None,
         priority: int | None = None,
         themes: tuple[PassageThemeRelevance, ...] | None = None,
         start_page: int | None = None,
@@ -91,13 +89,7 @@ class Passage:
         update_page_range: bool = False,
     ) -> None:
         self.locator = self.locator if locator is None else locator
-        self.short_text = self.short_text if short_text is None else short_text
         self.paraphrase = self.paraphrase if paraphrase is None else paraphrase
-        self.interpretation_note = (
-            self.interpretation_note
-            if interpretation_note is None
-            else interpretation_note
-        )
         self.priority = self.priority if priority is None else priority
         self.themes = self.themes if themes is None else themes
         if update_page_range:

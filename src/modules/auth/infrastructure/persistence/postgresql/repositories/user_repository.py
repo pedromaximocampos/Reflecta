@@ -110,6 +110,7 @@ class UserRepository(IUserRepository):
                 surname=user.surname,
                 date_of_birth=user.date_of_birth,
                 avatar_url=user.avatar_url,
+                avatar_object_key=user.avatar_object_key,
                 last_login_at=user.last_login_at,
                 role=user.role,
                 deleted_at=user.deleted_at,
@@ -126,7 +127,6 @@ class UserRepository(IUserRepository):
             "name": user.name,
             "surname": user.surname,
             "date_of_birth": user.date_of_birth,
-            "avatar_url": user.avatar_url,
         }
         if not fields_to_update or not fields_to_update.issubset(allowed_values):
             raise ValueError("Invalid fields for user information update.")
@@ -138,6 +138,23 @@ class UserRepository(IUserRepository):
                 UserModel.deleted_at.is_(None),
             )
             .values(**{field: allowed_values[field] for field in fields_to_update})
+            .returning(UserModel.id)
+        )
+        result = await self.__session.execute(query)
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError()
+
+    async def update_user_avatar(self, user: User) -> None:
+        query = (
+            update(UserModel)
+            .where(
+                UserModel.id == user.id.value,
+                UserModel.deleted_at.is_(None),
+            )
+            .values(
+                avatar_object_key=user.avatar_object_key,
+                avatar_url=user.avatar_url,
+            )
             .returning(UserModel.id)
         )
         result = await self.__session.execute(query)

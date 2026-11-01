@@ -25,6 +25,10 @@ class IThemeRepository(Protocol):
         """Retorna uma lista de todos os temas."""
         ...
 
+    async def list_theme_colors(self) -> set[str]:
+        """Retorna as cores já reservadas por temas persistidos."""
+        ...
+
     async def create_many_themes(self, themes: list[Theme]) -> list[Theme]:
         """Cria vários temas de uma vez."""
         ...

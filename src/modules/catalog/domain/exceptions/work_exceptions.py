@@ -36,6 +36,15 @@ class WorkNotFoundError(DomainError):
         )
 
 
+class InvalidWorkCoverError(DomainError):
+    def __init__(self, message: str = "The uploaded work cover is invalid.") -> None:
+        super().__init__(
+            message=message,
+            status_code=422,
+            name="InvalidWorkCoverError",
+        )
+
+
 class InvalidWorkDocumentError(DomainError):
     def __init__(self, message: str = "The uploaded work document is invalid.") -> None:
         super().__init__(

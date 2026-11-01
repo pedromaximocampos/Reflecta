@@ -9,9 +9,15 @@ from src.shared.domain.errors.api_types import BadRequestError
 
 class LoginController(IControllerInterface):
 
-    def __init__(self, login_use_case: ILoginUseCase, system_clock: IClock):
+    def __init__(
+        self,
+        login_use_case: ILoginUseCase,
+        system_clock: IClock,
+        secure_cookie: bool = True,
+    ):
         self._login_use_case = login_use_case
         self._system_clock = system_clock
+        self._secure_cookie = secure_cookie
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
         authorization_header = request.headers.get("authorization")
@@ -31,7 +37,7 @@ class LoginController(IControllerInterface):
             name="refresh_token",
             value=login_output.refresh_token,
             http_only=True,
-            secure=True,
+            secure=self._secure_cookie,
             path="/",
             max_age=self._system_clock.refresh_token_expiration_in_seconds()
         )

@@ -48,3 +48,13 @@ class InvalidUserInfoError(DomainError):
             name="InvalidUserInfoError",
             **kwargs,
         )
+
+
+class InvalidUserAvatarError(DomainError):
+    def __init__(self, message: str = "Invalid user avatar.", **kwargs):
+        super().__init__(
+            message=message,
+            status_code=422,
+            name="InvalidUserAvatarError",
+            **kwargs,
+        )

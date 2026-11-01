@@ -171,6 +171,39 @@ class WorkIngestionChunkRepository(IWorkIngestionChunkRepository):
             WorkIngestionChunkStatus(status): count for status, count in result.all()
         }
 
+    async def count_many_by_status(
+        self,
+        ingestion_ids: tuple[WorkIngestionId, ...],
+    ) -> dict[WorkIngestionId, dict[WorkIngestionChunkStatus, int]]:
+        if not ingestion_ids:
+            return {}
+        query = (
+            select(
+                WorkIngestionChunkModel.ingestion_id,
+                WorkIngestionChunkModel.status,
+                func.count(WorkIngestionChunkModel.id),
+            )
+            .where(
+                WorkIngestionChunkModel.ingestion_id.in_(
+                    tuple(item.value for item in ingestion_ids)
+                )
+            )
+            .group_by(
+                WorkIngestionChunkModel.ingestion_id,
+                WorkIngestionChunkModel.status,
+            )
+        )
+        result = await self.__session.execute(query)
+        counts: dict[
+            WorkIngestionId,
+            dict[WorkIngestionChunkStatus, int],
+        ] = {}
+        for ingestion_id, status, count in result.all():
+            counts.setdefault(WorkIngestionId(ingestion_id), {})[
+                WorkIngestionChunkStatus(status)
+            ] = count
+        return counts
+
     @classmethod
     def _copy_mutable_state(
         cls,

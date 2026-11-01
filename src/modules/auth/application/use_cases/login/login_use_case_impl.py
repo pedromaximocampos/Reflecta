@@ -10,6 +10,10 @@ from src.modules.auth.domain.ports.units_of_work.iauth_unit_of_work import IAuth
 from src.modules.auth.public.email import Email
 from src.modules.auth.domain.value_objects.password_hash import PasswordHash
 from src.shared.domain.errors.api_types import AuthError
+from src.modules.auth.application.ports.storage import IUserAvatarStorage
+from src.modules.auth.application.services.user_avatar_url_resolver import (
+    resolve_user_avatar_url,
+)
 
 from .dto import LoginInput, LoginOutput
 from .ilogin_use_case import ILoginUseCase
@@ -19,13 +23,15 @@ class LoginUseCaseImpl(ILoginUseCase):
 
     def __init__(self,password_hasher: IPasswordHasher, system_clock: IClock,
                  auth_session_service: IAuthSessionService, email_verification_service: IEmailVerificationService,
-                 auth_unit_of_work: IAuthUnitOfWork, outbox_service: IOutboxService) -> None:
+                 auth_unit_of_work: IAuthUnitOfWork, outbox_service: IOutboxService,
+                 avatar_storage: IUserAvatarStorage) -> None:
         self.__password_hasher = password_hasher
         self.__system_clock = system_clock
         self.__auth_session_service = auth_session_service
         self.__email_verification_service = email_verification_service
         self.__auth_unit_of_work = auth_unit_of_work
         self.__outbox_service = outbox_service
+        self.__avatar_storage = avatar_storage
 
 
     async def execute(self, login_input: LoginInput) -> LoginOutput:
@@ -56,7 +62,12 @@ class LoginUseCaseImpl(ILoginUseCase):
 
             auth_session_result: AuthSessionResultDTO = await self.__auth_session_service.create_session(user, uow)
 
-            login_output: LoginOutput = self.__create_login_output(user, auth_session_result)
+            avatar_url = await resolve_user_avatar_url(user, self.__avatar_storage)
+            login_output: LoginOutput = self.__create_login_output(
+                user,
+                auth_session_result,
+                avatar_url=avatar_url,
+            )
 
             await uow.commit()
 
@@ -94,7 +105,11 @@ class LoginUseCaseImpl(ILoginUseCase):
             raise AuthError("Invalid username or password")
 
     @staticmethod
-    def __create_login_output(user: User, auth_session_result: AuthSessionResultDTO) -> LoginOutput:
+    def __create_login_output(
+        user: User,
+        auth_session_result: AuthSessionResultDTO,
+        avatar_url: str | None = None,
+    ) -> LoginOutput:
 
         return LoginOutput(
             access_token=auth_session_result.access_token,
@@ -104,7 +119,7 @@ class LoginUseCaseImpl(ILoginUseCase):
             name=user.name,
             username=user.username,
             surname=user.surname,
-            avatar_url=user.avatar_url,
+            avatar_url=avatar_url if avatar_url is not None else user.avatar_url,
             role=user.role,
             date_of_birth=user.date_of_birth,
         )

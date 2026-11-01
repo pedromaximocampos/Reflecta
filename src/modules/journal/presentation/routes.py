@@ -1,4 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
+from src.modules.journal.public.context_analysis import ContextPeriod
+from datetime import date
+from datetime import datetime
+import logging
+from pydantic import BaseModel, ConfigDict
+
+logger = logging.getLogger(__name__)
+from src.modules.operations.presentation.routes import require_admin, get_failure_gateway
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import Response
 
 from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
@@ -42,6 +50,82 @@ def get_analysis_gateway():
     return JournalAnalysisGateway(individuum_mvp_provider)
 
 
+def get_context_gateway():
+    from src.modules.journal.infrastructure.persistence.postgresql.context_gateway import ContextGateway
+    from src.shared.infrastructure.persistence.postgresql.provider import individuum_mvp_provider
+    return ContextGateway(individuum_mvp_provider)
+
+
+def get_context_case():
+    from src.modules.ai_processing.application.contextual_analysis import AnalyzeContext
+    from src.modules.ai_processing.infrastructure.openai_interpreter import OpenAIInterpreter, OpenAISettings
+    return AnalyzeContext(get_context_gateway(), OpenAIInterpreter(OpenAISettings()))
+
+
+def get_context_period(start_date: date, end_date: date):
+    from pydantic import ValidationError
+    try:
+        return ContextPeriod(start_date=start_date, end_date=end_date)
+    except ValidationError:
+        raise HTTPException(status_code=422, detail="Selecione um período de exatamente 7 dias, incluindo início e fim.") from None
+
+
+@journal_router.get("/context-analysis")
+async def get_context_analysis(
+    period: ContextPeriod = Depends(get_context_period),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_context_gateway),
+):
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        return await gateway.status(current_user.user_id.value, period)
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Histórico indisponível. Tente novamente mais tarde.") from None
+
+
+@journal_router.get("/context-analysis/history")
+async def get_context_analysis_history(
+    limit: int = Query(default=5, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_context_gateway),
+):
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        return await gateway.history(current_user.user_id.value, limit=limit, offset=offset)
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Histórico de análises indisponível. Tente novamente mais tarde.") from None
+
+
+@journal_router.post("/context-analysis")
+async def submit_context_analysis(
+    period: ContextPeriod,
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    case=Depends(get_context_case),
+):
+    from src.modules.ai_processing.application.contextual_analysis import InsufficientHistoryError, HistoryChangedError
+    from src.modules.ai_processing.application.contracts import InterpretationFailedError, ProviderNotConfiguredError
+    from sqlalchemy.exc import SQLAlchemyError
+    from pydantic import ValidationError
+    try:
+        return await case.execute(current_user.user_id.value, period)
+    except InsufficientHistoryError:
+        raise HTTPException(status_code=409, detail="O período selecionado precisa conter pelo menos 5 reflexões para gerar a análise.") from None
+    except HistoryChangedError:
+        raise HTTPException(status_code=409, detail="Seu histórico mudou durante a análise. Solicite novamente.") from None
+    except (InterpretationFailedError, ProviderNotConfiguredError, SQLAlchemyError, ValidationError) as error:
+        if isinstance(error, InterpretationFailedError):
+            code = error.reason.value
+        elif isinstance(error, ProviderNotConfiguredError):
+            code = "provider_not_configured"
+        elif isinstance(error, SQLAlchemyError):
+            code = "database_error"
+        else:
+            code = "invalid_interpretation"
+        logger.warning("Context analysis failed code=%s", code)
+        raise HTTPException(status_code=503, detail="Não foi possível analisar seu histórico. Suas reflexões foram preservadas. Tente novamente.") from None
+
+
 @journal_router.get("/entries/{journal_entry_id}/analysis")
 async def get_journal_analysis(
     journal_entry_id: str = Path(..., min_length=26, max_length=26),
@@ -51,21 +135,46 @@ async def get_journal_analysis(
     return await gateway.get_analysis(journal_entry_id, current_user.user_id.value)
 
 
+@journal_router.get("/entries/{journal_entry_id}/analysis/failures", deprecated=True)
+async def get_journal_analysis_failures(
+    journal_entry_id: str = Path(..., min_length=26, max_length=26),
+    limit: int = Query(default=20, ge=1, le=100),
+    admin: AuthenticatedPrincipal = Depends(require_admin),
+    gateway=Depends(get_failure_gateway),
+):
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        return await gateway.list_failures(source="journal", entity_id=journal_entry_id, limit=limit)
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Consulta de falhas indisponível. Tente novamente.") from None
+
+
+class AnalysisSubmission(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: datetime | None = None
+
+
 @journal_router.post("/entries/{journal_entry_id}/analysis", status_code=202)
 async def submit_journal_analysis(
     journal_entry_id: str = Path(..., min_length=26, max_length=26),
+    body: AnalysisSubmission | None = Body(default=None),
     current_user: AuthenticatedPrincipal = Depends(get_current_user),
     gateway=Depends(get_analysis_gateway),
 ):
-    from datetime import datetime, timezone
-    from src.modules.journal.public.analysis import AnalysisConflictError
+    from datetime import timezone
+    from src.modules.journal.public.analysis import AnalysisConflictError, UserReprocessLimitError
+    from sqlalchemy.exc import SQLAlchemyError
     try:
-        await gateway.submit(journal_entry_id, current_user.user_id.value, now=datetime.now(timezone.utc))
+        return await gateway.submit(journal_entry_id, current_user.user_id.value, now=datetime.now(timezone.utc),
+                                    expected_revision=body.expected_revision if body else None)
+    except UserReprocessLimitError:
+        raise HTTPException(status_code=403, detail="Após três reprocessamentos sem sucesso, somente um administrador pode solicitar nova tentativa.") from None
     except AnalysisConflictError:
-        raise HTTPException(status_code=409, detail="Entry already analyzed.") from None
+        raise HTTPException(status_code=409, detail="O estado da análise mudou. Atualize a página antes de tentar novamente.") from None
     except ValueError:
-        raise HTTPException(status_code=400, detail="Entry must contain between 1 and 10000 characters.") from None
-    return {"entry_id": journal_entry_id, "status": "pending_analysis"}
+        raise HTTPException(status_code=400, detail="A reflexão deve conter entre 1 e 20000 caracteres.") from None
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Não foi possível solicitar a análise. Tente novamente.") from None
 
 
 @journal_router.post(

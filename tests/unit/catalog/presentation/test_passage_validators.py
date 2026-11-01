@@ -8,6 +8,7 @@ from src.modules.catalog.presentation.validators.passage import (
 
 
 THEME_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
+SECOND_THEME_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAX"
 WORK_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 
 
@@ -47,3 +48,25 @@ def test_update_requires_both_page_fields_even_when_null() -> None:
         match="start_page and end_page must be provided together",
     ):
         UpdatePassageValidator.model_validate({"start_page": None})
+
+
+@pytest.mark.parametrize("protected_field", ["short_text", "interpretation_note"])
+def test_update_rejects_ai_protected_fields(protected_field: str) -> None:
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        UpdatePassageValidator.model_validate({protected_field: "Alteração indevida"})
+
+
+def test_update_accepts_multiple_unique_themes() -> None:
+    validated = UpdatePassageValidator.model_validate(
+        {
+            "themes": [
+                {"theme_id": THEME_ID, "confidence": 0.91},
+                {"theme_id": SECOND_THEME_ID, "confidence": 0.82},
+            ]
+        }
+    )
+
+    assert [theme.theme_id for theme in validated.themes or []] == [
+        THEME_ID,
+        SECOND_THEME_ID,
+    ]

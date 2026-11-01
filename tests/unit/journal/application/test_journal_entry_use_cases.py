@@ -107,7 +107,8 @@ async def test_create_entry_persists_authenticated_owner_and_commits() -> None:
     persisted = uow.journal_entry_repository.create.await_args.args[0]
     assert persisted.id == ENTRY_ID
     assert persisted.user_id == USER_ID
-    assert persisted.status is JournalEntryStatus.DRAFT
+    assert persisted.status is JournalEntryStatus.PENDING_ANALYSIS
+    assert output.status is JournalEntryStatus.PENDING_ANALYSIS
     assert output.id == ENTRY_ID
     uow.commit.assert_awaited_once_with()
 
@@ -247,3 +248,63 @@ async def test_delete_entry_returns_not_found_without_committing() -> None:
 
     uow.journal_entry_repository.soft_delete.assert_not_awaited()
     uow.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_created_entry_is_consumed_by_existing_worker():
+    from types import SimpleNamespace
+    from src.modules.ai_processing.worker import process_one
+    from src.modules.journal.public.analysis import EntrySnapshot
+
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.create.side_effect = lambda entry: entry
+    output = await CreateJournalEntryUseCaseImpl(uow, FixedClock(), FixedUlidGenerator()).execute(
+        CreateJournalEntryDTO(user_id=USER_ID, title=None, content_text="Minha reflexão.")
+    )
+    uow.commit.assert_awaited_once()
+    snapshot = EntrySnapshot(output.id.value, output.user_id.value, output.content_text,
+                             output.context_tags, output.updated_at, output.status.value)
+    gateway = SimpleNamespace(next_pending=AsyncMock(return_value=snapshot), mark_failed=AsyncMock())
+    interpreter = SimpleNamespace(execute=AsyncMock(return_value="analysis-id"))
+    assert await process_one(gateway, interpreter)
+    interpreter.execute.assert_awaited_once_with(ENTRY_ID.value, USER_ID.value)
+    gateway.mark_failed.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_failed_creation_rolls_back_without_committing_pending_work():
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.create.side_effect = RuntimeError("Database unavailable")
+    with pytest.raises(RuntimeError):
+        await CreateJournalEntryUseCaseImpl(uow, FixedClock(), FixedUlidGenerator()).execute(
+            CreateJournalEntryDTO(user_id=USER_ID, title=None, content_text="Minha reflexão.")
+        )
+    uow.commit.assert_not_awaited()
+    uow.rollback.assert_awaited_once()
+
+
+@pytest.mark.parametrize("status", list(JournalEntryStatus))
+def test_created_event_replay_does_not_reset_processing(status):
+    from src.modules.journal.application.handlers.journal_entry_created import enqueue_created_entry
+    from src.modules.journal.domain.events.journal_entry_created import JournalEntryCreated
+
+    entry = make_entry(status)
+    event = JournalEntryCreated(entry.id, entry.user_id, LATER)
+    enqueue_created_entry(event, entry)
+    expected = JournalEntryStatus.PENDING_ANALYSIS if status is JournalEntryStatus.DRAFT else status
+    assert entry.status is expected
+    updated_at = entry.updated_at
+    enqueue_created_entry(event, entry)
+    assert entry.status is expected
+    assert entry.updated_at == updated_at
+
+
+def test_created_event_rejects_another_owner():
+    from src.modules.journal.application.handlers.journal_entry_created import enqueue_created_entry
+    from src.modules.journal.domain.events.journal_entry_created import JournalEntryCreated
+
+    entry = make_entry()
+    event = JournalEntryCreated(entry.id, UserId("another-owner"), LATER)
+    with pytest.raises(ValueError):
+        enqueue_created_entry(event, entry)
+    assert entry.status is JournalEntryStatus.DRAFT

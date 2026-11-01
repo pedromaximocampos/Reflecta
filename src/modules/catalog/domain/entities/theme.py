@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from src.modules.catalog.public.theme_id import ThemeId
+from src.modules.catalog.public.theme_color import DEFAULT_THEME_COLOR, normalize_theme_color
 
 
 @dataclass(eq=False, slots=True)
@@ -13,8 +14,10 @@ class Theme:
     created_at: datetime
     is_active: bool = True
     updated_at: datetime | None = None
+    color: str = DEFAULT_THEME_COLOR
 
-
+    def __post_init__(self) -> None:
+        self.color = normalize_theme_color(self.color)
 
     def activate(self, updated_at: datetime | None = None) -> None:
         self.is_active = True

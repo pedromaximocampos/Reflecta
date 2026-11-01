@@ -104,17 +104,36 @@ async def test_user_info_update_changes_only_profile_columns() -> None:
     repository, session = make_repository()
     user = UserBuilder().build()
 
-    await repository.update_user_info(user, frozenset({"name", "avatar_url"}))
+    await repository.update_user_info(user, frozenset({"name"}))
 
     statement = session.execute.await_args.args[0]
     sql = compiled_sql(statement)
     set_clause = sql.split(" SET ", maxsplit=1)[1].split(" WHERE ", maxsplit=1)[0]
     assert "name=" in set_clause
-    assert "avatar_url=" in set_clause
+    assert "avatar_url=" not in set_clause
     assert "surname=" not in set_clause
     assert "date_of_birth=" not in set_clause
     assert "email=" not in set_clause
     assert "username=" not in set_clause
     assert "role=" not in set_clause
     assert "deleted_at=" not in set_clause
+    assert "users.deleted_at IS NULL" in sql
+
+
+@pytest.mark.asyncio
+async def test_avatar_update_changes_only_avatar_columns() -> None:
+    repository, session = make_repository()
+    user = UserBuilder().with_avatar_object_key(
+        "users/user-id/avatar/avatar.webp"
+    ).build()
+
+    await repository.update_user_avatar(user)
+
+    statement = session.execute.await_args.args[0]
+    sql = compiled_sql(statement)
+    set_clause = sql.split(" SET ", maxsplit=1)[1].split(" WHERE ", maxsplit=1)[0]
+    assert "avatar_object_key=" in set_clause
+    assert "avatar_url=" in set_clause
+    assert "name=" not in set_clause
+    assert "email=" not in set_clause
     assert "users.deleted_at IS NULL" in sql

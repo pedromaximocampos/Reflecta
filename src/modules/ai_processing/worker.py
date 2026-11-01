@@ -2,30 +2,87 @@
 import argparse
 import asyncio
 import logging
+from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timezone
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from neo4j.exceptions import Neo4jError, DriverError
 
-from src.modules.ai_processing.application.contracts import ProviderNotConfiguredError
+from src.modules.ai_processing.application.failure_reasons import FailureReason
+from src.modules.ai_processing.application.contracts import InterpretationFailedError, InvalidJournalInputError
+from src.modules.journal.public.analysis import AnalysisFailure
+
+from src.modules.ai_processing.application.contracts import ProviderNotConfiguredError, InvalidInterpretationError
 from src.modules.journal.public.analysis import AnalysisConflictError
 
 logger = logging.getLogger(__name__)
 LOCK_ID = 190024
 
 
-async def process_one(gateway, interpreter, *, entry_id=None):
+@asynccontextmanager
+async def provider_request_scope(case):
+    """Keep each distinct provider pool open for the complete analysis."""
+    async with AsyncExitStack() as stack:
+        providers = (
+            getattr(case, "interpreter", None),
+            getattr(case, "passage_selector", None),
+        )
+        entered: set[int] = set()
+        for provider in providers:
+            request_scope = getattr(provider, "request_scope", None)
+            if provider is None or request_scope is None or id(provider) in entered:
+                continue
+            entered.add(id(provider))
+            await stack.enter_async_context(request_scope())
+        yield
+
+
+def failure_reason(error):
+    if isinstance(error, InterpretationFailedError):
+        return error.reason
+    if isinstance(error, InvalidJournalInputError):
+        return FailureReason.INPUT
+    if isinstance(error, SQLAlchemyError):
+        return FailureReason.DATABASE
+    if isinstance(error, (Neo4jError, DriverError)):
+        return FailureReason.CATALOG
+    return FailureReason.UNEXPECTED
+
+
+async def process_one(gateway, interpreter, *, entry_id=None, case_factory=None):
     snapshot = await gateway.next_pending(entry_id)
     if snapshot is None:
         return False
+    attempt = 0
     try:
-        analysis_id = await interpreter.execute(snapshot.entry_id, snapshot.user_id)
+        if getattr(snapshot, "processing_settings", None) is not None:
+            if case_factory is None:
+                raise ProviderNotConfiguredError("Per-attempt settings require a case factory.")
+            interpreter = case_factory(processing_settings=snapshot.processing_settings)
+        async with provider_request_scope(interpreter):
+            # One bounded retry for an invalid AI result; never loop indefinitely.
+            # Failed validations do not save data. Connection establishment has its
+            # own bounded retry inside the provider adapter.
+            for attempt in range(2):
+                try:
+                    analysis_id = await interpreter.execute(snapshot.entry_id, snapshot.user_id)
+                    break
+                except InvalidInterpretationError:
+                    if attempt == 1:
+                        raise
+                    logger.warning("Invalid analysis result; retrying entry=%s attempt=2/2", snapshot.entry_id)
     except ProviderNotConfiguredError:
         raise
     except AnalysisConflictError:
         logger.info("Entry changed or already analyzed: %s", snapshot.entry_id)
     except Exception as error:
-        await gateway.mark_failed(snapshot, now=datetime.now(timezone.utc))
-        logger.error("Analysis failed entry=%s error=%s", snapshot.entry_id, type(error).__name__)
+        reason = failure_reason(error)
+        await gateway.mark_failed(
+            snapshot, now=datetime.now(timezone.utc),
+            failure=AnalysisFailure(reason.value, reason.message, attempt + 1),
+        )
+        logger.error("Analysis failed entry=%s code=%s attempts=%s", snapshot.entry_id, reason.value, attempt + 1)
     else:
         logger.info("Analysis saved entry=%s analysis=%s", snapshot.entry_id, analysis_id)
     return True
@@ -48,7 +105,7 @@ async def run(args):
                 acquired = await connection.scalar(text("SELECT pg_try_advisory_lock(:id)"), {"id": LOCK_ID})
                 try:
                     if acquired:
-                        await process_one(gateway, case, entry_id=args.entry_id)
+                        await process_one(gateway, case, entry_id=args.entry_id, case_factory=get_interpret_entry)
                 finally:
                     if acquired:
                         await connection.execute(text("SELECT pg_advisory_unlock(:id)"), {"id": LOCK_ID})

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,6 +21,7 @@ class JournalEntryModel(Base):
             "created_at",
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        CheckConstraint("user_reprocess_count BETWEEN 0 AND 3", name="ck_journal_user_reprocess_limit"),
         Index("ix_journal_entries_status", "status"),
         {"schema": "journal_schema"},
     )
@@ -40,6 +41,8 @@ class JournalEntryModel(Base):
         default="draft",
         server_default="draft",
     )
+    user_reprocess_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    processing_settings: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
     updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),

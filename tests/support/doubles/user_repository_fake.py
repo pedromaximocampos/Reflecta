@@ -25,6 +25,7 @@ class UserRepositoryFake(IUserRepository):
         self.calls_find_by_email = 0
         self.calls_update = 0
         self.calls_update_user_info = 0
+        self.calls_update_user_avatar = 0
         self.calls_update_auth_credentials = 0
         self.calls_update_last_login_at = 0
         self.calls_create = 0
@@ -73,6 +74,11 @@ class UserRepositoryFake(IUserRepository):
 
     async def update_user_info(self, user: User, fields_to_update: frozenset[str]) -> None:
         self.calls_update_user_info += 1
+        self._users_by_id[user.id] = user
+        self.last_updated_user = user
+
+    async def update_user_avatar(self, user: User) -> None:
+        self.calls_update_user_avatar += 1
         self._users_by_id[user.id] = user
         self.last_updated_user = user
 

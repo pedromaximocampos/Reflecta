@@ -1,0 +1,65 @@
+{
+  "info": {
+    "name": "Reflecta — Falhas administrativas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Faça login com uma conta ADMIN e preencha accessToken no environment Reflecta Local. failureSource e failureId são obtidos na listagem. A consulta não retorna payloads nem mensagens brutas."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "failureSource",
+      "value": "journal"
+    },
+    {
+      "key": "failureId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Listar falhas administrativas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/admin/operational-failures?limit=20&offset=0",
+        "description": "Requer accessToken de conta ADMIN. Usuário comum recebe 403. Não gera nem reprocessa análises."
+      }
+    },
+    {
+      "name": "Filtrar falhas do diário",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/admin/operational-failures?source=journal&entity_id={{journalId}}&limit=20&offset=0",
+        "description": "Requer accessToken de conta ADMIN. Usuário comum recebe 403. Não gera nem reprocessa análises."
+      }
+    },
+    {
+      "name": "Detalhar uma falha",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/admin/operational-failures/{{failureSource}}/{{failureId}}",
+        "description": "Requer accessToken de conta ADMIN. Usuário comum recebe 403. Não gera nem reprocessa análises."
+      }
+    },
+    {
+      "name": "Solicitar reprocessamento de análise falha do diário",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/admin/operational-failures/journal/{{failureId}}/reprocess",
+        "description": "Requer ADMIN e failureId da falha mais recente de uma entrada disponível. Retorna 202 e não reinicia a cota do usuário. Solicitações repetidas enquanto pendente não duplicam trabalho."
+      }
+    }
+  ]
+}

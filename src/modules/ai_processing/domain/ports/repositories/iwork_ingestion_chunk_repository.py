@@ -50,3 +50,8 @@ class IWorkIngestionChunkRepository(Protocol):
         self,
         ingestion_id: WorkIngestionId,
     ) -> dict[WorkIngestionChunkStatus, int]: ...
+
+    async def count_many_by_status(
+        self,
+        ingestion_ids: tuple[WorkIngestionId, ...],
+    ) -> dict[WorkIngestionId, dict[WorkIngestionChunkStatus, int]]: ...

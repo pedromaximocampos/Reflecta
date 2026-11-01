@@ -89,6 +89,21 @@ class ThemeRepository(IThemeRepository):
             async for record in result
         ]
 
+    async def list_theme_colors(self) -> set[str]:
+        result = await self._transaction.run(
+            """
+            MATCH (theme:Theme)
+            WHERE theme.color IS NOT NULL
+            RETURN DISTINCT toUpper(theme.color) AS color
+            """
+        )
+
+        return {
+            record["color"]
+            async for record in result
+            if isinstance(record["color"], str)
+        }
+
     async def create_many_themes(self, themes: list[Theme]) -> list[Theme]:
         if not themes:
             return []

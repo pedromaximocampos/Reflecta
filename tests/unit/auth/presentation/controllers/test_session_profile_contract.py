@@ -25,11 +25,11 @@ async def test_login_and_refresh_preserve_profile_and_role(role):
     refresh_use_case = AsyncMock()
     refresh_use_case.execute.return_value = RefreshResultDTO('access-token', 'refresh-token', user)
 
-    login = await LoginController(login_use_case, clock).handle_request(HttpRequest(
+    login = await LoginController(login_use_case, clock, secure_cookie=False).handle_request(HttpRequest(
         method='POST', url='/auth/login',
         headers={'authorization': encode(user.email.value, 'test-password')},
     ))
-    refresh = await RefreshController(refresh_use_case, clock).handle_request(HttpRequest(
+    refresh = await RefreshController(refresh_use_case, clock, secure_cookie=False).handle_request(HttpRequest(
         method='POST', url='/auth/refresh', cookies={'refresh_token': 'refresh-token'},
     ))
 
@@ -41,3 +41,5 @@ async def test_login_and_refresh_preserve_profile_and_role(role):
         assert payload['user']['email'] == user.email.value
         assert 'refresh_token' not in payload
     assert login.body['user'] == refresh.body['user']
+    assert login.cookies[0].secure is False
+    assert refresh.cookies[0].secure is False

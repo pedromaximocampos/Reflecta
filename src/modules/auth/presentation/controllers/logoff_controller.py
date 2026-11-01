@@ -6,8 +6,9 @@ from src.shared.presentation.interfaces.controller_interface import IControllerI
 
 class LogoffController(IControllerInterface):
 
-    def __init__(self, logoff_use_case: ILogoffUseCase):
+    def __init__(self, logoff_use_case: ILogoffUseCase, secure_cookie: bool = True):
         self._logoff_use_case = logoff_use_case
+        self._secure_cookie = secure_cookie
 
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
@@ -33,7 +34,7 @@ class LogoffController(IControllerInterface):
                 value="",
                 max_age=0,
                 http_only=True,
-                secure=True,
+                secure=self._secure_cookie,
                 samesite="Lax",
                 path="/",
                 domain=None,

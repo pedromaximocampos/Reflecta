@@ -11,7 +11,6 @@ class UpdateUserInfoInput:
     name: Optional[str] = None
     surname: Optional[str] = None
     date_of_birth: Optional[date] = None
-    avatar_url: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)

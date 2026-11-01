@@ -23,7 +23,7 @@ class UpdateUserInfoUseCaseSpy:
             name=dto.name or "Existing",
             surname=dto.surname or "User",
             date_of_birth=dto.date_of_birth or date(2000, 1, 1),
-            avatar_url=dto.avatar_url,
+            avatar_url=None,
         )
 
 
@@ -56,7 +56,6 @@ async def test_update_user_info_uses_token_identity_and_only_sent_fields() -> No
     assert use_case.dto.name == "Maria"
     assert use_case.dto.surname is None
     assert use_case.dto.date_of_birth is None
-    assert use_case.dto.avatar_url is None
     assert response.status_code == 200
 
 

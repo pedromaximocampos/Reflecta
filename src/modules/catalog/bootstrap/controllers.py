@@ -2,6 +2,10 @@ from src.modules.catalog.bootstrap.use_cases import (
     get_all_themes_use_case,
     get_create_themes_use_case,
     get_create_work_use_case,
+    get_all_works_use_case,
+    get_work_by_id_use_case,
+    get_remove_work_cover_use_case,
+    get_replace_work_cover_use_case,
     get_request_work_ingestion_use_case,
     get_delete_theme_by_id_use_case,
     get_theme_by_id_use_case,
@@ -27,6 +31,14 @@ from src.modules.catalog.presentation.controllers.create_themes_controller impor
     CreateThemesController,
 )
 from src.modules.catalog.presentation.controllers.create_work_controller import CreateWorkController
+from src.modules.catalog.presentation.controllers.get_works_controller import (
+    GetAllWorksController,
+    GetWorkByIdController,
+)
+from src.modules.catalog.presentation.controllers.update_work_cover_controller import (
+    RemoveWorkCoverController,
+    ReplaceWorkCoverController,
+)
 from src.modules.catalog.presentation.controllers.request_work_ingestion_controller import (
     RequestWorkIngestionController,
 )
@@ -50,6 +62,26 @@ def get_create_themes_controller() -> CreateThemesController:
 
 def get_create_work_controller() -> CreateWorkController:
     return CreateWorkController(create_work_use_case=get_create_work_use_case())
+
+
+def get_work_by_id_controller() -> GetWorkByIdController:
+    return GetWorkByIdController(get_work_by_id_use_case=get_work_by_id_use_case())
+
+
+def get_all_works_controller() -> GetAllWorksController:
+    return GetAllWorksController(get_all_works_use_case=get_all_works_use_case())
+
+
+def get_replace_work_cover_controller() -> ReplaceWorkCoverController:
+    return ReplaceWorkCoverController(
+        replace_work_cover_use_case=get_replace_work_cover_use_case()
+    )
+
+
+def get_remove_work_cover_controller() -> RemoveWorkCoverController:
+    return RemoveWorkCoverController(
+        remove_work_cover_use_case=get_remove_work_cover_use_case()
+    )
 
 
 def get_request_work_ingestion_controller() -> RequestWorkIngestionController:

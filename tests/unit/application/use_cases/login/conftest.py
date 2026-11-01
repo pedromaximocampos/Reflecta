@@ -24,6 +24,7 @@ def login_use_case_with_mocks(
         email_verification_service=mock_email_verification_service,
         auth_unit_of_work=mock_auth_unit_of_work,
         outbox_service=mock_outbox_service,
+        avatar_storage=AsyncMock(),
     )
 
 

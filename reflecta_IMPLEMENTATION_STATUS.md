@@ -57,12 +57,15 @@
 | PostgreSQL 16 / pgvector | PARTIAL | Compose, schemas/tabelas e colunas vector; busca vetorial ainda não implementada |
 | Neo4j 5.26 / driver assíncrono | IMPLEMENTED | providers compartilhados, UoW e repositories Catalog |
 | AWS S3 / boto3 | PARTIAL | adapters Catalog e AI Processing, testes unitários e upload/leitura reais exercitados; bucket e políticas permanecem fora do repositório |
-| AWS SNS/SQS | PARTIAL | dispatcher Outbox, publishers, consumer, retry e DLQ exercitados manualmente; recursos cloud permanecem fora do repositório |
+| AWS SNS/SQS | PARTIAL | dispatcher, consumers, retry e DLQ existem; `infra/terraform` declara tópico, filas, DLQs, policies e subscriptions, mas ainda não foi importado/aplicado |
 | OpenAI Responses API / httpx | PARTIAL | análise estruturada de chunks e validação de respostas exercitadas com o provedor real; faltam E2E automatizado, métricas e limites operacionais |
 | RabbitMQ / aio-pika | PARTIAL | caminho local legado/transicional continua no código e Compose |
 | Amazon SES | PARTIAL | notifier e Lambda de e-mail existem; infraestrutura cloud não é versionada como IaC |
 | Pytest / pytest-asyncio | IMPLEMENTED | 557 testes aprovados e 5 ignorados |
 | React / Vite | IMPLEMENTED | `frontend/src`, 73 testes, lint e build aprovados |
+| Amazon SES | PARTIAL | notifier e Lambda de e-mail existem; SES e Lambda ainda não fazem parte da cobertura Terraform |
+| Terraform / IaC | PARTIAL | primeira fatia SNS/SQS/DLQ versionada em `infra/terraform`; HCL analisado sintaticamente, sem `plan`, import ou `apply` |
+| Pytest / pytest-asyncio | IMPLEMENTED | 287 testes aprovados |
 | CI/CD | NOT_STARTED | nenhum workflow encontrado |
 
 ## 5. Arquitetura real
@@ -118,8 +121,6 @@ Implementado:
 - `catalog_schema.work_ingestions`;
 - `ai_processing_schema.work_ingestion_chunks`;
 - `ai_processing_schema.inbox_events`;
-- análises contextuais, compartilhamentos e parâmetros persistidos de reprocessamento;
-- chave de objeto do avatar do usuário;
 - repositories e UoWs para os fluxos recentes.
 
 Migrations recentes:
@@ -174,7 +175,8 @@ Migrations recentes:
 - visibility heartbeat durante processamento;
 - mensagem só é removida após sucesso;
 - falha deixa a mensagem disponível para retry/DLQ;
-- recursos AWS, políticas e redrive não são declarados por IaC no repositório.
+- tópico SNS, filas SQS, DLQs, policies, filtros e redrive possuem uma configuração Terraform inicial;
+- recursos existentes ainda precisam ser importados e comparados por `plan`; Lambda, SES, S3, bancos e deploy continuam fora dessa cobertura.
 
 ## 8. IA
 
@@ -225,11 +227,7 @@ Evidências principais:
 - worker PostgreSQL seleciona entradas pendentes;
 - OpenAI retorna saída estruturada com temas do catálogo ativo;
 - análise é persistida atomicamente com a mudança de status;
-- sentenças são associadas aos temas canônicos e até cinco temas reflexivos são priorizados;
-- passagens aprovadas do catálogo são selecionadas por correspondência contextual e persistidas em snapshot explicável;
-- conclusão geral e passagens são exibidas no frontend com navegação entre tema, frase e referência;
-- o cliente HTTP do provedor é reutilizado dentro do workflow e possui retry limitado para falhas de conexão;
-- ainda faltam embeddings, busca vetorial e avaliação sistemática da qualidade semântica.
+- ainda faltam o pipeline completo de sentenças, passagens contextuais e embeddings.
 
 ## 9. API existente
 
@@ -239,38 +237,30 @@ Evidências principais:
 - verificação e reset de senha;
 - solicitação/confirmação de exclusão lógica;
 - solicitação/confirmação de recuperação;
-- consulta/atualização parcial de perfil e upload/remoção de avatar.
+- atualização parcial de perfil.
 
 ### Journal
 
 - CRUD autenticado de `/journal/entries`;
 - `POST /journal/entries/{id}/analysis`;
-- `GET /journal/entries/{id}/analysis`;
-- análise contextual por período, histórico, compartilhamento, revogação e resolução pública por token.
+- `GET /journal/entries/{id}/analysis`.
 
 ### Catalog
 
 - CRUD de `/catalog/themes`;
-- criação, listagem e detalhe de `/catalog/works`;
-- upload/remoção de capa de obra;
+- `POST /catalog/works`;
 - `POST /catalog/works/{work_id}/ingestions` com PDF;
 - criação/listagem/detalhe/edição/remoção de passagens;
 - aprovação, rejeição, ativação e desativação de passagens;
 - filtros de passagem por status, obra e ingestão;
 - respostas de passagem incluem `theme_id`, `label` e `confidence`.
 
-### Operations / AI Processing
-
-- listagem e detalhe sanitizado de falhas operacionais;
-- parâmetros padrão da IA e reprocessamento administrativo limitado para Journal;
-- listagem de ingestões com progresso para a interface administrativa.
-
 Lacunas HTTP relevantes:
 
-- não existe edição ampla dos metadados da obra;
-- não existe reprocessamento administrativo da mesma ingestão sem novo upload/evento;
+- não existe listagem/detalhe/edição de obras;
+- não existe endpoint de consulta do estado/erro da ingestão;
 - não existe paginação de passagens;
-- não existe operação genérica de redrive de DLQ pela API.
+- não existe API operacional para DLQ/reprocessamento.
 
 ## 10. Testes
 
@@ -281,12 +271,10 @@ Lacunas HTTP relevantes:
 | Catalog | IMPLEMENTED unitariamente | temas, obras, ingestão, passagens, validators e repositories |
 | AI Processing | IMPLEMENTED unitariamente | Inbox, chunks, documentos, S3, SQS, OpenAI, worker e casos de uso |
 | Notification | IMPLEMENTED unitariamente | handlers, templates, SES e payloads |
-| Operations | IMPLEMENTED unitariamente | diagnóstico, sanitização e reprocessamento administrativo |
-| Frontend | IMPLEMENTED unitariamente | 73 testes de serviços/contratos, lint e build de produção |
 | API E2E real | NOT_STARTED | não existe suíte persistente com FastAPI + PostgreSQL + Neo4j + AWS |
 | Integrações cloud | PARTIAL | fluxo de obras validado manualmente com S3, SNS, SQS/DLQ e OpenAI; configuração ainda é externa e não há suíte E2E reproduzível |
 
-Resultado atual: **backend 557 passed, 5 skipped, 8 warnings; frontend 73 passed, lint e build aprovados**.
+Resultado atual: **287 passed, 8 warnings**.
 
 Validação funcional manual já observada no fluxo de obras:
 
@@ -309,16 +297,21 @@ comandos não foi registrada nesta atualização.
 1. documentação histórica ainda usa UUID, enquanto o código usa ULID textual;
 2. Auth/Outbox permanecem no schema padrão, enquanto o modelo planejado separa schemas;
 3. o repositório preserva RabbitMQ/SMTP junto do caminho alvo SNS/SQS/Lambda/SES;
+4. a fatia SNS/SQS possui IaC inicial, mas os recursos manuais ainda não foram importados e o state remoto não foi definido;
+5. a ausência de endpoint de status impede o frontend de distinguir processamento, zero resultados e falha;
 4. infraestrutura AWS foi configurada manualmente e não possui IaC reproduzível;
 5. existe acompanhamento de ingestão, mas o reprocessamento administrativo da mesma ingestão ainda não está implementado;
 6. a ingestão cruza PostgreSQL, S3, SQS e Neo4j sem transação distribuída;
 7. passagens são persistidas progressivamente; falha posterior exige retomada/reconciliação correta;
 8. custos e rate limits do provedor de IA precisam de limites operacionais;
 9. conteúdo privado do Journal exige política explícita de retenção, redaction e observabilidade;
-10. não há CI, IaC, métricas, tracing, health/readiness ou testes E2E automatizados.
+10. não há CI para Terraform, métricas, tracing, health/readiness ou testes E2E automatizados.
 
 ## 12. Menor próximo incremento coerente
 
+Para a infraestrutura, o menor incremento coerente é instalar a CLI Terraform, executar `init`, importar
+os recursos SNS/SQS já criados manualmente e revisar um `plan` sem mudanças inesperadas. Somente depois
+devem ser definidos state remoto, automação de CI e expansão para Lambda, SES, S3 ou deploy da aplicação.
 O menor próximo incremento de infraestrutura é uma base Terraform isolada para o ambiente de desenvolvimento,
 começando pelo caminho assíncrono SNS -> SQS -> DLQ e pelas políticas IAM mínimas. O primeiro passo deve ser
 modelar/importar os recursos já existentes sem recriá-los, usar estado fora do Git, revisar o `plan` e somente

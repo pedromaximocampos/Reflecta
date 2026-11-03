@@ -166,6 +166,16 @@ Journal draft
 
 Journal analysis persists sentence/theme matches, ranks up to five reflective themes, selects contextual passages from the curated catalog, and exposes an explainable conclusion to the frontend. Embeddings and vector similarity remain future increments.
 
+## Verified repository snapshot
+
+The following figures were verified from the current branch rather than inferred from planning documents:
+
+- 25 OpenAPI paths and 36 HTTP operations;
+- 287 passing automated tests;
+- 12 versioned Alembic migration files, with revision `a3d9e7f4b612` as the current head;
+- PostgreSQL/pgvector, Neo4j, and RabbitMQ services defined for local development;
+- Terraform configuration for the SNS/SQS messaging slice, validated syntactically but not applied automatically.
+
 ## Technology stack
 
 | Area | Technologies |
@@ -181,7 +191,7 @@ Journal analysis persists sentence/theme matches, ranks up to five reflective th
 | Document processing | pypdf, normalized text, boundary-aware chunking |
 | Object storage | Amazon S3 |
 | Notifications | AWS Lambda, Amazon SES, SMTP |
-| Infrastructure | Docker, Docker Compose |
+| Infrastructure | Docker, Docker Compose, Terraform |
 | Testing | pytest, pytest-asyncio |
 | Frontend | React 19, Vite, React Router, Tailwind CSS, Lucide |
 
@@ -229,7 +239,7 @@ The recommended interpreter for IDE configuration is:
 
 Create a local `.env.dev` file. It is intentionally excluded from version control because it contains credentials and environment-specific resource identifiers.
 
-The required settings are declared in [`src/shared/config/settings.py`](src/shared/config/settings.py). They cover PostgreSQL, Neo4j, JWT, RabbitMQ, SMTP, SNS, and SQS.
+The required settings are declared in [`src/shared/config/settings.py`](src/shared/config/settings.py). They cover PostgreSQL, Neo4j, JWT, RabbitMQ, SMTP/SES, Amazon S3, SNS, SQS, and the AI provider.
 
 Never commit real AWS credentials, SMTP passwords, JWT secrets, or production connection strings.
 
@@ -296,6 +306,12 @@ To include the AI workers declared under the Compose profile:
 docker compose -f docker-compose.api_workers.yml --profile ai up --build
 ```
 
+## Infrastructure as Code
+
+The first Terraform slice is available in [`infra/terraform`](infra/terraform). It models the integration SNS topic, the email and work-ingestion SQS queues, one DLQ per consumer, redrive policies, subscription filters, and least-privilege queue policies.
+
+The configuration is intentionally not applied automatically. Its HCL files have been parsed successfully, but full `terraform init` and `terraform validate` verification still requires the Terraform CLI. Existing development resources must be imported into Terraform state before any reviewed `apply`. See the [Terraform messaging guide](infra/terraform/README.md) for the safe workflow.
+
 ## Tests
 
 Run the complete suite with:
@@ -354,7 +370,18 @@ The repository still needs broader automated integration, API, and end-to-end co
 - expansion of the professional workflow beyond controlled read-only sharing;
 - generalized consumer idempotency outside the AI ingestion Inbox;
 - production-grade monitoring, tracing, and failure recovery;
+- operational monitoring and failure recovery;
+- a reproducible, versioned frontend application package;
+- expansion of Terraform coverage beyond the initial SNS/SQS messaging slice;
 - CI/CD and production deployment.
+
+### Known boundaries
+
+- recommendation and professional-sharing modules are still planned;
+- contextual passage matching is not part of the current Journal analysis result;
+- the initial Terraform slice does not yet cover PostgreSQL, Neo4j, S3, SES, Lambda, application deployment, or remote state;
+- AWS development resources still require controlled import before Terraform can become their source of truth;
+- broader integration, end-to-end, security, and failure-recovery testing remains necessary.
 
 ## Engineering considerations
 

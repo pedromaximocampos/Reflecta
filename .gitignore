@@ -226,5 +226,25 @@ reflecta-lambda.zip
 
 # Local preparation notes (not part of the public portfolio)
 INTERVIEW_CONTEXT.md
+
+# Terraform local state, plans, credentials and machine-specific overrides
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+*.local.tf
+.terraformrc
+terraform.rc
+
+# Keep provider dependency locks and safe examples versioned
+!.terraform.lock.hcl
+!*.tfvars.example
+
+# Local preparation notes (not part of the public portfolio)
+INTERVIEW_CONTEXT.md
 /.env.ai.example
 /frontend/.env.example

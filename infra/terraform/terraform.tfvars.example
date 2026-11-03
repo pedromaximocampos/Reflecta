@@ -1,0 +1,16 @@
+project_name = "reflecta"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# Local use only. In AWS, prefer the execution role credential chain.
+aws_profile = "reflecta-dev"
+
+# Override only when importing resources whose names differ from the defaults.
+email_queue_name          = "reflecta-emails-dev"
+email_dlq_name            = "reflecta-emails-dlq-dev"
+work_ingestion_queue_name = "reflecta-work-ingestions-dev"
+work_ingestion_dlq_name   = "reflecta-work-ingestions-dlq-dev"
+
+max_receive_count       = 5
+message_retention_seconds = 345600
+dlq_retention_seconds     = 1209600

@@ -1,0 +1,22 @@
+# This file is documentation and is not loaded by Terraform.
+# Copy only the required blocks to imports.local.tf, which is ignored by Git.
+# Replace every placeholder with the identifier of the resource that already exists.
+
+# import {
+#   to = aws_sns_topic.integration_events
+#   id = "arn:aws:sns:REGION:ACCOUNT_ID:reflecta-integration-events-dev"
+# }
+
+# import {
+#   to = aws_sqs_queue.consumer["emails"]
+#   id = "https://sqs.REGION.amazonaws.com/ACCOUNT_ID/reflecta-emails-dev"
+# }
+
+# import {
+#   to = aws_sqs_queue.dead_letter["emails"]
+#   id = "https://sqs.REGION.amazonaws.com/ACCOUNT_ID/reflecta-emails-dlq-dev"
+# }
+
+# Repeat the queue and DLQ imports for the work_ingestions key when those resources exist.
+# Subscriptions, queue policies, and redrive policies also support import; inspect their
+# current identifiers in AWS and review the provider documentation before importing them.

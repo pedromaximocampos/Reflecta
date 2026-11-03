@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+from src.modules.catalog.public.theme_color import DEFAULT_THEME_COLOR, ThemeColor
 
 
 class ThemeOption(BaseModel):
@@ -8,3 +9,4 @@ class ThemeOption(BaseModel):
     slug: str
     label: str
     description: str
+    color: ThemeColor = DEFAULT_THEME_COLOR

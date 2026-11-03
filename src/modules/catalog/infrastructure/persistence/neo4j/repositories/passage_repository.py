@@ -4,7 +4,10 @@ from typing import Any
 from neo4j import AsyncTransaction
 
 from src.modules.catalog.domain.entities.passage import Passage
-from src.modules.catalog.domain.ports.repositories import IPassageRepository
+from src.modules.catalog.domain.ports.repositories.ipassage_repository import (
+    ContextualPassageRecord,
+    IPassageRepository,
+)
 from src.modules.catalog.domain.value_objects import CatalogStatus
 from src.modules.catalog.public.passage_id import PassageId
 from src.modules.catalog.public.work_id import WorkId
@@ -71,6 +74,91 @@ class PassageRepository(IPassageRepository):
             ),
         )
         return [self._record_to_entity(record) async for record in result]
+
+    async def find_active_contextual_candidates(
+        self,
+        *,
+        theme_ids: tuple[str, ...],
+        limit_per_theme: int,
+    ) -> list[ContextualPassageRecord]:
+        if not theme_ids:
+            return []
+
+        result = await self._transaction.run(
+            """
+            UNWIND range(0, size($theme_ids) - 1) AS theme_rank
+            WITH theme_rank, $theme_ids[theme_rank] AS requested_theme_id
+            MATCH (passage:Passage {status: 'ACTIVE'})
+                  -[relevance:RELATES_TO]->
+                  (theme:Theme {
+                      theme_id: requested_theme_id,
+                      is_active: true
+                  })
+            MATCH (passage)-[:BELONGS_TO]->(work:Work)
+                  -[:WRITTEN_BY]->(author:Author)
+            WHERE relevance.confidence IS NOT NULL
+              AND relevance.confidence >= 0
+              AND relevance.confidence <= 1
+            WITH theme_rank,
+                 requested_theme_id,
+                 passage,
+                 relevance,
+                 work,
+                 author
+            ORDER BY theme_rank,
+                     relevance.confidence DESC,
+                     passage.priority DESC,
+                     passage.passage_id
+            WITH theme_rank,
+                 requested_theme_id,
+                 collect({
+                     passage_id: passage.passage_id,
+                     theme_confidence: relevance.confidence,
+                     short_text: passage.short_text,
+                     paraphrase: passage.paraphrase,
+                     interpretation_note: passage.interpretation_note,
+                     locator: passage.locator,
+                     priority: passage.priority,
+                     start_page: passage.start_page,
+                     end_page: passage.end_page,
+                     work_id: work.work_id,
+                     work_title: work.title,
+                     author_name: author.name
+                 })[..$limit_per_theme] AS candidates
+            UNWIND candidates AS candidate
+            RETURN theme_rank,
+                   requested_theme_id AS matched_theme_id,
+                   candidate
+            ORDER BY theme_rank,
+                     candidate.theme_confidence DESC,
+                     candidate.priority DESC,
+                     candidate.passage_id
+            """,
+            theme_ids=list(theme_ids),
+            limit_per_theme=limit_per_theme,
+        )
+        return [
+            ContextualPassageRecord(
+                passage_id=record["candidate"]["passage_id"],
+                matched_theme_id=record["matched_theme_id"],
+                matched_theme_confidence=record["candidate"][
+                    "theme_confidence"
+                ],
+                short_text=record["candidate"]["short_text"],
+                paraphrase=record["candidate"]["paraphrase"],
+                interpretation_note=record["candidate"][
+                    "interpretation_note"
+                ],
+                locator=record["candidate"]["locator"],
+                priority=record["candidate"]["priority"],
+                start_page=record["candidate"]["start_page"],
+                end_page=record["candidate"]["end_page"],
+                work_id=record["candidate"]["work_id"],
+                work_title=record["candidate"]["work_title"],
+                author_name=record["candidate"]["author_name"],
+            )
+            async for record in result
+        ]
 
     async def create(self, passage: Passage) -> Passage:
         await self._ensure_work_and_themes(

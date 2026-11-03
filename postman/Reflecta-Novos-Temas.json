@@ -1,0 +1,39 @@
+{
+  "themes": [
+    {
+      "label": "Percepção dos Próprios Estados",
+      "description": "Identificar emoções, sensações corporais e necessidades presentes. Exige percepção explícita do próprio estado; não inferir padrões de personalidade ou autoconhecimento profundo.",
+      "is_active": true
+    },
+    {
+      "label": "Sentimentos Mistos",
+      "description": "Reconhecer estados diferentes que coexistem, como cansaço e felicidade ou alegria e tristeza. Não associar apenas por uma mudança de emoção em momentos distintos.",
+      "is_active": true
+    },
+    {
+      "label": "Satisfação e Realização",
+      "description": "Expressar contentamento com uma ação, conquista ou resultado. Exige satisfação relatada; concluir uma tarefa, por si só, não basta.",
+      "is_active": true
+    },
+    {
+      "label": "Medo de Errar e Autocobrança",
+      "description": "Relatar receio de falhar, exigência consigo ou dificuldade em aceitar os próprios erros. Não tratar toda preocupação como perfeccionismo nem inferir um traço permanente.",
+      "is_active": true
+    },
+    {
+      "label": "Expectativas e Experiência Real",
+      "description": "Comparar expectativas, previsões ou receios com o que efetivamente aconteceu. Exige contraste sustentado pelo relato, sem presumir expectativas não mencionadas.",
+      "is_active": true
+    },
+    {
+      "label": "Reconhecimento e Avaliação Externa",
+      "description": "Relatar elogios, críticas ou efeitos da avaliação de outras pessoas. Receber um elogio não implica dependência de aprovação.",
+      "is_active": true
+    },
+    {
+      "label": "Esforço, Descanso e Recuperação",
+      "description": "Refletir sobre desgaste, necessidade de pausa ou recuperação após esforço. Não associar automaticamente qualquer atividade ao esgotamento nem inferir necessidade de descanso sem evidência.",
+      "is_active": true
+    }
+  ]
+}

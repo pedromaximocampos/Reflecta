@@ -11,8 +11,16 @@ from src.modules.catalog.application.use_cases.get_themes.get_all_themes_use_cas
 from src.modules.catalog.application.use_cases.get_themes.get_theme_by_id_use_case import (
     GetThemeByIdUseCase,
 )
+from src.modules.catalog.application.use_cases.get_works import (
+    GetAllWorksUseCase,
+    GetWorkByIdUseCase,
+)
 from src.modules.catalog.application.use_cases.update_themes.update_theme_use_case import (
     UpdateThemeUseCase,
+)
+from src.modules.catalog.application.use_cases.update_work_cover import (
+    RemoveWorkCoverUseCase,
+    ReplaceWorkCoverUseCase,
 )
 from src.modules.catalog.application.use_cases.request_work_ingestion.request_work_ingestion_use_case import (
     RequestWorkIngestionUseCase,
@@ -26,11 +34,16 @@ from src.modules.catalog.application.use_cases.manage_passages import (
     SetPassageAvailabilityUseCase,
     UpdatePassageUseCase,
 )
-from src.modules.catalog.bootstrap.storage import get_work_document_storage
+from src.modules.catalog.bootstrap.media import get_work_cover_processor
+from src.modules.catalog.bootstrap.storage import (
+    get_work_cover_storage,
+    get_work_document_storage,
+)
 from src.modules.catalog.bootstrap.unit_of_work import (
     get_graph_unit_of_work,
     get_sql_unit_of_work,
 )
+from src.modules.catalog.infrastructure.system import VibrantThemeColorGenerator
 from src.modules.internal_events.bootstrap.services import get_outbox_service
 from src.shared.infrastructure.system.providers import (
     get_clock,
@@ -45,6 +58,7 @@ def get_create_themes_use_case() -> CreateThemesUseCase:
         ulid_generator=get_ulid_generator(),
         clock=get_clock(),
         slug_generator=get_slug_generator(),
+        color_generator=VibrantThemeColorGenerator(),
     )
 
 
@@ -54,6 +68,38 @@ def get_create_work_use_case() -> CreateWorkUseCase:
         ulid_generator=get_ulid_generator(),
         clock=get_clock(),
         slug_generator=get_slug_generator(),
+    )
+
+
+def get_work_by_id_use_case() -> GetWorkByIdUseCase:
+    return GetWorkByIdUseCase(
+        catalog_graph_uow=get_graph_unit_of_work(),
+        cover_storage=get_work_cover_storage(),
+    )
+
+
+def get_all_works_use_case() -> GetAllWorksUseCase:
+    return GetAllWorksUseCase(
+        catalog_graph_uow=get_graph_unit_of_work(),
+        cover_storage=get_work_cover_storage(),
+    )
+
+
+def get_replace_work_cover_use_case() -> ReplaceWorkCoverUseCase:
+    return ReplaceWorkCoverUseCase(
+        catalog_graph_uow=get_graph_unit_of_work(),
+        cover_processor=get_work_cover_processor(),
+        cover_storage=get_work_cover_storage(),
+        ulid_generator=get_ulid_generator(),
+        clock=get_clock(),
+    )
+
+
+def get_remove_work_cover_use_case() -> RemoveWorkCoverUseCase:
+    return RemoveWorkCoverUseCase(
+        catalog_graph_uow=get_graph_unit_of_work(),
+        cover_storage=get_work_cover_storage(),
+        clock=get_clock(),
     )
 
 

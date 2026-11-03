@@ -3,6 +3,7 @@ from datetime import datetime
 
 from src.modules.catalog.domain.entities.theme import Theme
 from src.modules.catalog.public.theme_id import ThemeId
+from src.modules.catalog.public.theme_color import DEFAULT_THEME_COLOR
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +15,7 @@ class ThemeOutputDTO:
     is_active: bool
     created_at: datetime
     updated_at: datetime | None = None
+    color: str = DEFAULT_THEME_COLOR
 
     @classmethod
     def from_entity(cls, theme: Theme) -> "ThemeOutputDTO":
@@ -25,6 +27,7 @@ class ThemeOutputDTO:
             is_active=theme.is_active,
             created_at=theme.created_at,
             updated_at=theme.updated_at,
+            color=theme.color,
         )
 
     def to_dict(self) -> dict:
@@ -33,6 +36,7 @@ class ThemeOutputDTO:
             "slug": self.slug,
             "label": self.label,
             "description": self.description,
+            "color": self.color,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

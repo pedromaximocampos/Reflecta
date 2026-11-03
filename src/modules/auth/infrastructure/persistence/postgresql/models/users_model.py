@@ -37,6 +37,7 @@ class UserModel(Base):
     email_verified_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     last_login_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=True)
+    avatar_object_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     credentials: Mapped[AuthCredentialsModel] = relationship(

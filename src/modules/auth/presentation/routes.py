@@ -19,6 +19,9 @@ from src.modules.auth.bootstrap.controllers import (
     get_reset_password_controller,
     get_signup_controller,
     get_update_user_info_controller,
+    get_user_profile_controller,
+    get_replace_user_avatar_controller,
+    get_remove_user_avatar_controller,
 )
 from src.modules.auth.presentation.validators.login import LoginResponseValidator
 from src.modules.auth.presentation.validators.sign_up import SignUpValidator
@@ -26,6 +29,10 @@ from src.modules.auth.presentation.validators.recovery import RequestRecoveryVal
 from src.modules.auth.presentation.validators.update_user_info import (
     UpdateUserInfoResponseValidator,
     UpdateUserInfoValidator,
+)
+from src.modules.auth.presentation.validators.user_avatar import (
+    ValidatedUserAvatarUpload,
+    validate_user_avatar_upload,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -43,6 +50,9 @@ _DELETE_USER_CONTROLLER = get_delete_user_controller()
 _REQUEST_RECOVERY_CONTROLLER = get_request_recovery_controller()
 _RECOVERY_CONTROLLER = get_recovery_controller()
 _UPDATE_USER_INFO_CONTROLLER = get_update_user_info_controller()
+_GET_USER_PROFILE_CONTROLLER = get_user_profile_controller()
+_REPLACE_USER_AVATAR_CONTROLLER = get_replace_user_avatar_controller()
+_REMOVE_USER_AVATAR_CONTROLLER = get_remove_user_avatar_controller()
 
 
 @auth_router.post("/login", response_model=LoginResponseValidator)
@@ -69,6 +79,14 @@ async def auth_signup(body: SignUpValidator, request:  Request):
     return await adapter_fastapi_request(request, _SIGNUP_CONTROLLER.handle_request, body)
 
 @auth_router.get("/verify-email")
+async def auth_verify_email_page(code: str = Query(default="")):
+    """Open the styled verification page for email links on the API host."""
+    frontend_url = get_settings().FRONT_END_DOMAIN.rstrip("/")
+    query = f"?{urlencode({'code': code})}" if code else ""
+    return RedirectResponse(url=f"{frontend_url}/auth/verify-email{query}", status_code=307)
+
+
+@auth_router.post("/verify-email")
 async def auth_verify_email(
     code: str = Query(..., description="Verification code sent to the user email"),
     request: Request = None,
@@ -112,6 +130,14 @@ async def auth_request_delete(
     )
 
 
+@auth_router.get("/delete")
+async def auth_delete_user_page(code: str = Query(default="")):
+    """Open the confirmation page; visiting an email link never deletes an account."""
+    frontend_url = get_settings().FRONT_END_DOMAIN.rstrip("/")
+    query = f"?{urlencode({'code': code})}" if code else ""
+    return RedirectResponse(url=f"{frontend_url}/auth/delete{query}", status_code=307)
+
+
 @auth_router.delete("/delete")
 async def auth_delete_user(
     request: Request,
@@ -151,5 +177,51 @@ async def auth_update_user_info(
         request,
         _UPDATE_USER_INFO_CONTROLLER.handle_request,
         body,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.get("/user-info", response_model=UpdateUserInfoResponseValidator)
+async def auth_get_user_info(
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+):
+    """Return the authenticated user's profile with a fresh avatar URL."""
+    return await adapter_fastapi_request(
+        request,
+        _GET_USER_PROFILE_CONTROLLER.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.put("/user-info/avatar", response_model=UpdateUserInfoResponseValidator)
+async def auth_replace_user_avatar(
+    request: Request,
+    avatar: ValidatedUserAvatarUpload = Depends(validate_user_avatar_upload),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+):
+    """Upload or replace the authenticated user's profile photo."""
+    return await adapter_fastapi_request(
+        request,
+        _REPLACE_USER_AVATAR_CONTROLLER.handle_request,
+        {
+            "filename": avatar.filename,
+            "content_type": avatar.content_type,
+            "size_bytes": avatar.size_bytes,
+            "content": avatar.content,
+        },
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.delete("/user-info/avatar", response_model=UpdateUserInfoResponseValidator)
+async def auth_remove_user_avatar(
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+):
+    """Remove the authenticated user's profile photo."""
+    return await adapter_fastapi_request(
+        request,
+        _REMOVE_USER_AVATAR_CONTROLLER.handle_request,
         authenticated_user_id=current_user.user_id.value,
     )

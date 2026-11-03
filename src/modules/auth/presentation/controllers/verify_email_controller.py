@@ -17,4 +17,7 @@ class VerifyEmailController(IControllerInterface):
 
         output = await self.verify_email_use_case.execute(code)
 
-        return HttpResponse(status_code=200, body={"message": output.message})
+        return HttpResponse(
+            status_code=200 if output.success else 410,
+            body={"success": output.success, "message": output.message},
+        )

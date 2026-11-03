@@ -1,3 +1,5 @@
+from src.modules.journal.application.handlers.journal_entry_created import enqueue_created_entry
+from src.modules.journal.domain.events.journal_entry_created import JournalEntryCreated
 from src.modules.journal.application.dto.journal_entry import JournalEntryOutputDTO
 from src.modules.journal.application.use_cases.create_entry.dto import (
     CreateJournalEntryDTO,
@@ -41,6 +43,9 @@ class CreateJournalEntryUseCaseImpl(ICreateJournalEntryUseCase):
             status=JournalEntryStatus.DRAFT,
             created_at=self.__system_clock.now(),
         )
+
+        event = JournalEntryCreated(journal_entry.id, journal_entry.user_id, journal_entry.created_at)
+        enqueue_created_entry(event, journal_entry)
 
         async with self.__journal_unit_of_work as uow:
             created_entry = await uow.journal_entry_repository.create(journal_entry)

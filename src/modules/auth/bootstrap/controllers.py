@@ -13,6 +13,9 @@ from src.modules.auth.bootstrap.use_cases import (
     get_sign_up_use_case,
     get_verify_email_use_case,
     get_update_user_info_use_case,
+    get_user_profile_use_case,
+    get_replace_user_avatar_use_case,
+    get_remove_user_avatar_use_case,
 )
 from src.shared.infrastructure.system.providers import get_clock
 from src.modules.auth.presentation.controllers.refresh_controller import RefreshController
@@ -27,6 +30,16 @@ from src.modules.auth.presentation.controllers.recovery_controller import Recove
 from src.modules.auth.presentation.controllers.update_user_info_controller import (
     UpdateUserInfoController,
 )
+from src.modules.auth.presentation.controllers.user_avatar_controller import (
+    GetUserProfileController,
+    RemoveUserAvatarController,
+    ReplaceUserAvatarController,
+)
+from src.shared.config.settings import get_settings
+
+
+def _secure_auth_cookie() -> bool:
+    return get_settings().ENV != "dev"
 
 
 def get_login_controller() -> LoginController:
@@ -34,7 +47,8 @@ def get_login_controller() -> LoginController:
 
     return LoginController(
     login_use_case=get_login_use_case(),
-    system_clock=get_clock()
+    system_clock=get_clock(),
+    secure_cookie=_secure_auth_cookie(),
     )
 
 
@@ -43,6 +57,7 @@ def get_logoff_controller() -> LogoffController:
 
     return LogoffController(
     logoff_use_case=get_logoff_use_case(),
+    secure_cookie=_secure_auth_cookie(),
     )
 
 def get_refresh_controller() -> RefreshController:
@@ -50,7 +65,8 @@ def get_refresh_controller() -> RefreshController:
 
     return RefreshController(
         refresh_use_case=get_refresh_use_case(),
-        system_clock=get_clock()
+        system_clock=get_clock(),
+        secure_cookie=_secure_auth_cookie(),
     )
 
 def get_signup_controller():
@@ -109,3 +125,15 @@ def get_update_user_info_controller() -> UpdateUserInfoController:
     return UpdateUserInfoController(
         update_user_info_use_case=get_update_user_info_use_case(),
     )
+
+
+def get_user_profile_controller() -> GetUserProfileController:
+    return GetUserProfileController(get_user_profile_use_case())
+
+
+def get_replace_user_avatar_controller() -> ReplaceUserAvatarController:
+    return ReplaceUserAvatarController(get_replace_user_avatar_use_case())
+
+
+def get_remove_user_avatar_controller() -> RemoveUserAvatarController:
+    return RemoveUserAvatarController(get_remove_user_avatar_use_case())

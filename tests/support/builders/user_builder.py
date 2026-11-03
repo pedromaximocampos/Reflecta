@@ -16,6 +16,7 @@ class UserBuilder:
         self._username = "johndoe"
         self._date_of_birth = datetime(2000, 1, 1).date()
         self._avatar_url = None
+        self._avatar_object_key = None
         self._is_email_verified = True
         self._role = UserRole.USER
         self._password_hash = PasswordHash(
@@ -51,6 +52,14 @@ class UserBuilder:
         self._id = UserId(id_str)
         return self
 
+    def with_avatar_url(self, avatar_url: str | None):
+        self._avatar_url = avatar_url
+        return self
+
+    def with_avatar_object_key(self, avatar_object_key: str | None):
+        self._avatar_object_key = avatar_object_key
+        return self
+
     def build(self):
         auth = AuthCredentials(password=self._password_hash, user_id=self._id, created_at=datetime.now(timezone.utc))
         return User(
@@ -61,6 +70,7 @@ class UserBuilder:
             surname=self._surname,
             username=self._username,
             avatar_url=self._avatar_url,
+            avatar_object_key=self._avatar_object_key,
             is_email_verified=self._is_email_verified,
             auth_credentials=auth,
             last_login_at=self._last_login_at,

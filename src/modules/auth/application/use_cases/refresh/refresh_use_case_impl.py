@@ -7,16 +7,21 @@ from src.modules.auth.application.services.auth_session import IAuthSessionServi
 from src.modules.auth.domain.entities.auth_session import AuthSession
 from src.shared.domain.errors.api_types import AuthError
 from src.shared.domain.ports.system.iclock import IClock
+from src.modules.auth.application.ports.storage import IUserAvatarStorage
+from src.modules.auth.application.services.user_avatar_url_resolver import (
+    resolve_user_avatar_url,
+)
 
 
 class RefreshUseCaseImpl(IRefreshUseCase):
 
 
     def __init__(self, auth_session_service: IAuthSessionService, auth_unit_of_work: IAuthUnitOfWork,
-                 system_clock : IClock):
+                 system_clock : IClock, avatar_storage: IUserAvatarStorage):
         self.__auth_session_service = auth_session_service
         self.__auth_unit_of_work = auth_unit_of_work
         self._clock = system_clock
+        self.__avatar_storage = avatar_storage
 
 
     async def execute(self, refresh_token: str) -> RefreshResultDTO:
@@ -37,8 +42,11 @@ class RefreshUseCaseImpl(IRefreshUseCase):
 
             await uow.commit()
 
+            avatar_url = await resolve_user_avatar_url(user, self.__avatar_storage)
+
             return RefreshResultDTO(
                 access_token=auth_session_result.access_token,
                 refresh_token=auth_session_result.refresh_token,
-                user=user
+                user=user,
+                avatar_url=avatar_url,
             )

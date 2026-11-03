@@ -46,18 +46,26 @@ class UnitOfWorkFake:
         return None
 
 
+class AvatarStorageFake:
+    async def create_read_url(self, *, object_key):
+        return f"https://signed.example.test/{object_key}"
+
+
 def make_use_case(uow) -> UpdateUserInfoUseCaseImpl:
     return UpdateUserInfoUseCaseImpl(
         auth_unit_of_work=uow,
         system_clock=ClockFake(
             now=datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
         ),
+        avatar_storage=AvatarStorageFake(),
     )
 
 
 @pytest.mark.asyncio
 async def test_updates_a_subset_without_overwriting_other_user_fields() -> None:
-    user = UserBuilder().build()
+    user = UserBuilder().with_avatar_object_key(
+        "users/user-id/avatar/avatar.webp"
+    ).build()
     original_surname = user.surname
     original_date_of_birth = user.date_of_birth
     uow = UnitOfWorkFake(user)
@@ -66,16 +74,15 @@ async def test_updates_a_subset_without_overwriting_other_user_fields() -> None:
         UpdateUserInfoInput(
             user_id=user.id,
             name="Maria",
-            avatar_url="https://cdn.example.com/avatar.png",
         )
     )
 
     assert output.name == "Maria"
-    assert output.avatar_url == "https://cdn.example.com/avatar.png"
+    assert output.avatar_url == "https://signed.example.test/users/user-id/avatar/avatar.webp"
     assert output.surname == original_surname
     assert output.date_of_birth == original_date_of_birth
     assert uow.users_repository.updated_user is user
-    assert uow.users_repository.updated_fields == frozenset({"name", "avatar_url"})
+    assert uow.users_repository.updated_fields == frozenset({"name"})
     assert uow.commits == 1
 
 

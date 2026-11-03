@@ -6,6 +6,7 @@ from neo4j.time import DateTime as Neo4jDateTime
 
 from src.modules.catalog.domain.entities.theme import Theme
 from src.modules.catalog.public.theme_id import ThemeId
+from src.modules.catalog.public.theme_color import DEFAULT_THEME_COLOR
 from src.shared.infrastructure.persistence.mappers.interface import IMapper
 
 
@@ -19,6 +20,7 @@ class ThemeMapper(IMapper[Mapping[str, Any], Theme]):
             is_active=model["is_active"],
             created_at=self._to_native_datetime(model["created_at"]),
             updated_at=self._to_optional_native_datetime(model.get("updated_at")),
+            color=model.get("color") or DEFAULT_THEME_COLOR,
         )
 
     def to_model(self, entity: Theme) -> Mapping[str, Any]:
@@ -27,6 +29,7 @@ class ThemeMapper(IMapper[Mapping[str, Any], Theme]):
             "slug": entity.slug,
             "label": entity.label,
             "description": entity.description,
+            "color": entity.color,
             "is_active": entity.is_active,
             "created_at": entity.created_at,
             "updated_at": entity.updated_at,

@@ -32,4 +32,6 @@ dependencies = [
     "neo4j==6.3.0",
     "python-slugify>=9,<10",
     "mypy-boto3-s3>=1.43.106",
+    "pillow>=11,<13",
+    "tzdata>=2025.2",
 ]

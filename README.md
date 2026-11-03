@@ -3,7 +3,8 @@
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Architecture](https://img.shields.io/badge/architecture-modular%20monolith-4B5563)
-![Tests](https://img.shields.io/badge/tests-287%20passing-brightgreen)
+![Backend tests](https://img.shields.io/badge/backend%20tests-557%20passing-brightgreen)
+![Frontend tests](https://img.shields.io/badge/frontend%20tests-73%20passing-brightgreen)
 
 > **Work in progress:** Reflecta is actively being developed as a Software Engineering capstone project. The repository already contains working vertical slices, but it is not yet a production-ready application.
 
@@ -82,6 +83,15 @@ Journal entries are text-only in the current scope. Audio and image journaling a
 - email templates for verification, password reset, account deletion, and account recovery;
 - local RabbitMQ infrastructure retained as a development path while the AWS flow evolves.
 
+### Web application
+
+- React and Vite application in [`frontend/`](frontend/);
+- authenticated user and administrator areas with automatic session restoration;
+- journal creation, history, editing, deletion, AI analysis, contextual passages, and explainable theme highlights;
+- administrative management of themes, works, covers, PDF ingestions, passages, and operational failures;
+- client-side caching for low-volatility catalog data, local filtering, pagination, and responsive layouts;
+- profile management with avatar upload and controlled sharing of contextual analyses.
+
 ## Architecture
 
 Reflecta is implemented as a **modular monolith**. Modules are deployed as one backend but maintain explicit business and dependency boundaries.
@@ -105,11 +115,16 @@ src/
 │   ├── catalog/             # Curated themes, works, authors, and passages
 │   ├── ai_processing/       # Journal interpretation and work ingestion
 │   ├── internal_events/     # Outbox, routing, and publishers
+│   ├── operations/          # Failure diagnostics and administrative reprocessing
 │   └── notification/        # Event handlers and email delivery
 └── shared/                  # Cross-cutting contracts and infrastructure
+
+frontend/
+├── src/                     # React pages, components, services, and styles
+└── tests/                   # Frontend contract and behavior tests
 ```
 
-Recommendation and Sharing / Professional remain planned modules without complete implementations.
+Recommendation remains planned. Sharing / Professional currently provides controlled, token-based read-only analysis sharing, but the broader professional workflow is still incomplete.
 
 ## Main processing flows
 
@@ -149,7 +164,7 @@ Journal draft
               └── persisted analysis and entry state transition
 ```
 
-Journal submission and structured analysis are implemented as an initial vertical slice. Sentence-level processing, embeddings, and contextual passage matching remain future increments.
+Journal analysis persists sentence/theme matches, ranks up to five reflective themes, selects contextual passages from the curated catalog, and exposes an explainable conclusion to the frontend. Embeddings and vector similarity remain future increments.
 
 ## Technology stack
 
@@ -168,16 +183,20 @@ Journal submission and structured analysis are implemented as an initial vertica
 | Notifications | AWS Lambda, Amazon SES, SMTP |
 | Infrastructure | Docker, Docker Compose |
 | Testing | pytest, pytest-asyncio |
+| Frontend | React 19, Vite, React Router, Tailwind CSS, Lucide |
 
 ## API surface
 
-The current API exposes 25 paths and 37 HTTP operations across three public modules:
+The current API exposes 39 paths and 58 HTTP operations across Auth, Journal, Catalog, AI Processing, Sharing, and Operations:
 
 - `/auth`: authentication, verification, password reset, profile, deletion, and recovery;
 - `/journal/entries`: authenticated Journal CRUD plus analysis submission and retrieval;
 - `/catalog/themes`: administrator-protected Theme CRUD;
-- `/catalog/works`: work creation and PDF ingestion;
+- `/catalog/works`: work listing, detail, cover management, creation, and PDF ingestion;
 - `/catalog/passages`: passage listing, editing, review, and availability management.
+- `/journal/context-analysis`: contextual analysis, history, and controlled sharing;
+- `/admin/operational-failures`: diagnostics and bounded administrative reprocessing;
+- `/ai-processing/work-ingestions`: ingestion progress for the administrative interface.
 
 After starting the API, the generated documentation is available at:
 
@@ -251,6 +270,16 @@ uv run uvicorn src.main.server.fast_api.run:app --reload
 
 The API will be available at `http://localhost:8000`.
 
+### 6. Start the frontend
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Copy `frontend/.env.example` to `frontend/.env.local` when an API URL different from the local default is required. The web application will normally be available at `http://localhost:5173`.
+
 ### Optional: run the containerized API and workers
 
 Start the infrastructure first, then run:
@@ -278,8 +307,19 @@ uv run pytest -q
 Current verified result:
 
 ```text
-287 passed
+557 passed, 5 skipped
 ```
+
+The frontend is independently validated with:
+
+```bash
+cd frontend
+npm test
+npm run lint
+npm run build
+```
+
+Current frontend result: **73 tests passed**, lint succeeded, and the production build completed.
 
 The suite covers domain rules, application use cases, authentication, account lifecycle, notification handlers, Catalog/Neo4j behavior, Journal persistence, S3 adapters, Inbox idempotency, SQS consumption, PDF chunking, OpenAI contracts, controllers, and validation.
 
@@ -298,20 +338,22 @@ The repository still needs broader automated integration, API, and end-to-end co
 - passage suggestion, explanation, review, and lifecycle management;
 - Journal draft CRUD backed by PostgreSQL;
 - initial structured Journal analysis pipeline;
+- contextual passage selection and explainable journal conclusions;
+- React user and administrative interfaces;
+- work listing, cover/avatar uploads, ingestion progress, and operational failure diagnostics;
+- controlled contextual-analysis sharing and history;
 - Outbox persistence and event dispatch infrastructure;
 - email event handling and AWS/local notification adapters;
 - Docker-based PostgreSQL, Neo4j, and RabbitMQ infrastructure.
 
 ### In progress or planned
 
-- embeddings generation and similarity search;
-- sentence-level Journal processing and contextual passage matching;
-- work listing/editing and ingestion-status API endpoints;
+- embeddings generation and vector similarity search;
+- broader work editing and automated ingestion recovery;
 - recommendation generation;
-- controlled sharing with healthcare professionals;
+- expansion of the professional workflow beyond controlled read-only sharing;
 - generalized consumer idempotency outside the AI ingestion Inbox;
-- operational monitoring and failure recovery;
-- frontend application;
+- production-grade monitoring, tracing, and failure recovery;
 - CI/CD and production deployment.
 
 ## Engineering considerations

@@ -30,9 +30,7 @@ class CreatePassageInputDTO:
 class UpdatePassageInputDTO:
     passage_id: PassageId
     locator: str | None = None
-    short_text: str | None = None
     paraphrase: str | None = None
-    interpretation_note: str | None = None
     priority: int | None = None
     themes: tuple[PassageThemeInputDTO, ...] | None = None
     start_page: int | None = None
@@ -44,9 +42,7 @@ class UpdatePassageInputDTO:
             value is None
             for value in (
                 self.locator,
-                self.short_text,
                 self.paraphrase,
-                self.interpretation_note,
                 self.priority,
                 self.themes,
                 self.start_page,

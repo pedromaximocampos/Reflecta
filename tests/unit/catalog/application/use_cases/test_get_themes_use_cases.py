@@ -52,6 +52,7 @@ async def test_get_theme_by_id_returns_mapped_theme_without_committing() -> None
         "slug": theme.slug,
         "label": theme.label,
         "description": theme.description,
+        "color": theme.color,
         "is_active": True,
         "created_at": theme.created_at.isoformat(),
         "updated_at": None,

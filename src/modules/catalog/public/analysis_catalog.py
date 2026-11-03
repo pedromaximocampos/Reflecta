@@ -12,6 +12,6 @@ class AnalysisThemeCatalog:
         async with self.uow as uow:
             themes = await uow.theme_repository.list_themes()
             return tuple(
-                ThemeOption(id=t.id.value, slug=t.slug, label=t.label, description=t.description)
+                ThemeOption(id=t.id.value, slug=t.slug, label=t.label, description=t.description, color=t.color)
                 for t in themes if t.is_active
             )

@@ -10,9 +10,15 @@ from src.shared.presentation.interfaces.controller_interface import IControllerI
 class RefreshController(IControllerInterface):
 
 
-    def __init__(self, refresh_use_case: IRefreshUseCase, system_clock: IClock):
+    def __init__(
+        self,
+        refresh_use_case: IRefreshUseCase,
+        system_clock: IClock,
+        secure_cookie: bool = True,
+    ):
         self._refresh_use_case = refresh_use_case
         self._system_clock = system_clock
+        self._secure_cookie = secure_cookie
 
 
     async def handle_request(self, request: HttpRequest) -> HttpResponse:
@@ -31,7 +37,7 @@ class RefreshController(IControllerInterface):
                     "email": refresh_result.user.email.value,
                     "name": refresh_result.user.name,
                     "surname": refresh_result.user.surname,
-                    "avatar_url": refresh_result.user.avatar_url,
+                    "avatar_url": refresh_result.avatar_url,
                     "role": refresh_result.user.role.value,
                     "date_of_birth": refresh_result.user.date_of_birth.isoformat(),
                 }
@@ -40,7 +46,7 @@ class RefreshController(IControllerInterface):
                     name="refresh_token",
                     value=refresh_result.refresh_token,
                     http_only=True,
-                    secure=True,
+                    secure=self._secure_cookie,
                     path="/",
                     max_age=self._system_clock.refresh_token_expiration_in_seconds()
                 )
@@ -61,7 +67,7 @@ class RefreshController(IControllerInterface):
                 value="",
                 max_age=0,
                 http_only=True,
-                secure=True,
+                secure=self._secure_cookie,
                 samesite="Lax",
                 path="/",
                 domain=None,
@@ -78,7 +84,7 @@ class RefreshController(IControllerInterface):
                 value="",
                 max_age=0,
                 http_only=True,
-                secure=True,
+                secure=self._secure_cookie,
                 samesite="Lax",
                 path="/",
                 domain=None,

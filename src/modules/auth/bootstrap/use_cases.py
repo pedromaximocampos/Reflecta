@@ -31,6 +31,13 @@ from src.modules.auth.application.use_cases.recovery.recovery_use_case_impl impo
 from src.modules.auth.application.use_cases.update_user_info.update_user_info_use_case_impl import (
     UpdateUserInfoUseCaseImpl,
 )
+from src.modules.auth.application.use_cases.get_user_profile import GetUserProfileUseCase
+from src.modules.auth.application.use_cases.update_user_avatar import (
+    RemoveUserAvatarUseCase,
+    ReplaceUserAvatarUseCase,
+)
+from src.modules.auth.bootstrap.media import get_user_avatar_processor
+from src.modules.auth.bootstrap.storage import get_user_avatar_storage
 
 def get_login_use_case() -> LoginUseCaseImpl:
     """ Retorna uma instância do caso de uso de login com todas as dependências injetadas."""
@@ -41,7 +48,8 @@ def get_login_use_case() -> LoginUseCaseImpl:
         auth_session_service=get_auth_session_service(),
         email_verification_service=get_email_verification_service(),
         auth_unit_of_work=get_auth_unit_of_work(),
-        outbox_service=get_outbox_service()
+        outbox_service=get_outbox_service(),
+        avatar_storage=get_user_avatar_storage(),
     )
 
 
@@ -60,7 +68,8 @@ def get_refresh_use_case() -> RefreshUseCaseImpl:
     return RefreshUseCaseImpl(
         auth_session_service=get_auth_session_service(),
         auth_unit_of_work=get_auth_unit_of_work(),
-        system_clock=get_clock()
+        system_clock=get_clock(),
+        avatar_storage=get_user_avatar_storage(),
     )
 
 
@@ -150,4 +159,28 @@ def get_update_user_info_use_case() -> UpdateUserInfoUseCaseImpl:
     return UpdateUserInfoUseCaseImpl(
         auth_unit_of_work=get_auth_unit_of_work(),
         system_clock=get_clock(),
+        avatar_storage=get_user_avatar_storage(),
+    )
+
+
+def get_user_profile_use_case() -> GetUserProfileUseCase:
+    return GetUserProfileUseCase(
+        auth_unit_of_work=get_auth_unit_of_work(),
+        avatar_storage=get_user_avatar_storage(),
+    )
+
+
+def get_replace_user_avatar_use_case() -> ReplaceUserAvatarUseCase:
+    return ReplaceUserAvatarUseCase(
+        auth_unit_of_work=get_auth_unit_of_work(),
+        avatar_processor=get_user_avatar_processor(),
+        avatar_storage=get_user_avatar_storage(),
+        ulid_generator=get_ulid_generator(),
+    )
+
+
+def get_remove_user_avatar_use_case() -> RemoveUserAvatarUseCase:
+    return RemoveUserAvatarUseCase(
+        auth_unit_of_work=get_auth_unit_of_work(),
+        avatar_storage=get_user_avatar_storage(),
     )

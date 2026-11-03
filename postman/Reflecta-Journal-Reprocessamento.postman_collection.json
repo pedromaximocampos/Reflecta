@@ -1,0 +1,311 @@
+{
+  "info": {
+    "name": "Reflecta — Diagnóstico de falha e reprocessamento",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Reprocessamento pelo proprietário: faça login (0), consulte somente o estado (1), solicite nova tentativa se analysis_failed (2), acompanhe (3) e visualize (4). Motivos técnicos são exclusivos do painel administrativo. O reenvio pode consumir a API de IA. O usuário pode solicitar até três reprocessamentos; após a terceira falha apenas ADMIN pode solicitar outro. O passo 1 captura analysisRevision para prevenir repetição de uma falha antiga."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Fazer login — capturar accessToken",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "Preencha email e password no environment Reflecta Local e selecione esse environment. Usa HTTP Basic, sem body. A resposta salva accessToken automaticamente no environment. Utilize uma conta existente; não exige ADMIN. Não exporte o environment preenchido com senhas ou tokens.",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{email}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.unset('accessToken');",
+              "if (!pm.environment.get('email') || !pm.environment.get('password')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Preencha email e password no environment Reflecta Local antes do login.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login retorna HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Resposta contém access_token', () => pm.expect(data.access_token).to.be.a('string').and.not.empty);",
+              "    if (typeof data.access_token === 'string' && data.access_token) {",
+              "        pm.environment.set('accessToken', data.access_token);",
+              "    } else { pm.execution.setNextRequest(null); }",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Consultar estado da análise — usar journalId",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "Consulta somente estado e resultado da entrada do proprietário. Não entrega diagnóstico técnico. Se o estado for analysis_failed, permite seguir para solicitar nova tentativa."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken') || !pm.environment.get('journalId')) { pm.execution.setNextRequest(null); throw new Error('Faça login e preencha journalId no environment.'); }"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Consulta de estado: HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json();",
+              "  pm.test('Entrada selecionada', () => { pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')); pm.expect(data.status).to.be.a('string'); pm.expect(data.analysis_error).to.eql(undefined); });",
+              "  pm.environment.set('analysisStatus', data.status);",
+              "  pm.environment.set('analysisRevision', data.reprocess.revision);",
+              "  if (data.status !== 'analysis_failed' || !data.reprocess.can_user_reprocess) { pm.execution.setNextRequest(null); console.info('Reenvio interrompido: a entrada não permite reprocessamento pelo usuário.'); }",
+              "} else { pm.execution.setNextRequest(null); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Solicitar reprocessamento da análise com falha — mesmo journalId",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "Reenvia a mesma entrada falha usando analysisRevision capturada no passo 1. Consome uma das três solicitações permitidas ao usuário. Respostas 403 indicam limite atingido e 409 exigem nova consulta do estado. Não entrega motivo técnico.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"expected_revision\": \"{{analysisRevision}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('analysisRevision')) { pm.execution.setNextRequest(null); throw new Error('Execute o passo 1 para capturar a revisão atual da análise.'); }",
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}",
+              "pm.environment.set('pollCount', '0');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Solicitação retorna HTTP 202', () => pm.response.to.have.status(202));",
+              "if (pm.response.code === 202) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Entrada entrou na fila', () => pm.expect(data.status).to.eql('pending_analysis'));",
+              "    pm.test('Resposta corresponde ao journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.environment.set('analysisStatus', data.status);",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Acompanhar reprocessamento — repetir até analyzed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "No envio manual, repita esta chamada enquanto status = pending_analysis. No Collection Runner, ela se repete automaticamente a cada pollIntervalMs (padrão 5 segundos), até maxPollAttempts (padrão 24 consultas). Em analyzed, segue para o passo 4. Em analysis_failed ou prazo excedido, interrompe o Runner com teste de falha. O motivo detalhado fica em journal_schema.analysis.analysis_error, não é exposto por este endpoint."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}",
+              "const max = Number(pm.environment.get('maxPollAttempts') || 24);",
+              "const interval = Number(pm.environment.get('pollIntervalMs') || 5000);",
+              "if (!Number.isInteger(max) || max < 1 || max > 120 || !Number.isFinite(interval) || interval < 1000 || interval > 10000) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Use maxPollAttempts entre 1 e 120 e pollIntervalMs entre 1000 e 10000.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Consulta retorna HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    const count = Number(pm.environment.get('pollCount') || 0) + 1;",
+              "    const max = Number(pm.environment.get('maxPollAttempts') || 24);",
+              "    const interval = Number(pm.environment.get('pollIntervalMs') || 5000);",
+              "    pm.environment.set('pollCount', String(count));",
+              "    pm.environment.set('analysisStatus', data.status);",
+              "    pm.test('Resposta corresponde ao journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.test('Status esperado', () => pm.expect(data.status).to.be.oneOf(['pending_analysis', 'analyzed', 'analysis_failed']));",
+              "    if (data.status === 'pending_analysis') {",
+              "        pm.test('Análise pendente ainda não tem resultado', () => pm.expect(data.analysis).to.eql(null));",
+              "        if (count < max) {",
+              "            setTimeout(() => pm.execution.setNextRequest(pm.info.requestId), interval);",
+              "        } else {",
+              "            pm.test('Análise concluiu dentro do limite de consultas', () => { throw new Error('Limite de espera atingido. Confira o worker e o banco; pendente não significa falha confirmada.'); });",
+              "            pm.execution.setNextRequest(null);",
+              "        }",
+              "    } else if (data.status === 'analysis_failed') {",
+              "        pm.test('Análise concluída com sucesso', () => { throw new Error('analysis_failed: consulte analysis_error no banco. Para reenviar, execute o passo 2 e depois o passo 3.'); });",
+              "        pm.execution.setNextRequest(null);",
+              "    } else if (data.status === 'analyzed') {",
+              "        pm.test('Resultado da análise disponível', () => pm.expect(data.analysis).to.be.an('object'));",
+              "        if (data.analysis) pm.environment.set('analysisId', data.analysis.id);",
+              "    } else { pm.execution.setNextRequest(null); }",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Visualizar análise após reprocessamento",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "Execute após o passo 3 indicar analyzed. Abra Body > Pretty > JSON para ver summary (resumo), main_message (interpretação), metadata.sentiments, metadata.tone, metadata.themes e sentences. Os temas podem estar vazios, dependendo do catálogo ativo e do texto; isso é válido. Não há texto fixo esperado para a resposta da IA."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Retorno final: HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Análise concluída', () => pm.expect(data.status).to.eql('analyzed'));",
+              "    pm.test('Mesmo journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.test('Resultado válido', () => {",
+              "        pm.expect(data.analysis).to.be.an('object');",
+              "        pm.expect(data.analysis.id).to.be.a('string').with.lengthOf(26);",
+              "        pm.expect(data.analysis.summary).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.main_message).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.metadata.sentiments).to.be.an('array');",
+              "        pm.expect(data.analysis.metadata.tone).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.metadata.themes).to.be.an('array');",
+              "        pm.expect(data.analysis.sentences).to.be.an('array').and.not.empty;",
+              "        pm.expect(data.analysis.analyzed_at).to.be.a('string').and.not.empty;",
+              "        data.analysis.sentences.forEach((sentence, index) => {",
+              "            pm.expect(sentence.sentence_index).to.eql(index);",
+              "            pm.expect(sentence.sentence_text).to.be.a('string').and.not.empty;",
+              "            pm.expect(sentence.start_offset).to.be.at.least(0);",
+              "            pm.expect(sentence.end_offset).to.be.greaterThan(sentence.start_offset);",
+              "            pm.expect(sentence.themes).to.be.an('array');",
+              "        });",
+              "    });",
+              "    if (data.analysis) pm.environment.set('analysisId', data.analysis.id);",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

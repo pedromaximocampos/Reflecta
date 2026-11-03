@@ -1,7 +1,7 @@
 # Reflecta — Estado real da implementação
 
-> Auditoria focal atualizada em 2026-10-14 após a sincronização do backend desenvolvido na branch
-> `feature/atividade-a3-pedro` do repositório acadêmico com este repositório privado.
+> Auditoria focal atualizada em 2026-11-01 após a sincronização da branch `develop` do repositório
+> acadêmico com este repositório de portfólio. Backend e frontend foram sincronizados.
 >
 > Este documento registra somente capacidades comprovadas por código, migrations, testes ou execução.
 > Diagramas e documentação de produto continuam sendo referência do planejado, não evidência de implementação.
@@ -16,13 +16,13 @@
 
 ## 2. Verificações desta atualização
 
-- 829 arquivos rastreados do backend acadêmico foram comparados por SHA-256 após a sincronização;
-- `uv sync`: 73 pacotes resolvidos; `pypdf` e stubs S3 adicionados ao ambiente;
-- `pytest -q`: **287 testes aprovados**, com oito avisos de depreciação Pydantic;
-- `compileall`: código de `src`, `tests` e `alembic` compilado sem erro;
-- Alembic: cadeia linear, uma head `a3d9e7f4b612`, banco local na head;
-- `alembic check`: nenhuma nova operação de upgrade detectada;
-- FastAPI/OpenAPI: aplicação importada e **25 paths / 37 operações HTTP** gerados;
+- 976 arquivos rastreados do backend e 81 do frontend foram comparados por SHA-256 após a sincronização;
+- duas adaptações locais de portabilidade foram aplicadas: `tzdata` explícito e teste sem dependência do nome da pasta raiz;
+- `uv sync --locked`: 75 pacotes resolvidos;
+- `pytest -q`: **557 testes aprovados, 5 ignorados**, com oito avisos de depreciação Pydantic;
+- frontend: **73 testes aprovados**, lint sem erros e build Vite de produção concluído;
+- Alembic: cadeia linear, uma head `d8c51a700003`;
+- FastAPI/OpenAPI: aplicação importada e **39 paths / 58 operações HTTP** gerados;
 - `git diff --check`: nenhum erro de whitespace; somente avisos de conversão LF/CRLF no Windows;
 - o fluxo equivalente da branch acadêmica sincronizada foi exercitado manualmente com S3, SNS, SQS,
   OpenAI e Neo4j reais; a execução externa não foi repetida a partir desta cópia privada após a sincronização.
@@ -31,18 +31,19 @@
 
 | Área | Status | Estado real |
 |---|---|---|
-| Backend/API | PARTIAL | FastAPI expõe Auth, CRUD Journal, análise de Journal, catálogo de temas, criação/ingestão de obras e curadoria de passagens. |
+| Backend/API | PARTIAL | FastAPI expõe Auth, Journal, análise contextual, catálogo, ingestão, curadoria, compartilhamento e operações administrativas. |
 | Monólito modular | PARTIAL | Módulos físicos em `src/modules`, shared técnico em `src/shared` e composição em `src/main`; ainda existem acoplamentos de Presentation e dívidas antigas em Auth. |
 | Clean Architecture / DDD | PARTIAL | Entidades, VOs, ports, casos de uso, repositories, UoWs e adapters estão separados nos fluxos recentes; nem todo código legado segue o mesmo rigor. |
 | Auth | PARTIAL | Cadastro, login, refresh/logoff, verificação, reset, exclusão lógica, recuperação, perfil e role existem; faltam E2E automatizado e distinção criptográfica entre access/refresh token. |
-| Journal | PARTIAL | CRUD com ownership e exclusão lógica está implementado; submissão/consulta de análise e worker existem, mas o pipeline futuro de sentenças, embeddings e referências continua incompleto. |
-| AI Processing | PARTIAL | Interpretação de Journal e ingestão de PDF com extração, normalização, chunks, OpenAI, validação de citação, retry, Inbox e persistência de estado estão implementadas e o fluxo de obras foi exercitado manualmente; faltam E2E automatizado e operação reproduzível. |
-| Catalog / Knowledge | PARTIAL | CRUD de temas, criação de obra/autor, solicitação de ingestão e CRUD/revisão de passagens existem; faltam listagem/edição de obras e endpoint público de status da ingestão. |
+| Journal | PARTIAL | CRUD com ownership, análise estruturada, sentenças/temas, conclusão, passagens contextuais, histórico e compartilhamento controlado existem; embeddings continuam incompletos. |
+| AI Processing | PARTIAL | Interpretação do Journal, seleção contextual e ingestão de PDF com chunks, OpenAI, validação, retry, Inbox e persistência de estado estão implementadas; faltam E2E cloud automatizado e operação reproduzível. |
+| Catalog / Knowledge | PARTIAL | CRUD de temas e passagens, criação/listagem/detalhe de obras, capas, solicitação e acompanhamento de ingestões existem; edição ampla de obras e recuperação automática ainda são lacunas. |
 | Recommendation | NOT_STARTED | Não existe módulo funcional. |
-| Sharing / Professional | NOT_STARTED | Não existe módulo funcional. |
+| Sharing / Professional | PARTIAL | Análises contextuais podem ser compartilhadas por token, resolvidas publicamente e revogadas; o fluxo completo do profissional ainda não existe. |
 | Notification | PARTIAL | Handler unificado, SMTP, SES e consumer Lambda/SQS existem; idempotência persistente e deploy reproduzível permanecem pendentes. |
 | Internal Events | PARTIAL | Outbox, dispatcher SNS/SQS/RabbitMQ e retries existem; recovery de eventos presos e processed events gerais continuam incompletos. |
-| Frontend | NOT_STARTED | Não existe aplicação frontend neste repositório. |
+| Operations | PARTIAL | Falhas de Journal e ingestão podem ser listadas/detalhadas; Journal possui reprocessamento administrativo parametrizado. |
+| Frontend | PARTIAL | React/Vite em `frontend/` cobre áreas de usuário e administrador; faltam E2E automatizado, acessibilidade sistemática e deploy reproduzível. |
 
 ## 4. Stack real
 
@@ -52,7 +53,7 @@
 | FastAPI / Uvicorn | IMPLEMENTED | `src/main/server/fast_api/` |
 | Pydantic / pydantic-settings | IMPLEMENTED | validators dos módulos e `src/shared/config/settings.py` |
 | SQLAlchemy assíncrono / asyncpg | IMPLEMENTED | persistência PostgreSQL em `src/shared` e módulos |
-| Alembic | IMPLEMENTED | `alembic/`; head `a3d9e7f4b612` aplicada localmente |
+| Alembic | IMPLEMENTED | `alembic/`; head versionada `d8c51a700003` |
 | PostgreSQL 16 / pgvector | PARTIAL | Compose, schemas/tabelas e colunas vector; busca vetorial ainda não implementada |
 | Neo4j 5.26 / driver assíncrono | IMPLEMENTED | providers compartilhados, UoW e repositories Catalog |
 | AWS S3 / boto3 | PARTIAL | adapters Catalog e AI Processing, testes unitários e upload/leitura reais exercitados; bucket e políticas permanecem fora do repositório |
@@ -60,7 +61,8 @@
 | OpenAI Responses API / httpx | PARTIAL | análise estruturada de chunks e validação de respostas exercitadas com o provedor real; faltam E2E automatizado, métricas e limites operacionais |
 | RabbitMQ / aio-pika | PARTIAL | caminho local legado/transicional continua no código e Compose |
 | Amazon SES | PARTIAL | notifier e Lambda de e-mail existem; infraestrutura cloud não é versionada como IaC |
-| Pytest / pytest-asyncio | IMPLEMENTED | 287 testes aprovados |
+| Pytest / pytest-asyncio | IMPLEMENTED | 557 testes aprovados e 5 ignorados |
+| React / Vite | IMPLEMENTED | `frontend/src`, 73 testes, lint e build aprovados |
 | CI/CD | NOT_STARTED | nenhum workflow encontrado |
 
 ## 5. Arquitetura real
@@ -76,8 +78,12 @@ src/
     ai_processing/
     internal_events/
     notification/
+    operations/
   shared/
   main/
+frontend/
+  src/
+  tests/
 ```
 
 Os fluxos mais recentes usam:
@@ -112,13 +118,21 @@ Implementado:
 - `catalog_schema.work_ingestions`;
 - `ai_processing_schema.work_ingestion_chunks`;
 - `ai_processing_schema.inbox_events`;
+- análises contextuais, compartilhamentos e parâmetros persistidos de reprocessamento;
+- chave de objeto do avatar do usuário;
 - repositories e UoWs para os fluxos recentes.
 
 Migrations recentes:
 
 - `b81f4e2a9c07_create_catalog_work_ingestions.py`;
 - `f6c2a91d4e08_create_ai_processing_chunks.py`;
-- `a3d9e7f4b612_create_ai_processing_inbox.py`.
+- `a3d9e7f4b612_create_ai_processing_inbox.py`;
+- `a31b7d5e0001_context_analysis_period.py`;
+- `b31c72e00002_context_sharing.py`;
+- `c7e2b4a91d08_add_user_avatar_object_key.py`;
+- `e183a62b07c4_context_analyses.py`;
+- `f29a30c3b001_analysis_reprocess_limit.py`;
+- `d8c51a700003_admin_analysis_settings.py`.
 
 ### Neo4j — IMPLEMENTED
 
@@ -211,7 +225,11 @@ Evidências principais:
 - worker PostgreSQL seleciona entradas pendentes;
 - OpenAI retorna saída estruturada com temas do catálogo ativo;
 - análise é persistida atomicamente com a mudança de status;
-- ainda faltam o pipeline completo de sentenças, passagens contextuais e embeddings.
+- sentenças são associadas aos temas canônicos e até cinco temas reflexivos são priorizados;
+- passagens aprovadas do catálogo são selecionadas por correspondência contextual e persistidas em snapshot explicável;
+- conclusão geral e passagens são exibidas no frontend com navegação entre tema, frase e referência;
+- o cliente HTTP do provedor é reutilizado dentro do workflow e possui retry limitado para falhas de conexão;
+- ainda faltam embeddings, busca vetorial e avaliação sistemática da qualidade semântica.
 
 ## 9. API existente
 
@@ -221,30 +239,38 @@ Evidências principais:
 - verificação e reset de senha;
 - solicitação/confirmação de exclusão lógica;
 - solicitação/confirmação de recuperação;
-- atualização parcial de perfil.
+- consulta/atualização parcial de perfil e upload/remoção de avatar.
 
 ### Journal
 
 - CRUD autenticado de `/journal/entries`;
 - `POST /journal/entries/{id}/analysis`;
-- `GET /journal/entries/{id}/analysis`.
+- `GET /journal/entries/{id}/analysis`;
+- análise contextual por período, histórico, compartilhamento, revogação e resolução pública por token.
 
 ### Catalog
 
 - CRUD de `/catalog/themes`;
-- `POST /catalog/works`;
+- criação, listagem e detalhe de `/catalog/works`;
+- upload/remoção de capa de obra;
 - `POST /catalog/works/{work_id}/ingestions` com PDF;
 - criação/listagem/detalhe/edição/remoção de passagens;
 - aprovação, rejeição, ativação e desativação de passagens;
 - filtros de passagem por status, obra e ingestão;
 - respostas de passagem incluem `theme_id`, `label` e `confidence`.
 
+### Operations / AI Processing
+
+- listagem e detalhe sanitizado de falhas operacionais;
+- parâmetros padrão da IA e reprocessamento administrativo limitado para Journal;
+- listagem de ingestões com progresso para a interface administrativa.
+
 Lacunas HTTP relevantes:
 
-- não existe listagem/detalhe/edição de obras;
-- não existe endpoint de consulta do estado/erro da ingestão;
+- não existe edição ampla dos metadados da obra;
+- não existe reprocessamento administrativo da mesma ingestão sem novo upload/evento;
 - não existe paginação de passagens;
-- não existe API operacional para DLQ/reprocessamento.
+- não existe operação genérica de redrive de DLQ pela API.
 
 ## 10. Testes
 
@@ -255,10 +281,12 @@ Lacunas HTTP relevantes:
 | Catalog | IMPLEMENTED unitariamente | temas, obras, ingestão, passagens, validators e repositories |
 | AI Processing | IMPLEMENTED unitariamente | Inbox, chunks, documentos, S3, SQS, OpenAI, worker e casos de uso |
 | Notification | IMPLEMENTED unitariamente | handlers, templates, SES e payloads |
+| Operations | IMPLEMENTED unitariamente | diagnóstico, sanitização e reprocessamento administrativo |
+| Frontend | IMPLEMENTED unitariamente | 73 testes de serviços/contratos, lint e build de produção |
 | API E2E real | NOT_STARTED | não existe suíte persistente com FastAPI + PostgreSQL + Neo4j + AWS |
 | Integrações cloud | PARTIAL | fluxo de obras validado manualmente com S3, SNS, SQS/DLQ e OpenAI; configuração ainda é externa e não há suíte E2E reproduzível |
 
-Resultado atual: **287 passed, 8 warnings**.
+Resultado atual: **backend 557 passed, 5 skipped, 8 warnings; frontend 73 passed, lint e build aprovados**.
 
 Validação funcional manual já observada no fluxo de obras:
 
@@ -282,21 +310,16 @@ comandos não foi registrada nesta atualização.
 2. Auth/Outbox permanecem no schema padrão, enquanto o modelo planejado separa schemas;
 3. o repositório preserva RabbitMQ/SMTP junto do caminho alvo SNS/SQS/Lambda/SES;
 4. infraestrutura AWS foi configurada manualmente e não possui IaC reproduzível;
-5. a ausência de endpoint de status impede o frontend de distinguir processamento, zero resultados e falha;
+5. existe acompanhamento de ingestão, mas o reprocessamento administrativo da mesma ingestão ainda não está implementado;
 6. a ingestão cruza PostgreSQL, S3, SQS e Neo4j sem transação distribuída;
 7. passagens são persistidas progressivamente; falha posterior exige retomada/reconciliação correta;
 8. custos e rate limits do provedor de IA precisam de limites operacionais;
 9. conteúdo privado do Journal exige política explícita de retenção, redaction e observabilidade;
-10. não há CI, métricas, tracing, health/readiness ou testes E2E automatizados.
+10. não há CI, IaC, métricas, tracing, health/readiness ou testes E2E automatizados.
 
 ## 12. Menor próximo incremento coerente
 
-Para a entrega administrativa atual, o menor incremento vertical é um endpoint autenticado:
-
-```text
-GET /catalog/work-ingestions/{ingestion_id}
-```
-
-Ele deve retornar status, tentativas, timestamps e um erro sanitizado. Isso permite ao frontend distinguir
-`pending`, `processing`, `pending_review`, `completed` e `failed` sem consultar diretamente o banco ou
-inferir estado apenas pela presença de passagens. O incremento ainda não foi iniciado.
+O menor próximo incremento de infraestrutura é uma base Terraform isolada para o ambiente de desenvolvimento,
+começando pelo caminho assíncrono SNS -> SQS -> DLQ e pelas políticas IAM mínimas. O primeiro passo deve ser
+modelar/importar os recursos já existentes sem recriá-los, usar estado fora do Git, revisar o `plan` e somente
+depois considerar `apply`. CI/CD, bancos gerenciados e deploy da API ficam fora desse primeiro incremento.

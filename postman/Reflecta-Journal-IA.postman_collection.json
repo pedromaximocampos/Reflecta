@@ -1,0 +1,367 @@
+{
+  "info": {
+    "name": "Reflecta — Fluxo completo de análise do journal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Execute as chamadas de 0 a 5. Importe também o environment Reflecta Local, preencha email/password e selecione-o. Captura accessToken, journalId e analysisId automaticamente. No Runner, o passo 3 faz polling limitado. Requer API, PostgreSQL, Neo4j e worker de análise ativos. Cria uma entrada fictícia real e pode consumir a API de IA. Não contém credenciais. Para consultar falhas e reenviar uma entrada, use a collection separada Reflecta-Journal-Reprocessamento."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Fazer login — capturar accessToken",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "Preencha email e password no environment Reflecta Local e selecione esse environment. Usa HTTP Basic, sem body. A resposta salva accessToken automaticamente no environment. Utilize uma conta existente; não exige ADMIN. Não exporte o environment preenchido com senhas ou tokens.",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{email}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.unset('accessToken');",
+              "if (!pm.environment.get('email') || !pm.environment.get('password')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Preencha email e password no environment Reflecta Local antes do login.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login retorna HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Resposta contém access_token', () => pm.expect(data.access_token).to.be.a('string').and.not.empty);",
+              "    if (typeof data.access_token === 'string' && data.access_token) {",
+              "        pm.environment.set('accessToken', data.access_token);",
+              "    } else { pm.execution.setNextRequest(null); }",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Criar entrada de diário — salvar journalId",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/journal/entries",
+        "description": "Cria uma reflexão fictícia em draft. O ID retornado é salvo automaticamente em journalId. Salvar não solicita análise. A análise aceita até 10.000 caracteres, embora a criação aceite até 20.000. Executar esta chamada novamente cria outra entrada real no banco.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Teste Postman — análise do diário {{$timestamp}}\",\n  \"content_text\": \"Hoje apresentei um projeto importante no trabalho. Antes da reunião, senti ansiedade e medo de errar. A apresentação correu bem e recebi um retorno positivo da equipe. No fim do dia, fiquei cansado, mas feliz com o resultado.\",\n  \"context_tags\": {\n    \"domains\": [\n      {\n        \"label\": \"Trabalho\",\n        \"source\": \"user\"\n      }\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "pm.environment.unset('journalId');",
+              "pm.environment.unset('analysisId');",
+              "pm.environment.unset('analysisStatus');",
+              "pm.environment.set('pollCount', '0');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Criação retorna HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Entrada criada em draft', () => pm.expect(data.status).to.eql('draft'));",
+              "    pm.test('ID válido retornado', () => pm.expect(data.id).to.be.a('string').with.lengthOf(26));",
+              "    if (typeof data.id === 'string' && data.id.length === 26) {",
+              "        pm.environment.set('journalId', data.id);",
+              "    } else { pm.execution.setNextRequest(null); }",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Solicitar análise de IA — usar journalId",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "Solicita análise da entrada criada no passo 1. Sem body. Retorno 202 significa apenas que a entrada está na fila PostgreSQL. O worker precisa estar em execução, com PostgreSQL, Neo4j e provedor de IA disponíveis. Pode gerar consumo na conta de IA. Uma entrada já analisada retorna 409."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}",
+              "pm.environment.set('pollCount', '0');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Solicitação retorna HTTP 202', () => pm.response.to.have.status(202));",
+              "if (pm.response.code === 202) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Entrada entrou na fila', () => pm.expect(data.status).to.eql('pending_analysis'));",
+              "    pm.test('Resposta corresponde ao journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.environment.set('analysisStatus', data.status);",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Consultar andamento — repetir até analyzed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "No envio manual, repita esta chamada enquanto status = pending_analysis. No Collection Runner, ela se repete automaticamente a cada pollIntervalMs (padrão 5 segundos), até maxPollAttempts (padrão 24 consultas). Em analyzed, segue para o passo 4. Em analysis_failed ou prazo excedido, interrompe o Runner com teste de falha. Motivos detalhados são exclusivos de administradores no painel de falhas."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}",
+              "const max = Number(pm.environment.get('maxPollAttempts') || 24);",
+              "const interval = Number(pm.environment.get('pollIntervalMs') || 5000);",
+              "if (!Number.isInteger(max) || max < 1 || max > 120 || !Number.isFinite(interval) || interval < 1000 || interval > 10000) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Use maxPollAttempts entre 1 e 120 e pollIntervalMs entre 1000 e 10000.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Consulta retorna HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    const count = Number(pm.environment.get('pollCount') || 0) + 1;",
+              "    const max = Number(pm.environment.get('maxPollAttempts') || 24);",
+              "    const interval = Number(pm.environment.get('pollIntervalMs') || 5000);",
+              "    pm.environment.set('pollCount', String(count));",
+              "    pm.environment.set('analysisStatus', data.status);",
+              "    pm.test('Resposta corresponde ao journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.test('Status esperado', () => pm.expect(data.status).to.be.oneOf(['pending_analysis', 'analyzed', 'analysis_failed']));",
+              "    if (data.status === 'pending_analysis') {",
+              "        pm.test('Análise pendente ainda não tem resultado', () => pm.expect(data.analysis).to.eql(null));",
+              "        if (count < max) {",
+              "            setTimeout(() => pm.execution.setNextRequest(pm.info.requestId), interval);",
+              "        } else {",
+              "            pm.test('Análise concluiu dentro do limite de consultas', () => { throw new Error('Limite de espera atingido. Confira o worker e o banco; pendente não significa falha confirmada.'); });",
+              "            pm.execution.setNextRequest(null);",
+              "        }",
+              "    } else if (data.status === 'analysis_failed') {",
+              "        pm.test('Análise concluída com sucesso', () => { throw new Error('analysis_failed: sua reflexão foi preservada. Para reenviar, execute o passo 2 e depois o passo 3. Motivos técnicos são exclusivos da administração.'); });",
+              "        pm.execution.setNextRequest(null);",
+              "    } else if (data.status === 'analyzed') {",
+              "        pm.test('Resultado da análise disponível', () => pm.expect(data.analysis).to.be.an('object'));",
+              "        if (data.analysis) pm.environment.set('analysisId', data.analysis.id);",
+              "    } else { pm.execution.setNextRequest(null); }",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Visualizar retorno final — resumo, interpretação, sentimentos e frases",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}/analysis",
+        "description": "Execute após o passo 3 indicar analyzed. Abra Body > Pretty > JSON para ver summary (resumo), main_message (interpretação), metadata.sentiments, metadata.tone, metadata.themes e sentences. Os temas podem estar vazios, dependendo do catálogo ativo e do texto; isso é válido. Não há texto fixo esperado para a resposta da IA."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Retorno final: HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Análise concluída', () => pm.expect(data.status).to.eql('analyzed'));",
+              "    pm.test('Mesmo journalId', () => pm.expect(data.entry_id).to.eql(pm.environment.get('journalId')));",
+              "    pm.test('Resultado válido', () => {",
+              "        pm.expect(data.analysis).to.be.an('object');",
+              "        pm.expect(data.analysis.id).to.be.a('string').with.lengthOf(26);",
+              "        pm.expect(data.analysis.summary).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.main_message).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.metadata.sentiments).to.be.an('array');",
+              "        pm.expect(data.analysis.metadata.tone).to.be.a('string').and.not.empty;",
+              "        pm.expect(data.analysis.metadata.themes).to.be.an('array');",
+              "        pm.expect(data.analysis.sentences).to.be.an('array').and.not.empty;",
+              "        pm.expect(data.analysis.analyzed_at).to.be.a('string').and.not.empty;",
+              "        data.analysis.sentences.forEach((sentence, index) => {",
+              "            pm.expect(sentence.sentence_index).to.eql(index);",
+              "            pm.expect(sentence.sentence_text).to.be.a('string').and.not.empty;",
+              "            pm.expect(sentence.start_offset).to.be.at.least(0);",
+              "            pm.expect(sentence.end_offset).to.be.greaterThan(sentence.start_offset);",
+              "            pm.expect(sentence.themes).to.be.an('array');",
+              "        });",
+              "    });",
+              "    if (data.analysis) pm.environment.set('analysisId', data.analysis.id);",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Conferir entrada persistida — status analyzed pelo journalId",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/journal/entries/{{journalId}}",
+        "description": "Consulta a entrada original no banco pela API e confirma que ela terminou em analyzed. A collection não exclui a entrada: ela permanece no histórico para conferência pelo frontend."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('accessToken')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 0 para preencher accessToken.');",
+              "}",
+              "if (!pm.environment.get('journalId')) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('Execute o passo 1 para preencher journalId.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Consulta da entrada: HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    pm.test('Entrada persistida corresponde ao journalId', () => pm.expect(data.id).to.eql(pm.environment.get('journalId')));",
+              "    pm.test('Entrada está analisada', () => pm.expect(data.status).to.eql('analyzed'));",
+              "}",
+              "",
+              "if (pm.response.code >= 400) {",
+              "    pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

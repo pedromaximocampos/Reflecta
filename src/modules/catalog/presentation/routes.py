@@ -7,6 +7,10 @@ from src.modules.catalog.bootstrap.controllers import (
     get_all_themes_controller,
     get_create_themes_controller,
     get_create_work_controller,
+    get_all_works_controller,
+    get_work_by_id_controller,
+    get_remove_work_cover_controller,
+    get_replace_work_cover_controller,
     get_request_work_ingestion_controller,
     get_delete_theme_by_id_controller,
     get_theme_by_id_controller,
@@ -35,6 +39,14 @@ from src.modules.catalog.presentation.controllers.create_themes_controller impor
     CreateThemesController,
 )
 from src.modules.catalog.presentation.controllers.create_work_controller import CreateWorkController
+from src.modules.catalog.presentation.controllers.get_works_controller import (
+    GetAllWorksController,
+    GetWorkByIdController,
+)
+from src.modules.catalog.presentation.controllers.update_work_cover_controller import (
+    RemoveWorkCoverController,
+    ReplaceWorkCoverController,
+)
 from src.modules.catalog.presentation.controllers.request_work_ingestion_controller import (
     RequestWorkIngestionController,
 )
@@ -55,7 +67,15 @@ from src.modules.catalog.presentation.validators.create_theme import (
     ThemesResponseValidator,
 )
 from src.modules.catalog.presentation.validators.update_theme import UpdateThemeValidator
-from src.modules.catalog.presentation.validators.create_work import CreatedWorkValidator, CreateWorkValidator
+from src.modules.catalog.presentation.validators.create_work import (
+    CreatedWorkValidator,
+    CreateWorkValidator,
+    WorksResponseValidator,
+)
+from src.modules.catalog.presentation.validators.work_cover import (
+    ValidatedWorkCoverUpload,
+    validate_work_cover_upload,
+)
 from src.modules.catalog.presentation.validators.request_work_ingestion import (
     ValidatedWorkDocumentUpload,
     WorkIngestionAcceptedValidator,
@@ -260,6 +280,88 @@ async def create_work(
         request,
         controller.handle_request,
         body.model_dump(),
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.get(
+    "/works",
+    summary="List catalog works",
+    response_model=WorksResponseValidator,
+)
+async def get_all_works(
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: GetAllWorksController = Depends(get_all_works_controller),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.get(
+    "/works/{work_id}",
+    summary="Get a catalog work by ID",
+    response_model=CreatedWorkValidator,
+)
+async def get_work_by_id(
+    request: Request,
+    work_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: GetWorkByIdController = Depends(get_work_by_id_controller),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.put(
+    "/works/{work_id}/cover",
+    summary="Upload or replace a catalog work cover image",
+    response_model=CreatedWorkValidator,
+)
+async def replace_work_cover(
+    request: Request,
+    work_id: str = Path(..., min_length=26, max_length=26),
+    cover: ValidatedWorkCoverUpload = Depends(validate_work_cover_upload),
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: ReplaceWorkCoverController = Depends(
+        get_replace_work_cover_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        {
+            "filename": cover.filename,
+            "content_type": cover.content_type,
+            "size_bytes": cover.size_bytes,
+            "content": cover.content,
+        },
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.delete(
+    "/works/{work_id}/cover",
+    summary="Remove a catalog work cover image",
+    response_model=CreatedWorkValidator,
+)
+async def remove_work_cover(
+    request: Request,
+    work_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: RemoveWorkCoverController = Depends(
+        get_remove_work_cover_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
         authenticated_user_id=current_user.user_id.value,
     )
 

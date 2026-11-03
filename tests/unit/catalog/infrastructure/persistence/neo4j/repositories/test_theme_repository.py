@@ -166,6 +166,21 @@ async def test_list_themes_maps_every_returned_node() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_theme_colors_returns_distinct_persisted_colors() -> None:
+    result = make_result(
+        {"color": "#12ABEF"},
+        {"color": "#F04F78"},
+    )
+    transaction = AsyncMock()
+    transaction.run.return_value = result
+    repository = ThemeRepository(transaction, ThemeMapper())
+
+    colors = await repository.list_theme_colors()
+
+    assert colors == {"#12ABEF", "#F04F78"}
+
+
+@pytest.mark.asyncio
 async def test_create_many_themes_uses_one_query_and_preserves_result_order() -> None:
     first = make_theme("01THEME0000000000000000000")
     second = make_theme("01THEME0000000000000000001")
@@ -211,3 +226,25 @@ async def test_create_many_themes_translates_neo4j_constraint_error() -> None:
 
     assert raised.value.status_code == 409
     assert isinstance(raised.value.__cause__, ConstraintError)
+
+
+def test_mapper_supports_legacy_themes_without_color_and_round_trips_new_color() -> None:
+    from src.modules.catalog.public.theme_color import DEFAULT_THEME_COLOR
+    node = node_from(make_theme())
+    node.pop("color")
+    legacy = ThemeMapper().to_entity(node)
+    assert legacy.color == DEFAULT_THEME_COLOR
+    stored = ThemeMapper().to_model(
+        Theme(
+            id=legacy.id,
+            slug=legacy.slug,
+            label=legacy.label,
+            description=legacy.description,
+            is_active=legacy.is_active,
+            created_at=legacy.created_at,
+            updated_at=legacy.updated_at,
+            color="#12abef",
+        )
+    )
+    assert stored["color"] == "#12ABEF"
+    assert ThemeMapper().to_entity(stored).color == "#12ABEF"

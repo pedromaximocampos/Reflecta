@@ -46,13 +46,7 @@ class UpdatePassageValidator(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     locator: str | None = Field(default=None, min_length=1, max_length=255)
-    short_text: str | None = Field(default=None, min_length=20, max_length=8000)
     paraphrase: str | None = Field(default=None, min_length=1, max_length=4000)
-    interpretation_note: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=4000,
-    )
     priority: int | None = Field(default=None, ge=0)
     themes: list[PassageThemeInputValidator] | None = Field(
         default=None,

@@ -71,7 +71,10 @@ async def test_create_work_persists_inactive_work_with_author_relation() -> None
     work, author = uow.work_repository.create_work.await_args.args
     assert work.slug == "meditacoes"
     assert work.status is CatalogStatus.INACTIVE
+    assert work.cover_image_url is None
+    assert work.cover_object_key is None
     assert author.normalized_name == "marco-aurelio"
+    assert output.cover_image_url is None
     assert output.author.id == author.id
     uow.commit.assert_awaited_once_with()
 

@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class UpdateUserInfoValidator(BaseModel):
@@ -9,7 +9,6 @@ class UpdateUserInfoValidator(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     surname: str | None = Field(default=None, max_length=200)
     date_of_birth: date | None = None
-    avatar_url: AnyHttpUrl | None = None
 
     @field_validator("name", "surname")
     @classmethod

@@ -22,17 +22,12 @@ class UpdateUserInfoController(IControllerInterface):
         else:
             payload = dict(body or {})
 
-        avatar_url = payload.get("avatar_url")
-        if avatar_url is not None:
-            avatar_url = str(avatar_url)
-
         output = await self.__use_case.execute(
             UpdateUserInfoInput(
                 user_id=UserId(request.authenticated_user_id),
                 name=payload.get("name"),
                 surname=payload.get("surname"),
                 date_of_birth=payload.get("date_of_birth"),
-                avatar_url=avatar_url,
             )
         )
         return HttpResponse(

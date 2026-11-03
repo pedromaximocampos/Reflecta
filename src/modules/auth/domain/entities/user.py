@@ -32,6 +32,7 @@ class User:
     role: UserRole = UserRole.USER
     email_verified_at: Optional[datetime] = None
     avatar_url: Optional[str] = None
+    avatar_object_key: Optional[str] = None
     last_login_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
 
@@ -61,8 +62,16 @@ class User:
     def update_last_login(self, last_login_at: datetime) -> None:
         self.last_login_at = last_login_at
 
-    def update_avatar_url(self, avatar_url: str) -> None:
-        self.avatar_url = avatar_url
+    def replace_avatar(self, object_key: str) -> None:
+        normalized_object_key = object_key.strip()
+        if not normalized_object_key:
+            raise InvalidUserInfoError("Avatar object key cannot be empty.")
+        self.avatar_object_key = normalized_object_key
+        self.avatar_url = None
+
+    def remove_avatar(self) -> None:
+        self.avatar_object_key = None
+        self.avatar_url = None
 
     def update_info(
         self,
@@ -71,11 +80,10 @@ class User:
         name: Optional[str] = None,
         surname: Optional[str] = None,
         date_of_birth: Optional[date] = None,
-        avatar_url: Optional[str] = None,
     ) -> None:
         if all(
             value is None
-            for value in (name, surname, date_of_birth, avatar_url)
+            for value in (name, surname, date_of_birth)
         ):
             raise InvalidUserInfoError("At least one user information field is required.")
 
@@ -99,12 +107,6 @@ class User:
             if date_of_birth >= today:
                 raise InvalidUserInfoError("Date of birth must be in the past.")
             self.date_of_birth = date_of_birth
-
-        if avatar_url is not None:
-            normalized_avatar_url = avatar_url.strip()
-            if not normalized_avatar_url:
-                raise InvalidUserInfoError("Avatar URL cannot be empty.")
-            self.avatar_url = normalized_avatar_url
 
     def set_credentials(self, credentials: AuthCredentials) -> None:
         self.auth_credentials = credentials

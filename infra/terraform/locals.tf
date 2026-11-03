@@ -21,7 +21,7 @@ locals {
       dlq_name                  = coalesce(var.work_ingestion_dlq_name, "${var.project_name}-work-ingestions-dlq-${var.environment}")
       visibility_timeout_seconds = 300
       filter_policy = jsonencode({
-        event_type = ["catalog.work_ingestion.requested"]
+        event_type = ["catalog.work.ingestion.requested"]
       })
     }
   }

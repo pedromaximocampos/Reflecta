@@ -1,10 +1,11 @@
-export const tagCategories = { people: 'Pessoas', places: 'Lugares', domains: 'Temas' }
+export const tagCategories = { people: 'Pessoas', places: 'Lugares' }
 
 export function entryFields(entry) {
   return {
     title: entry.title ?? '', content_text: entry.content_text,
+    entry_date: entry.entry_date,
     ...Object.fromEntries(Object.keys(tagCategories).map((key) =>
-      [key, (entry.context_tags?.[key] ?? []).map((tag) => tag.label).join(', ')])),
+      [key, (entry.context_tags?.[key] ?? []).map((tag) => tag.label).join('; ')])),
   }
 }
 
@@ -22,7 +23,7 @@ export function entryChanges(entry, fields) {
   let tagsChanged = false
   for (const key of Object.keys(tagCategories)) {
     if (fields[key] === originalFields[key]) continue
-    const labels = [...new Set(fields[key].split(',').map((label) => label.trim()).filter(Boolean))]
+    const labels = [...new Set(fields[key].split(';').map((label) => label.trim()).filter(Boolean))]
     if (labels.some((label) => label.length > 100)) throw new Error('Cada tag deve ter no máximo 100 caracteres.')
     tags[key] = labels.map((label) => (entry.context_tags?.[key] ?? []).find((tag) => tag.label === label)
       ?? { label, source: 'user' })

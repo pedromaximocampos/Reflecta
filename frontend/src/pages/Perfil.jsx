@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   getUserProfile,
+  exportUserData,
   updateUserInfo,
   uploadUserAvatar,
 } from '../services/authApi';
 import { clearSession, updateSessionProfile, useAuth } from '../services/authSession';
-import { User as UserIcon, Download, Shield, History, AlertCircle, ListFilter, LockKeyhole } from 'lucide-react';
+import { User as UserIcon, Download, Shield, History, AlertCircle, LockKeyhole, Archive, FileJson } from 'lucide-react';
 import { AccountDeletionRequest } from '../components/AccountDeletionRequest';
+import { getDashboardSummary } from '../services/dashboardApi';
 
 export function Perfil() {
   const { user, isAuthenticated } = useAuth();
@@ -26,7 +28,11 @@ export function Perfil() {
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [failedAvatarUrl, setFailedAvatarUrl] = useState('');
-  const [sharingStatus, setSharingStatus] = useState('');
+  const [profileSummary, setProfileSummary] = useState(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState('zip');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -49,6 +55,9 @@ export function Perfil() {
           navigate('/', { state: { mensagem: 'Sua sessão expirou. Entre novamente.' } });
         }
       });
+    getDashboardSummary()
+      .then((summary) => { if (active) setProfileSummary(summary); })
+      .catch((err) => { if (active && err.status === 401) clearSession(); });
     return () => { active = false; };
   }, [isAuthenticated, navigate]);
 
@@ -163,19 +172,44 @@ export function Perfil() {
     ([key, value]) => value.trim() !== String(user?.[key] ?? ''),
   );
 
-  const compartilhamentos = [
-    { id: '1', profissional: 'Dra. Maria Silva', data: '5 de Maio, 2026', status: 'Ativo' },
-    { id: '2', profissional: 'Dr. João Santos', data: '20 de Abril, 2026', status: 'Ativo' },
-    { id: '3', profissional: 'Dra. Ana Costa', data: '10 de Março, 2026', status: 'Expirado' },
-  ];
-  const filteredCompartilhamentos = sharingStatus
-    ? compartilhamentos.filter((compartilhamento) => compartilhamento.status === sharingStatus)
-    : compartilhamentos;
-
   const handleExportarDados = () => {
-    alert('A exportação de dados ainda não está disponível.');
+    setExportError('');
+    setExportModalOpen(true);
   };
 
+  const closeExportModal = () => {
+    if (exporting) return;
+    setExportModalOpen(false);
+    setExportError('');
+  };
+
+  const handleExportDownload = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError('');
+    try {
+      const { blob, filename } = await exportUserData(exportFormat);
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename || `reflecta-meus-dados.${exportFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+      setExportModalOpen(false);
+      setMessage('Seus dados foram exportados com sucesso.');
+    } catch (err) {
+      if (err.status === 401) {
+        clearSession();
+        navigate('/', { state: { mensagem: 'Sua sessão expirou. Entre novamente.' } });
+        return;
+      }
+      setExportError(err.message || 'Não foi possível exportar seus dados.');
+    } finally {
+      setExporting(false);
+    }
+  };
   return (
     <div className="profile-page admin-fixed-shell min-h-screen bg-background p-5 md:p-8">
       <div className="admin-fixed-page max-w-5xl mx-auto">
@@ -188,8 +222,8 @@ export function Perfil() {
 
         <div className="admin-scroll-region">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="profile-personal-column lg:col-span-2 space-y-6">
+            <div className="profile-personal-card bg-card rounded-2xl border border-border p-6">
               <div className="profile-card-heading">
                 <h2 className="text-xl font-semibold">Informações pessoais</h2>
                 {isAuthenticated && !editingProfile && <button type="button" className="catalog-button catalog-hover-secondary" onClick={startProfileEditing}>Editar informações</button>}
@@ -267,42 +301,6 @@ export function Perfil() {
               )}
             </div>
 
-            <div className="bg-card rounded-2xl border border-border p-6">
-              <div className="profile-section-heading">
-                <h2 className="text-xl font-semibold">Histórico de compartilhamentos</h2>
-                <div className="profile-sharing-filter">
-                  <button type="button" className="catalog-button profile-sharing-filter-trigger" aria-haspopup="true">
-                    <ListFilter size={15} aria-hidden="true" />Filtrar
-                    {sharingStatus && <span aria-label={`Filtro ativo: ${sharingStatus}`} />}
-                  </button>
-                  <div className="profile-sharing-filter-popover">
-                    <label htmlFor="sharing-status">Status</label>
-                    <select id="sharing-status" value={sharingStatus} onChange={(event) => setSharingStatus(event.target.value)}>
-                      <option value="">Todos</option>
-                      <option value="Ativo">Ativos</option>
-                      <option value="Inativo">Inativos</option>
-                      <option value="Expirado">Expirados</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {filteredCompartilhamentos.map((comp) => (
-                  <div key={comp.id} className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                    <div>
-                      <div className="mb-1">{comp.profissional}</div>
-                      <div className="text-sm text-muted-foreground">{comp.data}</div>
-                    </div>
-                    <span className={`sharing-status sharing-status-${comp.status.toLowerCase()}`}>
-                      {comp.status}
-                    </span>
-                  </div>
-                ))}
-                {!filteredCompartilhamentos.length && <p className="profile-sharing-empty">Nenhum compartilhamento encontrado para este status.</p>}
-              </div>
-            </div>
-
           </div>
 
           <div className="lg:col-span-1 space-y-6">
@@ -339,15 +337,15 @@ export function Perfil() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Reflexões registradas</span>
-                  <span>47</span>
+                  <span>{profileSummary?.metrics?.total_reflections ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Dias consecutivos</span>
-                  <span>12</span>
+                  <span className="text-muted-foreground">Reflexões neste mês</span>
+                  <span>{profileSummary?.metrics?.reflections_this_month ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Temas explorados</span>
-                  <span>15</span>
+                  <span>{profileSummary?.metrics?.explored_themes ?? '—'}</span>
                 </div>
               </div>
             </div>
@@ -360,6 +358,7 @@ export function Perfil() {
 
               <div className="profile-privacy-actions space-y-3">
                 <button
+                  type="button"
                   onClick={handleExportarDados}
                   className="w-full flex items-center justify-center gap-2 border border-border rounded-lg hover:bg-muted transition-colors"
                 >
@@ -370,7 +369,7 @@ export function Perfil() {
                 <div className="profile-privacy-note flex gap-2.5 bg-muted rounded-lg">
                   <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                   <p className="text-muted-foreground">
-                    Você controla seus dados e pode exportá-los ou solicitar a exclusão da conta.
+                    Você pode editar seus dados pessoais, gerenciar os links compartilhados e solicitar a exclusão da conta.
                   </p>
                 </div>
 
@@ -448,6 +447,79 @@ export function Perfil() {
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {avatarSaving ? 'Salvando...' : 'Salvar foto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {exportModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="data-export-modal-title"
+        >
+          <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 shadow-xl">
+            <h2 id="data-export-modal-title" className="text-xl mb-2">
+              Exportar meus dados
+            </h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              O arquivo contém seu perfil, reflexões, análises, passagens,
+              compartilhamentos e orientações. Senhas e tokens nunca são incluídos.
+            </p>
+
+            <fieldset className="grid gap-3" disabled={exporting}>
+              <legend className="text-sm font-semibold mb-2">Escolha o formato</legend>
+              <label className={`data-export-option ${exportFormat === 'zip' ? 'is-selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="export-format"
+                  value="zip"
+                  checked={exportFormat === 'zip'}
+                  onChange={() => setExportFormat('zip')}
+                />
+                <Archive className="w-5 h-5 text-primary" />
+                <span>
+                  <strong>ZIP recomendado</strong>
+                  <small>Arquivos JSON separados e sua foto de perfil.</small>
+                </span>
+              </label>
+              <label className={`data-export-option ${exportFormat === 'json' ? 'is-selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="export-format"
+                  value="json"
+                  checked={exportFormat === 'json'}
+                  onChange={() => setExportFormat('json')}
+                />
+                <FileJson className="w-5 h-5 text-primary" />
+                <span>
+                  <strong>JSON único</strong>
+                  <small>Um documento portável com todos os dados.</small>
+                </span>
+              </label>
+            </fieldset>
+
+            {exportError && <p role="alert" className="mt-4 text-sm text-destructive">{exportError}</p>}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={closeExportModal}
+                disabled={exporting}
+                className="catalog-button catalog-hover-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleExportDownload}
+                disabled={exporting}
+                className="catalog-primary catalog-hover-primary"
+              >
+                <Download className="w-4 h-4" />
+                {exporting ? 'Preparando...' : 'Baixar dados'}
               </button>
             </div>
           </div>

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1050" viewBox="0 0 1180 1050"><defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#263747" stroke-width="1.3"/></marker></defs><rect width="1180" height="1050" fill="white"/>
+<text x="590" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#17212b"><tspan x="590" dy="0">Reflecta  UC18  Criar histórico contextual dos usuários</tspan></text>
+<rect x="5" y="62" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/><line x1="95" y1="132" x2="95" y2="982" stroke="#85909c" stroke-dasharray="6 6"/>
+<text x="95" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="95" dy="0">Usuário Final</tspan></text>
+<rect x="220" y="62" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/><line x1="310" y1="132" x2="310" y2="982" stroke="#85909c" stroke-dasharray="6 6"/>
+<text x="310" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="310" dy="0">Frontend Web</tspan></text>
+<rect x="440" y="62" width="250" height="70" rx="2" fill="#e9edf3" stroke="#667381"/><line x1="565" y1="132" x2="565" y2="982" stroke="#85909c" stroke-dasharray="6 6"/>
+<text x="565" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#17212b"><tspan x="565" dy="0">Backend Reflecta</tspan><tspan x="565" dy="25">Journal e AnalyzeContext</tspan></text>
+<rect x="735" y="62" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/><line x1="825" y1="132" x2="825" y2="982" stroke="#85909c" stroke-dasharray="6 6"/>
+<text x="825" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="825" dy="0">PostgreSQL</tspan><tspan x="825" dy="25">journal_schema</tspan></text>
+<rect x="990" y="62" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/><line x1="1080" y1="132" x2="1080" y2="982" stroke="#85909c" stroke-dasharray="6 6"/>
+<text x="1080" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="1080" dy="0">Provedor de IA</tspan></text>
+<line x1="95" y1="190" x2="310" y2="190" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="107" y="178" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="107" dy="0">Escolher período de 7 dias</tspan></text>
+<line x1="310" y1="235" x2="565" y2="235" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="322" y="223" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="322" dy="0">Consultar elegibilidade</tspan></text>
+<line x1="565" y1="280" x2="825" y2="280" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="577" y="268" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Buscar entradas do titular por entry_date</tspan></text>
+<line x1="825" y1="325" x2="565" y2="325" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="577" y="313" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Quantidade e resultado já salvo</tspan></text>
+<line x1="565" y1="370" x2="310" y2="370" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="322" y="358" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="322" dy="0">Exibir elegibilidade (mínimo de 5 entradas)</tspan></text>
+<line x1="95" y1="425" x2="310" y2="425" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="107" y="413" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="107" dy="0">Confirmar análise do histórico</tspan></text>
+<line x1="310" y1="470" x2="565" y2="470" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="322" y="458" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="322" dy="0">POST /journal/context-analysis</tspan></text>
+<text x="575" y="504" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="575" dy="0">Validar titular, período e mínimo de entradas</tspan></text>
+<line x1="565" y1="550" x2="825" y2="550" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="577" y="538" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Consultar resultado pelo fingerprint</tspan></text>
+<rect x="280" y="570" width="880" height="360" fill="none" stroke="#667381"/><rect x="280" y="570" width="56" height="30" fill="#e9edf3" stroke="#667381"/>
+<text x="290" y="592" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b"><tspan x="290" dy="0">alt</tspan></text>
+<text x="350" y="594" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b"><tspan x="350" dy="0">[resultado existente para o mesmo conjunto]</tspan></text>
+<line x1="825" y1="635" x2="565" y2="635" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="577" y="623" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Reutilizar análise persistida</tspan></text>
+<line x1="280" y1="655" x2="1160" y2="655" stroke="#667381" stroke-dasharray="5 4"/>
+<text x="350" y="680" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b"><tspan x="350" dy="0">[nova análise]</tspan></text>
+<line x1="565" y1="725" x2="1080" y2="725" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="577" y="713" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Enviar textos e tags de contexto do período</tspan></text>
+<line x1="1080" y1="775" x2="565" y2="775" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="577" y="763" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Resumo, padrões, mudanças e perguntas</tspan></text>
+<text x="575" y="807" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="575" dy="0">Validar resposta e conferir se as fontes mudaram</tspan></text>
+<line x1="565" y1="850" x2="825" y2="850" stroke="#263747" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<text x="577" y="838" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Persistir em context_analyses se o conjunto não mudou</tspan></text>
+<line x1="825" y1="900" x2="565" y2="900" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="577" y="888" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="577" dy="0">Confirmar gravação</tspan></text>
+<line x1="565" y1="980" x2="310" y2="980" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="322" y="968" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="322" dy="0">Retornar análise contextual</tspan></text>
+<text x="590" y="1008" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="590" dy="0">A consulta de elegibilidade não gera análise. Períodos inválidos ou com menos de 5 entradas são recusados.</tspan></text>
+<text x="590" y="1034" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="590" dy="0">Se as fontes mudarem durante a geração, o resultado não é salvo. Falhas são informadas ao usuário.</tspan></text>
+</svg>

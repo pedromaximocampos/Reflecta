@@ -47,6 +47,8 @@ class PassageMapper(IMapper[Mapping[str, Any], Passage]):
             end_page=model.get("end_page"),
             start_offset=model.get("start_offset"),
             end_offset=model.get("end_offset"),
+            reflective_value=model.get("reflective_value"),
+            reflective_note=model.get("reflective_note"),
             updated_at=self._to_optional_native_datetime(model.get("updated_at")),
         )
 
@@ -70,6 +72,8 @@ class PassageMapper(IMapper[Mapping[str, Any], Passage]):
             "end_page": entity.end_page,
             "start_offset": entity.start_offset,
             "end_offset": entity.end_offset,
+            "reflective_value": entity.reflective_value,
+            "reflective_note": entity.reflective_note,
             "created_at": entity.created_at,
             "updated_at": entity.updated_at,
         }

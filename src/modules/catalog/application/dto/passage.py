@@ -33,6 +33,8 @@ class PassageOutputDTO:
     short_text: str
     paraphrase: str
     interpretation_note: str
+    reflective_value: float | None
+    reflective_note: str | None
     status: str
     priority: int
     themes: tuple[PassageThemeOutputDTO, ...]
@@ -60,6 +62,8 @@ class PassageOutputDTO:
             short_text=passage.short_text,
             paraphrase=passage.paraphrase,
             interpretation_note=passage.interpretation_note,
+            reflective_value=passage.reflective_value,
+            reflective_note=passage.reflective_note,
             status=passage.status.value,
             priority=passage.priority,
             themes=tuple(
@@ -94,6 +98,8 @@ class PassageOutputDTO:
             "short_text": self.short_text,
             "paraphrase": self.paraphrase,
             "interpretation_note": self.interpretation_note,
+            "reflective_value": self.reflective_value,
+            "reflective_note": self.reflective_note,
             "status": self.status,
             "priority": self.priority,
             "start_page": self.start_page,

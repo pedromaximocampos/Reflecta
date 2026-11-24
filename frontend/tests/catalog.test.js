@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createWork, getWork, listPassages, listWorkIngestions, listWorks, passageAction, removeWorkCover, updatePassage, uploadWork, uploadWorkCover } from '../src/services/catalogApi.js'
+import { createWork, getWork, listPassages, listWorkIngestions, listWorks, passageAction, removeWorkCover, reprocessWorkIngestion, updatePassage, uploadWork, uploadWorkCover } from '../src/services/catalogApi.js'
 
 test('catalog authenticates, encodes filters, validates PDF and uploads multipart document', async () => {
   const previousFetch = globalThis.fetch
@@ -43,5 +43,9 @@ test('catalog authenticates, encodes filters, validates PDF and uploads multipar
     assert.equal(new URL(calls.at(-1).url).pathname, '/ai-processing/work-ingestions')
     assert.equal(new URL(calls.at(-1).url).searchParams.get('limit'), '25')
     assert.equal(calls.at(-1).headers.Authorization, 'Bearer admin-token')
+    await reprocessWorkIngestion('ingestion/id')
+    assert.match(calls.at(-1).url, /catalog\/work-ingestions\/ingestion%2Fid\/reprocess$/)
+    assert.equal(calls.at(-1).method, 'POST')
+    assert.equal(calls.at(-1).body, undefined)
   } finally { globalThis.fetch = previousFetch; globalThis.sessionStorage = previousStorage }
 })

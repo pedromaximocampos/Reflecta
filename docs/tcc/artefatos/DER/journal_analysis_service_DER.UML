@@ -1,0 +1,33 @@
+@startuml Service_Journal
+!theme plain
+title Journal & Analysis Service (DB)
+
+entity "JOURNAL_ENTRIES" as journal {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<Ref>>
+  title : VARCHAR
+  content_text : TEXT (Encrypted)
+  content_meta : JSONB
+  status : VARCHAR (pending, analyzed)
+  created_at : TIMESTAMPTZ
+}
+
+entity "ENTRY_EMBEDDINGS" as embeddings {
+  * entry_id : UUID <<PK, FK>>
+  --
+  embedding : VECTOR (pgvector)
+  top_theme : VARCHAR
+}
+
+entity "THEMES" as themes {
+  * id : UUID <<PK>>
+  --
+  slug : VARCHAR <<UNIQUE>>
+  label : VARCHAR
+  authors : JSONB
+}
+
+journal ||--|| embeddings
+journal }o..o{ themes : "Logical N:M"
+@enduml

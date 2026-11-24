@@ -56,6 +56,33 @@ async def test_stale_or_missing_revision_does_not_consume_user_retry(revision):
 
 
 @pytest.mark.asyncio
+async def test_completed_analysis_can_be_explicitly_requested_again_within_same_quota():
+    gateway, session, entry = setup_gateway()
+    entry.status = "analyzed"
+    entry.updated_at = NOW
+    result = await gateway.submit(
+        "entry", "owner", now=NOW + timedelta(seconds=1),
+        expected_revision=NOW, reanalyze=True,
+    )
+    assert result["status"] == "pending_analysis"
+    assert result["reprocess"]["user_used"] == 1
+    audit = session.add.call_args.args[0]
+    assert audit.failure_id is None
+    assert audit.user_attempt_number == 1
+
+
+@pytest.mark.asyncio
+async def test_completed_analysis_requires_explicit_reanalysis_flag():
+    gateway, session, entry = setup_gateway()
+    entry.status = "analyzed"
+    entry.updated_at = NOW
+    with pytest.raises(AnalysisConflictError):
+        await gateway.submit("entry", "owner", now=NOW, expected_revision=NOW)
+    assert (entry.user_reprocess_count or 0) == 0
+    session.add.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_admin_can_retry_foreign_entry_after_limit_without_resetting_quota():
     gateway, session, entry = setup_gateway()
     entry.status = "analysis_failed"

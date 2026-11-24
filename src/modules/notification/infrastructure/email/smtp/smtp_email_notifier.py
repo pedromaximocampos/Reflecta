@@ -4,6 +4,7 @@ from src.modules.notification.infrastructure.email.templates.password_reset_temp
 from src.modules.notification.infrastructure.email.templates.verification_template_html import VerificationTemplateHTML
 from src.modules.notification.infrastructure.email.templates.user_deletion_template_html import UserDeletionTemplateHTML
 from src.modules.notification.infrastructure.email.templates.user_recovery_template_html import UserRecoveryTemplateHTML
+from src.modules.notification.infrastructure.email.templates.professional_activity_template_html import ProfessionalActivityTemplateHTML
 from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
 from src.modules.notification.application.ports.notifiers.iemail_notifier import IEmailNotifier
 from src.modules.notification.infrastructure.email.smtp.base_smtp_email_notifier import BaseSMTPEmailNotifier
@@ -19,6 +20,8 @@ class SMTPEmailNotifier(BaseSMTPEmailNotifier, IEmailNotifier):
             return f"Confirm account deletion for {self._config.app_name}"
         if dto.kind is EmailKind.USER_RECOVERY:
             return f"Recover your account for {self._config.app_name}"
+        if dto.kind is EmailKind.PROFESSIONAL_ACTIVITY:
+            return ProfessionalActivityTemplateHTML.get_subject_template(dto)
         raise ValueError(f"Unsupported email kind: {dto.kind}")
 
     def get_template(self, dto: EmailDTO) -> str:
@@ -30,6 +33,8 @@ class SMTPEmailNotifier(BaseSMTPEmailNotifier, IEmailNotifier):
             return UserDeletionTemplateHTML.get_email_template(dto)
         if dto.kind is EmailKind.USER_RECOVERY:
             return UserRecoveryTemplateHTML.get_email_template(dto)
+        if dto.kind is EmailKind.PROFESSIONAL_ACTIVITY:
+            return ProfessionalActivityTemplateHTML.get_email_template(dto)
         raise ValueError(f"Unsupported email kind: {dto.kind}")
 
     async def send_email(self, dto: EmailDTO) -> None:

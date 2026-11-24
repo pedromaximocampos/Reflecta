@@ -5,7 +5,10 @@ from typing import Any, BinaryIO
 from botocore.exceptions import BotoCoreError, ClientError
 from mypy_boto3_s3 import S3Client
 
-from src.modules.auth.application.dto import StoredUserAvatarDTO
+from src.modules.auth.application.dto import (
+    DownloadedUserAvatarDTO,
+    StoredUserAvatarDTO,
+)
 from src.modules.auth.application.exceptions import UserAvatarStorageError
 from src.modules.auth.application.ports.storage import IUserAvatarStorage
 
@@ -87,6 +90,14 @@ class S3UserAvatarStorage(IUserAvatarStorage):
             self.__log_aws_error("create_read_url", error)
             raise UserAvatarStorageError("create_read_url") from error
 
+    async def download(self, *, object_key: str) -> DownloadedUserAvatarDTO:
+        self.__validate_object_key(object_key)
+        try:
+            return await asyncio.to_thread(self.__get_object, object_key)
+        except (BotoCoreError, ClientError) as error:
+            self.__log_aws_error("download", error)
+            raise UserAvatarStorageError("download") from error
+
     def __put_object(
         self,
         object_key: str,
@@ -104,6 +115,23 @@ class S3UserAvatarStorage(IUserAvatarStorage):
             ContentLength=size_bytes,
             CacheControl="private, max-age=900",
             ServerSideEncryption="AES256",
+        )
+
+    def __get_object(self, object_key: str) -> DownloadedUserAvatarDTO:
+        response = self.__client.get_object(
+            Bucket=self.__settings.bucket_name,
+            Key=object_key,
+        )
+        body = response["Body"]
+        try:
+            content = body.read()
+        finally:
+            body.close()
+        content_type = response.get("ContentType") or "image/webp"
+        return DownloadedUserAvatarDTO(
+            content=content,
+            content_type=content_type,
+            size_bytes=len(content),
         )
 
     def __validate_object_key(self, object_key: str) -> None:

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.domain.exceptions.journal_exceptions import (
@@ -21,6 +22,7 @@ class JournalEntry:
     content_text: str
     status: JournalEntryStatus
     created_at: datetime
+    entry_date: date | None = None
     context_tags: ContentTags | None = None
     updated_at: datetime | None = None
     deleted_at: datetime | None = None
@@ -28,6 +30,10 @@ class JournalEntry:
     def __post_init__(self) -> None:
         self.content_text = self._validate_content(self.content_text)
         self.title = self._normalize_title(self.title)
+        if self.entry_date is None:
+            self.entry_date = self.created_at.astimezone(
+                ZoneInfo("America/Sao_Paulo")
+            ).date()
 
     @property
     def is_draft(self) -> bool:
@@ -55,6 +61,11 @@ class JournalEntry:
     ) -> None:
         self._ensure_editable()
         self.context_tags = context_tags
+        self.updated_at = now
+
+    def prepare_revision(self, *, now: datetime) -> None:
+        self._ensure_editable()
+        self.status = JournalEntryStatus.DRAFT
         self.updated_at = now
 
     def mark_pending_analysis(self, *, now: datetime) -> None:
@@ -96,5 +107,10 @@ class JournalEntry:
         return normalized or None
 
     def _ensure_editable(self) -> None:
-        if not self.is_draft or self.is_deleted:
+        editable_statuses = {
+            JournalEntryStatus.DRAFT,
+            JournalEntryStatus.ANALYZED,
+            JournalEntryStatus.ANALYSIS_FAILED,
+        }
+        if self.status not in editable_statuses or self.is_deleted:
             raise JournalEntryNotEditableError()

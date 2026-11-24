@@ -25,6 +25,9 @@ from src.modules.catalog.application.use_cases.update_work_cover import (
 from src.modules.catalog.application.use_cases.request_work_ingestion.request_work_ingestion_use_case import (
     RequestWorkIngestionUseCase,
 )
+from src.modules.catalog.application.use_cases.reprocess_work_ingestion import (
+    ReprocessWorkIngestionUseCase,
+)
 from src.modules.catalog.application.use_cases.manage_passages import (
     CreatePassageUseCase,
     DeletePassageUseCase,
@@ -110,6 +113,14 @@ def get_request_work_ingestion_use_case() -> RequestWorkIngestionUseCase:
         work_document_storage=get_work_document_storage(),
         outbox_service=get_outbox_service(),
         ulid_generator=get_ulid_generator(),
+        clock=get_clock(),
+    )
+
+
+def get_reprocess_work_ingestion_use_case() -> ReprocessWorkIngestionUseCase:
+    return ReprocessWorkIngestionUseCase(
+        catalog_sql_uow=get_sql_unit_of_work(),
+        outbox_service=get_outbox_service(),
         clock=get_clock(),
     )
 

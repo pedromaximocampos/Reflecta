@@ -1,5 +1,5 @@
 from src.modules.journal.public.context_analysis import ContextPeriod
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -25,7 +25,8 @@ async def test_period_entries_filters_owner_and_deleted_rows_and_bounds_input():
     now = datetime.now(timezone.utc)
     session.execute.return_value = MagicMock()
     session.execute.return_value.scalars.return_value.all.return_value = [SimpleNamespace(
-        id="latest", content_text="Texto", context_tags=None, created_at=now, updated_at=None)]
+        id="latest", content_text="Texto", context_tags=None,
+        entry_date=date(2026, 10, 24), created_at=now, updated_at=None)]
     entries = await gateway.period_entries("owner", PERIOD)
     query = session.execute.call_args.args[0].compile(dialect=postgresql.dialect())
     assert "user_id" in str(query)
@@ -33,9 +34,10 @@ async def test_period_entries_filters_owner_and_deleted_rows_and_bounds_input():
     assert "status !=" in str(query)
     assert "owner" in query.params.values()
     assert "LIMIT" not in str(query)
-    assert PERIOD.bounds()[0] in query.params.values()
-    assert PERIOD.bounds()[1] in query.params.values()
+    assert PERIOD.start_date in query.params.values()
+    assert PERIOD.end_date in query.params.values()
     assert entries[0]["id"] == "latest"
+    assert entries[0]["entry_date"] == "2026-10-24"
 
 
 @pytest.mark.asyncio
@@ -47,6 +49,43 @@ async def test_cache_cannot_return_another_users_result():
     assert "owner" in query.params.values()
     assert "key" in query.params.values()
     assert "user_id" in str(query)
+
+
+@pytest.mark.asyncio
+async def test_period_entry_summaries_are_owner_scoped_and_do_not_expose_content():
+    gateway, session = setup()
+    now = datetime.now(timezone.utc)
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = [SimpleNamespace(
+        id="entry-1",
+        title="Escolher mesmo sem garantia",
+        content_text="Conteúdo privado",
+        context_tags=None,
+        entry_date=date(2026, 10, 24),
+        status="analyzed",
+        created_at=now,
+        updated_at=None,
+    )]
+    session.execute.return_value = result
+    session.scalar.return_value = None
+
+    response = await gateway.status("owner", PERIOD)
+    summaries = response["entries"]
+
+    assert summaries == [{
+        "id": "entry-1",
+        "title": "Escolher mesmo sem garantia",
+        "entry_date": "2026-10-24",
+        "status": "analyzed",
+    }]
+    assert "content_text" not in summaries[0]
+    query = session.execute.call_args.args[0].compile(dialect=postgresql.dialect())
+    assert "owner" in query.params.values()
+    assert PERIOD.start_date in query.params.values()
+    assert PERIOD.end_date in query.params.values()
+    assert "entry_date" in str(query)
+    assert response["entry_count"] == 1
+    assert response["eligible"] is False
 
 
 @pytest.mark.asyncio

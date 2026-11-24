@@ -91,6 +91,17 @@ class PassageResponseValidator(BaseModel):
     short_text: str
     paraphrase: str
     interpretation_note: str
+    reflective_value: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+    )
+    reflective_note: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1000,
+    )
     status: str
     priority: int
     start_page: int | None = None

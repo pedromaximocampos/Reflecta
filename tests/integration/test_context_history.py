@@ -1,4 +1,3 @@
-from src.modules.journal.public.context_analysis import ContextPeriod
 from zoneinfo import ZoneInfo
 """Opt-in real PostgreSQL + HTTP check. All fixture writes are rolled back.
 
@@ -71,22 +70,27 @@ async def test_explicit_analysis_history_pagination_owner_isolation_and_deleted_
                         "is_email_verified": False, "role": UserRole.USER,
                     } for user_id in (owner, other)])
                 ids = [str(ulid.new()) for _ in range(8)]
-                lower, upper = ContextPeriod(**period).bounds()
+                end = start + timedelta(days=6)
                 async with session_scope() as session:
                     # Entries outside the local seven-day bounds and deleted entries
                     # cannot turn an ineligible four-entry interval into an eligible one.
-                    for timestamp, deleted in [(lower - timedelta(microseconds=1), False), (upper, False), (now, True)]:
+                    for entry_date, deleted in [
+                        (start - timedelta(days=1), False),
+                        (end + timedelta(days=1), False),
+                        (start, True),
+                    ]:
                         await session.execute(insert(Entry).values(id=str(ulid.new()), user_id=owner,
                             content_text="Não incluir na análise", status="deleted" if deleted else "pending_analysis",
-                            created_at=timestamp, deleted_at=now if deleted else None))
+                            entry_date=entry_date, created_at=now, deleted_at=now if deleted else None))
                     await session.execute(insert(Entry).values(id=str(ulid.new()), user_id=other,
-                        content_text="Entrada privada de outra conta", status="pending_analysis", created_at=lower))
+                        content_text="Entrada privada de outra conta", status="pending_analysis",
+                        entry_date=start, created_at=now))
 
                 async def add_entry(index):
                     async with session_scope() as session:
                         await session.execute(insert(Entry).values(id=ids[index], user_id=owner,
                             content_text=f"Reflexão fictícia {index}", status="pending_analysis",
-                            created_at=lower if index == 0 else upper - timedelta(microseconds=1) if index == 4 else now + timedelta(seconds=index)))
+                            entry_date=end if index == 4 else start + timedelta(days=index), created_at=now))
 
                 for index in range(4):
                     await add_entry(index)

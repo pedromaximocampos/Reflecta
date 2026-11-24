@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { formatPeriodDate } from '../../services/contextPeriod'
 
 export function JournalError({ error, onRetry }) {
   if (!error) return null
@@ -16,9 +17,8 @@ export function JournalError({ error, onRetry }) {
 
 export function EntryMeta({ entry }) {
   const labels = { draft: 'Rascunho', pending_analysis: 'Aguardando análise', analyzed: 'Analisada', analysis_failed: 'Falha na análise' }
-  const date = new Date(entry.created_at)
   return <p className="text-sm text-muted-foreground">
-    {Number.isNaN(date.getTime()) ? 'Data indisponível' : date.toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}
+    {entry.entry_date ? `Reflexão de ${formatPeriodDate(entry.entry_date)}` : 'Data indisponível'}
     {' · '}{labels[entry.status] ?? 'Salva'}
   </p>
 }

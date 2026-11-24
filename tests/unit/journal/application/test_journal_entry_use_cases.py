@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -28,6 +28,18 @@ from src.modules.journal.application.use_cases.list_entries.dto import (
 from src.modules.journal.application.use_cases.list_entries.list_journal_entries_use_case import (
     ListJournalEntriesUseCase,
 )
+from src.modules.journal.application.use_cases.list_entry_calendar.dto import (
+    ListJournalEntryCalendarInputDTO,
+)
+from src.modules.journal.application.use_cases.list_entry_calendar.list_journal_entry_calendar_use_case import (
+    ListJournalEntryCalendarUseCase,
+)
+from src.modules.journal.application.use_cases.list_entry_window.dto import (
+    ListJournalEntryWindowInputDTO,
+)
+from src.modules.journal.application.use_cases.list_entry_window.list_journal_entry_window_use_case import (
+    ListJournalEntryWindowUseCase,
+)
 from src.modules.journal.application.use_cases.update_entry.dto import (
     UpdateJournalEntryInputDTO,
 )
@@ -37,11 +49,17 @@ from src.modules.journal.application.use_cases.update_entry.update_journal_entry
 from src.modules.journal.domain.entities.journal_entry import JournalEntry
 from src.modules.journal.domain.exceptions.journal_exceptions import (
     EmptyJournalUpdateError,
+    FutureJournalEntryDateError,
+    JournalEntryDateConflictError,
     JournalEntryNotEditableError,
     JournalEntryNotFoundError,
 )
 from src.modules.journal.domain.value_objects.journal_entry_status import (
     JournalEntryStatus,
+)
+from src.modules.journal.domain.ports.repositories.ijournal_entry_repository import (
+    JournalEntryCalendarItem,
+    JournalEntryWindow,
 )
 from src.modules.journal.public.journal_entry_id import JournalEntryId
 
@@ -65,6 +83,7 @@ class FixedUlidGenerator:
 class FakeJournalUnitOfWork:
     def __init__(self) -> None:
         self.journal_entry_repository = AsyncMock()
+        self.journal_entry_repository.find_by_date_for_user.return_value = None
         self.commit = AsyncMock()
         self.rollback = AsyncMock()
         self.enter_count = 0
@@ -110,7 +129,52 @@ async def test_create_entry_persists_authenticated_owner_and_commits() -> None:
     assert persisted.status is JournalEntryStatus.PENDING_ANALYSIS
     assert output.status is JournalEntryStatus.PENDING_ANALYSIS
     assert output.id == ENTRY_ID
+    assert output.entry_date == date(2026, 9, 18)
     uow.commit.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+async def test_create_entry_accepts_past_date_and_rejects_future_date() -> None:
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.create.side_effect = lambda entry: entry
+    use_case = CreateJournalEntryUseCaseImpl(uow, FixedClock(), FixedUlidGenerator())
+
+    output = await use_case.execute(CreateJournalEntryDTO(
+        user_id=USER_ID,
+        title=None,
+        content_text="Ontem eu precisei pausar.",
+        entry_date=date(2026, 9, 17),
+    ))
+    assert output.entry_date == date(2026, 9, 17)
+
+    with pytest.raises(FutureJournalEntryDateError):
+        await use_case.execute(CreateJournalEntryDTO(
+            user_id=USER_ID,
+            title=None,
+            content_text="Amanhã ainda não aconteceu.",
+            entry_date=date(2026, 9, 19),
+        ))
+
+
+@pytest.mark.asyncio
+async def test_create_entry_rejects_an_existing_active_entry_for_the_date() -> None:
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.find_by_date_for_user.return_value = make_entry()
+
+    with pytest.raises(JournalEntryDateConflictError) as raised:
+        await CreateJournalEntryUseCaseImpl(
+            uow,
+            FixedClock(),
+            FixedUlidGenerator(),
+        ).execute(CreateJournalEntryDTO(
+            user_id=USER_ID,
+            title=None,
+            content_text="Outra reflexão no mesmo dia.",
+        ))
+
+    assert raised.value.details["existing_entry_id"] == ENTRY_ID.value
+    uow.journal_entry_repository.create.assert_not_awaited()
+    uow.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -161,6 +225,31 @@ async def test_list_entries_uses_owner_and_pagination() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_entry_window_maps_repository_cursor() -> None:
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.list_window_by_user.return_value = JournalEntryWindow(
+        entries=(make_entry(),),
+        start_date=date(2026, 9, 4),
+        end_date=date(2026, 9, 18),
+        next_end_date=date(2026, 8, 30),
+    )
+
+    output = await ListJournalEntryWindowUseCase(uow).execute(
+        ListJournalEntryWindowInputDTO(USER_ID, days=15)
+    )
+
+    assert len(output.entries) == 1
+    assert output.next_end_date == date(2026, 8, 30)
+    uow.journal_entry_repository.list_window_by_user.assert_awaited_once_with(
+        USER_ID,
+        end_date=None,
+        days=15,
+        center_date=None,
+        before_days=15,
+        after_days=15,
+    )
+
+@pytest.mark.asyncio
 async def test_update_entry_updates_only_requested_fields_and_commits() -> None:
     uow = FakeJournalUnitOfWork()
     entry = make_entry()
@@ -184,6 +273,61 @@ async def test_update_entry_updates_only_requested_fields_and_commits() -> None:
         frozenset({"content_text"}),
     )
     uow.commit.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+async def test_centered_entry_window_requests_days_on_both_sides() -> None:
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.list_window_by_user.return_value = JournalEntryWindow(
+        entries=(make_entry(),),
+        start_date=date(2026, 9, 3),
+        end_date=date(2026, 10, 3),
+        next_end_date=None,
+    )
+
+    await ListJournalEntryWindowUseCase(uow).execute(
+        ListJournalEntryWindowInputDTO(
+            USER_ID,
+            center_date=date(2026, 9, 18),
+            before_days=15,
+            after_days=15,
+        )
+    )
+
+    uow.journal_entry_repository.list_window_by_user.assert_awaited_once_with(
+        USER_ID,
+        end_date=None,
+        days=15,
+        center_date=date(2026, 9, 18),
+        before_days=15,
+        after_days=15,
+    )
+
+
+@pytest.mark.asyncio
+async def test_calendar_returns_only_lightweight_entry_metadata() -> None:
+    uow = FakeJournalUnitOfWork()
+    uow.journal_entry_repository.list_calendar_by_user.return_value = (
+        JournalEntryCalendarItem(
+            id=ENTRY_ID,
+            entry_date=date(2026, 9, 18),
+            status="analyzed",
+        ),
+    )
+
+    output = await ListJournalEntryCalendarUseCase(uow).execute(
+        ListJournalEntryCalendarInputDTO(
+            USER_ID,
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+        )
+    )
+
+    assert output.to_dict()["entries"] == [{
+        "id": ENTRY_ID.value,
+        "entry_date": "2026-09-18",
+        "status": "analyzed",
+    }]
 
 
 @pytest.mark.asyncio

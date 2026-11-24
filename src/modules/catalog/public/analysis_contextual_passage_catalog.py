@@ -39,6 +39,8 @@ class AnalysisContextualPassageCatalog:
                 short_text=record.short_text,
                 paraphrase=record.paraphrase,
                 interpretation_note=record.interpretation_note,
+                reflective_value=record.reflective_value,
+                reflective_note=record.reflective_note,
                 locator=record.locator,
                 priority=record.priority,
                 work_id=record.work_id,

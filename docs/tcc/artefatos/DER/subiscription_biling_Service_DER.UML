@@ -1,0 +1,23 @@
+@startuml Service_Billing
+!theme plain
+title Subscription & Billing Service (DB)
+
+entity "SUBSCRIPTIONS" as subscriptions {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<Ref>>
+  plan : VARCHAR
+  status : VARCHAR
+  started_at : TIMESTAMPTZ
+  canceled_at : TIMESTAMPTZ
+}
+
+entity "WEBHOOK_EVENTS" as webhooks {
+  * id : UUID <<PK>>
+  --
+  event_id : VARCHAR
+  source : VARCHAR (Stripe, etc)
+  payload : JSONB
+  processed_at : TIMESTAMPTZ
+}
+@enduml

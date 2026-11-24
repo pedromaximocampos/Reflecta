@@ -2,11 +2,11 @@
 
 ## Execução integrada com auth
 
-- Frontend: `npm ci` e `npm run dev` em `frontend` (origem padrão `http://localhost:5173`).
+- Frontend: `npm install` e `npm run dev` em `Codigo/FRONT` (origem padrão `http://localhost:5173`).
 - Configure `VITE_API_URL=http://localhost:8000` no `.env.local` do frontend.
 - No backend e worker de e-mail, configure `FRONT_END_DOMAIN=http://localhost:5173`, sem caminho adicional. Essa origem também é usada pelo CORS para aceitar chamadas com credenciais. Se mudar o host ou a porta do frontend, ajuste a configuração e reinicie os serviços.
 - Quando usar o worker AWS Lambda, configure também `FRONTEND_BASE_URL` com a mesma origem do frontend.
-- Prepare as dependências do backend com `uv sync` na raiz do repositório (incluindo `python-slugify`). Confira `DEBUG` e `SQL_ECHO` como booleanos e as configurações `NEO4J_*`, `AWS_SNS_REGION` e `AWS_SNS_ARN` no ambiente.
+- Prepare as dependências do backend com `uv sync` em `Codigo/BACK` (incluindo `python-slugify`). Confira `DEBUG` e `SQL_ECHO` como booleanos e as configurações `NEO4J_*`, `AWS_SNS_REGION` e `AWS_SNS_ARN` no ambiente.
 - API, bancos, migrations e worker de notificações precisam estar em execução para completar os fluxos. A resposta `202` confirma a solicitação, não a entrega do e-mail.
 - Faça um novo login para carregar papel e data de nascimento nas sessões criadas antes desta integração.
 - Testes locais: `npm test`, `npm run build` e `npm run lint`.
@@ -36,7 +36,7 @@ As confirmações por código não enviam cookies nem Bearer token e só são ex
 - As duas chamadas dispensam autenticação e não enviam cookies nem Bearer token. A confirmação não cria sessão: após sucesso, o usuário pode voltar ao login e usar suas credenciais existentes.
 - Há tratamento de código ausente/inválido/expirado/reutilizado, falhas da API e cliques repetidos. Reenvio é feito pelo formulário de solicitação; vale o link mais recente.
 - Configure a URL do frontend no serviço de notificações e o fallback para `index.html` na hospedagem para permitir acesso direto ao link do e-mail.
-- Contratos conferidos no backend desta branch. O envio real de e-mail e o fluxo ponta a ponta dependem do backend e serviço de notificações em execução.
+- Contratos conferidos em `Codigo/BACK` nesta branch. O envio real de e-mail e o fluxo ponta a ponta dependem do backend e serviço de notificações em execução.
 
 ## Integração do perfil
 
@@ -46,7 +46,7 @@ As confirmações por código não enviam cookies nem Bearer token e só são ex
 - E-mail é somente leitura. O contrato atual não permite limpar campos enviando valores nulos.
 - O perfil inicia com os dados retornados pelo login e mantidos em `sessionStorage`; não existe uma chamada de consulta de perfil nesta integração.
 - `useAuth()` em `src/services/authSession.js` fornece `user`, `role`, `isAdmin` e `isAuthenticated`. Espera `user.role` como `ADMIN` ou `USER` no login. Papel ausente/desconhecido resulta em `role: null` e `isAdmin: false`.
-- Login e refresh retornam `user.role` (`ADMIN` ou `USER`) e `user.date_of_birth` (`YYYY-MM-DD`). O perfil e os fluxos de exclusão/recuperação usam os endpoints do backend desta raiz.
+- Login e refresh retornam `user.role` (`ADMIN` ou `USER`) e `user.date_of_birth` (`YYYY-MM-DD`). O perfil e os fluxos de exclusão/recuperação usam os endpoints de `Codigo/BACK`.
 - O papel no navegador serve para apresentação. Um futuro guard de administrador deve ser acompanhado de autorização no servidor; dados em `sessionStorage` não são prova de permissão.
 - Após o login, `ADMIN` vai para `/deshboard`; `USER` ou papel ausente/desconhecido vai para `/inicio`, o dashboard do usuário. Papel não informado mantém `isAdmin: false`.
 - Compartilhamentos, estatísticas e preferências continuam demonstrativos.
@@ -61,7 +61,7 @@ As confirmações por código não enviam cookies nem Bearer token e só são ex
 
 A exclusão do backend é lógica: desativa a conta e invalida as sessões, sem apagar definitivamente os dados. Reenviar a solicitação invalida o link anterior. Cancelar/fechar a interface não revoga um link já emitido; o usuário é orientado a ignorá-lo.
 
-Configure a URL base do frontend no serviço de notificações do backend para que os links abram esta aplicação. O servidor que hospeda o frontend precisa servir `index.html` também no acesso direto a `/auth/delete`. Os endpoints foram conferidos no backend. Envio real e integração ponta a ponta ainda precisam ser validados com a API e o serviço de e-mail em execução.
+Configure a URL base do frontend no serviço de notificações do backend para que os links abram esta aplicação. O servidor que hospeda o frontend precisa servir `index.html` também no acesso direto a `/auth/delete`. Os endpoints foram conferidos em `Codigo/BACK`. Envio real e integração ponta a ponta ainda precisam ser validados com a API e o serviço de e-mail em execução.
 
 Validação local: `node --test tests/auth.test.js`, `npm run build` e `npm run lint`.
 
@@ -141,7 +141,7 @@ O backend desta branch implementa obras, ingestões e passagens. Falhas aparecem
 interface, sem respostas simuladas. Uma fila vazia não confirma conclusão ou falha
 da ingestão.
 
-Execute `npm test`, `npm run build` e `npm run lint` em `frontend`.
+Execute `npm test`, `npm run build` e `npm run lint` em `Codigo/FRONT`.
 
 ## Leitura da reflexão e da análise lado a lado
 

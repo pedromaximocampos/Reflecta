@@ -43,10 +43,13 @@ class JournalAnalysisGateway:
         )
 
     @staticmethod
-    def _check(entry: JournalEntryModel | None) -> JournalEntryModel:
+    def _check(entry: JournalEntryModel | None, *, allow_analyzed: bool = False) -> JournalEntryModel:
         if entry is None:
             raise JournalEntryNotFoundError()
-        if entry.status not in {"draft", "pending_analysis", "analysis_failed"}:
+        eligible = {"draft", "pending_analysis", "analysis_failed"}
+        if allow_analyzed:
+            eligible.add("analyzed")
+        if entry.status not in eligible:
             raise AnalysisConflictError("Entry is not eligible for interpretation.")
         return entry
 
@@ -65,20 +68,28 @@ class JournalAnalysisGateway:
         if not entry.content_text.strip() or len(entry.content_text.strip()) > 20000:
             raise ValueError("Entry must contain between 1 and 20000 characters.")
 
-    async def submit(self, entry_id: str, user_id: str, *, now: datetime, expected_revision: datetime | None = None):
+    async def submit(
+        self, entry_id: str, user_id: str, *, now: datetime,
+        expected_revision: datetime | None = None, reanalyze: bool = False,
+    ):
         async with self.db.session() as session:
             entry = (await session.execute(self._query(entry_id, user_id).with_for_update())).scalar_one_or_none()
-            entry = self._check(entry)
+            entry = self._check(entry, allow_analyzed=reanalyze)
             if entry.status == "pending_analysis":
                 return {"entry_id": entry.id, "status": entry.status, "reprocess": reprocess_policy(entry)}
             self._validate_text(entry)
-            if entry.status == "analysis_failed":
+            if entry.status in {"analysis_failed", "analyzed"}:
+                if entry.status == "analyzed" and not reanalyze:
+                    raise AnalysisConflictError("A completed analysis requires an explicit reanalysis request.")
                 used = entry.user_reprocess_count or 0
                 if used >= USER_REPROCESS_LIMIT:
                     raise UserReprocessLimitError()
                 if expected_revision is None or expected_revision != (entry.updated_at or entry.created_at):
                     raise AnalysisConflictError("Refresh analysis status before retrying.")
-                failure_id = await session.scalar(self._latest_failure(entry.id))
+                failure_id = (
+                    await session.scalar(self._latest_failure(entry.id))
+                    if entry.status == "analysis_failed" else None
+                )
                 entry.user_reprocess_count = used + 1
                 session.add(AnalysisReprocessModel(id=str(ulid.new()), entry_id=entry.id, failure_id=failure_id,
                     requested_by=user_id, actor_role="USER", user_attempt_number=used + 1, requested_at=now))
@@ -119,12 +130,37 @@ class JournalAnalysisGateway:
             entry = (await session.execute(self._query(entry_id, user_id))).scalar_one_or_none()
             if entry is None:
                 raise JournalEntryNotFoundError()
-            result = (await session.execute(select(AnalysisModel).where(
-                AnalysisModel.journal_entry_id == entry_id,
-                AnalysisModel.status == "completed",
-            ).order_by(AnalysisModel.created_at.desc(), AnalysisModel.id.desc()).limit(1))).scalar_one_or_none()
+            result = None
+            if entry.status in {"analyzed", "pending_analysis", "analysis_failed"}:
+                result = (await session.execute(select(AnalysisModel).where(
+                    AnalysisModel.journal_entry_id == entry_id,
+                    AnalysisModel.status == "completed",
+                ).order_by(AnalysisModel.created_at.desc(), AnalysisModel.id.desc()).limit(1))).scalar_one_or_none()
             sentences = []
             if result is not None:
+                stored_metadata = result.content_meta if isinstance(result.content_meta, dict) else {}
+                raw_themes = stored_metadata.get("themes")
+                available_themes = [
+                    theme for theme in raw_themes
+                    if isinstance(theme, dict) and isinstance(theme.get("id"), str) and theme["id"]
+                ] if isinstance(raw_themes, list) else []
+                available_by_id = {theme["id"]: theme for theme in available_themes}
+                selection = stored_metadata.get("user_theme_selection")
+                if isinstance(selection, dict) and isinstance(selection.get("theme_ids"), list):
+                    selected_theme_ids = [
+                        theme_id for theme_id in selection["theme_ids"]
+                        if isinstance(theme_id, str) and theme_id in available_by_id
+                    ]
+                else:
+                    selected_theme_ids = list(available_by_id)
+                selected_theme_id_set = set(selected_theme_ids)
+                effective_metadata = {
+                    **stored_metadata,
+                    "themes": [
+                        theme for theme in available_themes
+                        if theme["id"] in selected_theme_id_set
+                    ],
+                }
                 rows = (await session.execute(
                     select(JournalSentenceModel, SentenceThemeModel)
                     .outerjoin(SentenceThemeModel, SentenceThemeModel.sentence_id == JournalSentenceModel.id)
@@ -132,7 +168,7 @@ class JournalAnalysisGateway:
                            JournalSentenceModel.journal_entry_id == entry_id)
                     .order_by(JournalSentenceModel.sentence_index, SentenceThemeModel.theme_id)
                 )).all()
-                labels = {theme["id"]: theme for theme in (result.content_meta or {}).get("themes", [])}
+                labels = available_by_id
                 by_id = {}
                 for sentence, theme in rows:
                     if sentence.id not in by_id:
@@ -145,7 +181,7 @@ class JournalAnalysisGateway:
                         }
                         by_id[sentence.id] = item
                         sentences.append(item)
-                    if theme is not None:
+                    if theme is not None and theme.theme_id in selected_theme_id_set:
                         by_id[sentence.id]["themes"].append({
                             **labels.get(theme.theme_id, {}), "id": theme.theme_id,
                             "slug": theme.theme_slug, "confidence": float(theme.confidence),
@@ -162,6 +198,21 @@ class JournalAnalysisGateway:
                         )
                     )).scalars().all()
                     for passage in passage_rows:
+                        sentence_theme_ids = {
+                            theme["id"] for theme in by_id[passage.sentence_id]["themes"]
+                        }
+                        snapshot = passage.payload_snapshot if isinstance(passage.payload_snapshot, dict) else {}
+                        theme_matches = snapshot.get("theme_matches")
+                        matched_theme_ids = {
+                            match.get("theme_id") for match in theme_matches
+                            if isinstance(match, dict) and match.get("theme_id")
+                        } if isinstance(theme_matches, list) else set()
+                        relevant_theme_ids = (
+                            sentence_theme_ids & matched_theme_ids
+                            if matched_theme_ids else sentence_theme_ids
+                        )
+                        if not relevant_theme_ids:
+                            continue
                         by_id[passage.sentence_id]["passages"].append({
                             "id": passage.id,
                             "passage_id": passage.passage_id,
@@ -174,11 +225,62 @@ class JournalAnalysisGateway:
                 "analysis": None if result is None else {
                     "id": result.id, "summary": result.summary,
                     "main_message": result.main_message,
-                    "metadata": result.content_meta,
+                    "metadata": effective_metadata,
+                    "available_themes": available_themes,
+                    "selected_theme_ids": selected_theme_ids,
                     "sentences": sentences,
                     "analyzed_at": result.analyzed_at.isoformat() if result.analyzed_at else None,
                 },
             }
+
+    async def update_theme_selection(
+        self, entry_id: str, user_id: str, *, theme_ids: list[str], now: datetime,
+    ) -> dict[str, Any]:
+        async with self.db.session() as session:
+            entry = (await session.execute(
+                self._query(entry_id, user_id).with_for_update()
+            )).scalar_one_or_none()
+            if entry is None:
+                raise JournalEntryNotFoundError()
+            if entry.status != "analyzed":
+                raise AnalysisConflictError("Themes can only be curated after a completed analysis.")
+            result = (await session.execute(
+                select(AnalysisModel).where(
+                    AnalysisModel.journal_entry_id == entry_id,
+                    AnalysisModel.status == "completed",
+                ).order_by(
+                    AnalysisModel.created_at.desc(), AnalysisModel.id.desc(),
+                ).limit(1).with_for_update()
+            )).scalar_one_or_none()
+            if result is None:
+                raise AnalysisConflictError("Completed analysis was not found.")
+
+            metadata = result.content_meta if isinstance(result.content_meta, dict) else {}
+            raw_themes = metadata.get("themes")
+            available_themes = [
+                theme for theme in raw_themes
+                if isinstance(theme, dict) and isinstance(theme.get("id"), str) and theme["id"]
+            ] if isinstance(raw_themes, list) else []
+            available_ids = {theme["id"] for theme in available_themes}
+            if len(theme_ids) != len(set(theme_ids)):
+                raise ValueError("Theme identifiers must be unique.")
+            if any(theme_id not in available_ids for theme_id in theme_ids):
+                raise ValueError("Only themes identified by this analysis can be selected.")
+            requested_ids = set(theme_ids)
+            ordered_ids = [
+                theme["id"] for theme in available_themes
+                if theme["id"] in requested_ids
+            ]
+            result.content_meta = {
+                **metadata,
+                "user_theme_selection": {
+                    "theme_ids": ordered_ids,
+                    "updated_at": now.isoformat(),
+                },
+            }
+            result.updated_at = now
+
+        return await self.get_analysis(entry_id, user_id)
 
     async def get_analysis_failures(self, entry_id: str, user_id: str, *, limit: int = 20) -> dict[str, Any]:
         async with self.db.session() as session:
@@ -247,12 +349,6 @@ class JournalAnalysisGateway:
             entry = self._check(entry)
             if self._snapshot(entry) != snapshot:
                 raise AnalysisConflictError("Entry changed during interpretation.")
-            completed = await session.scalar(select(AnalysisModel.id).where(
-                AnalysisModel.journal_entry_id == snapshot.entry_id,
-                AnalysisModel.status == "completed",
-            ).limit(1))
-            if completed is not None:
-                raise AnalysisConflictError("Entry already has a completed analysis.")
             session.add(AnalysisModel(
                 id=analysis_id, journal_entry_id=snapshot.entry_id,
                 summary=summary, main_message=main_message, content_meta=metadata,

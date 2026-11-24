@@ -1,0 +1,17 @@
+digraph G {
+graph [rankdir=TB,bgcolor="white",pad="0.2",ranksep="0.4",nodesep="0.5",fontname="Arial",fontsize=16,label="UC34  Recuperar conta excluída",labelloc=t];
+node [shape=box,fontname="Arial",fontsize=12,margin="0.18,0.10"];
+edge [fontname="Arial",fontsize=11];
+solicitar [label="Usuário Final / Frontend público\nInformar e-mail e solicitar recuperação"];
+registrar [label="Auth Module / PostgreSQL\nResposta pública genérica\nSe elegível: criar solicitação e evento na outbox"];
+email [label="Worker de e-mail\nEnviar link ao titular"];
+abrir [label="Usuário Final / Frontend\nAbrir link e confirmar explicitamente\nAbrir o link não reativa a conta"];
+validar [label="Auth Module\nValidar código, estado e expiração"];
+transacao [label="PostgreSQL — mesma transação\nReativar users + confirmar solicitação\nPersistir UserAccountRecovered na outbox"];
+erro [label="Código inválido, expirado, revogado ou usado\nPreservar estado e exibir erro"];
+login [label="Frontend\nExibir sucesso e retornar ao login\nSem sessão automática"];
+solicitar -> registrar -> email -> abrir -> validar;
+validar -> transacao [label="válido"];
+validar -> erro [label="inválido"];
+transacao -> login;
+}

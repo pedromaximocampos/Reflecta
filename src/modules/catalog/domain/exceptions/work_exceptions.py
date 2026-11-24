@@ -64,3 +64,24 @@ class InvalidWorkIngestionTransitionError(DomainError):
             status_code=409,
             name="InvalidWorkIngestionTransitionError",
         )
+
+
+class WorkIngestionNotFoundError(DomainError):
+    def __init__(self, ingestion_id: str) -> None:
+        super().__init__(
+            message=f"Work ingestion '{ingestion_id}' was not found.",
+            status_code=404,
+            name="WorkIngestionNotFoundError",
+        )
+
+
+class WorkIngestionNotReprocessableError(DomainError):
+    def __init__(self, ingestion_id: str, status: str) -> None:
+        super().__init__(
+            message=(
+                f"Work ingestion '{ingestion_id}' cannot be reprocessed "
+                f"while its status is '{status}'."
+            ),
+            status_code=409,
+            name="WorkIngestionNotReprocessableError",
+        )

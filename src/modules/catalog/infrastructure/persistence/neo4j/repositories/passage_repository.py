@@ -106,6 +106,7 @@ class PassageRepository(IPassageRepository):
                  work,
                  author
             ORDER BY theme_rank,
+                     coalesce(passage.reflective_value, 0) DESC,
                      relevance.confidence DESC,
                      passage.priority DESC,
                      passage.passage_id
@@ -117,6 +118,8 @@ class PassageRepository(IPassageRepository):
                      short_text: passage.short_text,
                      paraphrase: passage.paraphrase,
                      interpretation_note: passage.interpretation_note,
+                     reflective_value: passage.reflective_value,
+                     reflective_note: passage.reflective_note,
                      locator: passage.locator,
                      priority: passage.priority,
                      start_page: passage.start_page,
@@ -130,6 +133,7 @@ class PassageRepository(IPassageRepository):
                    requested_theme_id AS matched_theme_id,
                    candidate
             ORDER BY theme_rank,
+                     coalesce(candidate.reflective_value, 0) DESC,
                      candidate.theme_confidence DESC,
                      candidate.priority DESC,
                      candidate.passage_id
@@ -149,6 +153,8 @@ class PassageRepository(IPassageRepository):
                 interpretation_note=record["candidate"][
                     "interpretation_note"
                 ],
+                reflective_value=record["candidate"].get("reflective_value"),
+                reflective_note=record["candidate"].get("reflective_note"),
                 locator=record["candidate"]["locator"],
                 priority=record["candidate"]["priority"],
                 start_page=record["candidate"]["start_page"],

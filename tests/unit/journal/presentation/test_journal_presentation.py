@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import AsyncMock
 
 import pytest
@@ -5,6 +6,9 @@ from pydantic import ValidationError
 
 from src.modules.journal.presentation.controllers.get_journal_entry_controller import (
     GetJournalEntryController,
+)
+from src.modules.journal.presentation.controllers.create_journal_entry_controller import (
+    CreateJournalEntryController,
 )
 from src.modules.journal.presentation.controllers.update_journal_entry_controller import (
     UpdateJournalEntryController,
@@ -91,6 +95,24 @@ async def test_get_controller_uses_authenticated_user_id() -> None:
 
 
 @pytest.mark.asyncio
+async def test_create_controller_converts_iso_entry_date_at_http_boundary() -> None:
+    use_case = AsyncMock()
+    use_case.execute.return_value = Output()
+    controller = CreateJournalEntryController(use_case)
+
+    response = await controller.handle_request(
+        make_request(body={
+            "content_text": "Uma reflexão passada.",
+            "entry_date": "2026-09-17",
+        })
+    )
+
+    journal_input = use_case.execute.await_args.args[0]
+    assert journal_input.entry_date == date(2026, 9, 17)
+    assert response.status_code == 201
+
+
+@pytest.mark.asyncio
 async def test_update_controller_preserves_explicit_fields() -> None:
     use_case = AsyncMock()
     use_case.execute.return_value = Output()
@@ -103,3 +125,8 @@ async def test_update_controller_preserves_explicit_fields() -> None:
     journal_input = use_case.execute.await_args.args[0]
     assert journal_input.user_id.value == USER_ID
     assert journal_input.fields_to_update == frozenset({"title", "context_tags"})
+
+
+def test_update_validator_rejects_attempts_to_change_the_original_date() -> None:
+    with pytest.raises(ValidationError):
+        UpdateJournalEntryValidator.model_validate({"entry_date": "2026-09-17"})

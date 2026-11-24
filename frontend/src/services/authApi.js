@@ -1,4 +1,4 @@
-import { request } from './apiClient.js'
+import { request, requestBlob } from './apiClient.js'
 import { clearSession } from './authSession.js'
 
 function encodeBasicCredentials(email, password) {
@@ -109,6 +109,20 @@ export function removeUserAvatar() {
   const token = getAccessToken('Sua sessão expirou. Entre novamente para remover a foto.')
   return request('/auth/user-info/avatar', {
     method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function exportUserData(format = 'zip') {
+  if (!['zip', 'json'].includes(format)) {
+    const error = new Error('Escolha ZIP ou JSON para exportar os dados.')
+    error.status = 400
+    throw error
+  }
+  const token = getAccessToken('Sua sessão expirou. Entre novamente para exportar seus dados.')
+  const query = new URLSearchParams({ format })
+  return requestBlob(`/account/data-export?${query}`, {
+    method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   })
 }

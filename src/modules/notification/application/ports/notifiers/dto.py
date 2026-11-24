@@ -9,6 +9,15 @@ class EmailKind(StrEnum):
     PASSWORD_RESET = "password_reset"
     USER_DELETION = "user_deletion"
     USER_RECOVERY = "user_recovery"
+    PROFESSIONAL_ACTIVITY = "professional_activity"
+
+
+@dataclass(frozen=True, slots=True)
+class EmailActivityDTO:
+    activity_type: str
+    activity_title: str
+    activity_description: str
+    due_date: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,3 +27,4 @@ class EmailDTO:
     link: str
     expires_in_minutes: int
     kind: EmailKind
+    activities: tuple[EmailActivityDTO, ...] = ()

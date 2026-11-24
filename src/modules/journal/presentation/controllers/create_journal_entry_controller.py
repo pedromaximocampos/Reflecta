@@ -1,3 +1,5 @@
+from datetime import date
+
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.application.use_cases.create_entry.dto import (
     CreateJournalEntryDTO,
@@ -19,11 +21,17 @@ class CreateJournalEntryController(IControllerInterface):
             raise AuthError()
 
         payload = dict(request.body or {})
+        raw_entry_date = payload.get("entry_date")
         output = await self.__use_case.execute(
             CreateJournalEntryDTO(
                 user_id=UserId(request.authenticated_user_id),
                 title=payload.get("title"),
                 content_text=payload["content_text"],
+                entry_date=(
+                    date.fromisoformat(raw_entry_date)
+                    if isinstance(raw_entry_date, str)
+                    else raw_entry_date
+                ),
                 context_tags=payload.get("context_tags"),
             )
         )

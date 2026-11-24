@@ -23,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _MAX_PASSAGES_PER_CHUNK = 5
 _MIN_PRIMARY_THEME_CONFIDENCE = 0.65
+_MIN_REFLECTIVE_VALUE = 0.75
 
 
 class _ProviderResponseValidationError(ValueError):
@@ -50,10 +51,29 @@ class _ThemeMatch(_StrictModel):
     )
 
 
+class _ReflectiveAssessment(_StrictModel):
+    self_contained: int = Field(ge=0, le=2)
+    reflective_depth: int = Field(ge=0, le=2)
+    lived_experience_applicability: int = Field(ge=0, le=2)
+    open_endedness: int = Field(ge=0, le=2)
+    note: str = Field(min_length=1, max_length=1000)
+
+    @property
+    def value(self) -> float:
+        total = (
+            self.self_contained
+            + self.reflective_depth
+            + self.lived_experience_applicability
+            + self.open_endedness
+        )
+        return total / 8
+
+
 class _PassageSuggestion(_StrictModel):
     exact_text: str = Field(min_length=20, max_length=8000)
     paraphrase: str = Field(min_length=1, max_length=4000)
     interpretation_note: str = Field(min_length=1, max_length=4000)
+    reflective_assessment: _ReflectiveAssessment
     themes: list[_ThemeMatch] = Field(min_length=1, max_length=1)
 
 
@@ -110,6 +130,23 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
         "confidence representa a força da associação entre a passagem e o tema, não "
         "a qualidade literária do texto. Retorne apenas associações com confidence "
         "igual ou superior a 0.65. "
+        "Avalie separadamente o valor reflexivo geral da passagem para uso futuro "
+        "junto a uma frase de diário. Essa avaliação não mede a relação com um tema "
+        "específico nem a relação com um diário específico, que ainda não existe "
+        "nesta etapa. Atribua de 0 a 2 para cada critério de reflective_assessment: "
+        "self_contained mede se o trecho é compreensível sem contexto ausente; "
+        "reflective_depth mede se ele convida a examinar escolhas, valores, conflitos, "
+        "desejos, limites ou perspectivas, em vez de apenas informar; "
+        "lived_experience_applicability mede se a ideia pode ampliar a compreensão "
+        "de uma experiência pessoal sem presumir fatos sobre o leitor; e "
+        "open_endedness mede se o trecho abre reflexão sem prescrever uma resposta, "
+        "moralizar ou oferecer aconselhamento. Use 0 quando o critério não é atendido, "
+        "1 quando é atendido parcialmente e 2 quando é atendido de modo claro. "
+        "reflective_assessment.note deve justificar brevemente a avaliação com base "
+        "em elementos observáveis da passagem. Fama do autor, beleza da escrita, "
+        "presença de palavras filosóficas ou alta confiança temática não aumentam "
+        "por si sós o valor reflexivo. Retorne somente passagens cuja soma dos quatro "
+        "critérios seja pelo menos 6 de 8. "
         "Se nenhuma passagem atender a todos os critérios, retorne passages vazio. "
         "Não produza diagnóstico clínico, aconselhamento médico ou interpretações "
         "sobre a saúde mental do autor ou do leitor. Retorne exclusivamente a "
@@ -399,6 +436,11 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
                 _log_discarded_suggestion("invalid_theme", response_id)
                 continue
 
+            reflective_value = suggestion.reflective_assessment.value
+            if reflective_value < _MIN_REFLECTIVE_VALUE:
+                _log_discarded_suggestion("low_reflective_value", response_id)
+                continue
+
             located = _locate_quote(
                 chunk_text,
                 suggestion.exact_text,
@@ -429,6 +471,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
                     chunk_end_offset=end,
                     paraphrase=suggestion.paraphrase,
                     rationale=suggestion.interpretation_note,
+                    reflective_value=reflective_value,
+                    reflective_note=suggestion.reflective_assessment.note,
                     themes=tuple(
                         SuggestedPassageThemeDTO(
                             theme_id=match.theme_id,

@@ -213,20 +213,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
-
-# Streamlit
-.streamlit/secrets.toml
-
-# Local deployment artifacts
-reflecta-lambda.zip
-
-# Local preparation notes (not part of the public portfolio)
-INTERVIEW_CONTEXT.md
-
 # Terraform local state, plans, credentials and machine-specific overrides
 **/.terraform/*
 *.tfstate
@@ -240,11 +226,18 @@ crash.*.log
 .terraformrc
 terraform.rc
 
+# Local portfolio notes and generated deployment bundles
+INTERVIEW_CONTEXT.md
+reflecta-lambda.zip
+
 # Keep provider dependency locks and safe examples versioned
 !.terraform.lock.hcl
 !*.tfvars.example
 
-# Local preparation notes (not part of the public portfolio)
-INTERVIEW_CONTEXT.md
-/.env.ai.example
-/frontend/.env.example
+# Marimo
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+# Streamlit
+.streamlit/secrets.toml

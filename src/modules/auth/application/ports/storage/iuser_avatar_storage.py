@@ -1,6 +1,9 @@
 from typing import BinaryIO, Protocol
 
-from src.modules.auth.application.dto import StoredUserAvatarDTO
+from src.modules.auth.application.dto import (
+    DownloadedUserAvatarDTO,
+    StoredUserAvatarDTO,
+)
 
 
 class IUserAvatarStorage(Protocol):
@@ -16,3 +19,5 @@ class IUserAvatarStorage(Protocol):
     async def delete(self, *, object_key: str) -> None: ...
 
     async def create_read_url(self, *, object_key: str) -> str: ...
+
+    async def download(self, *, object_key: str) -> DownloadedUserAvatarDTO: ...

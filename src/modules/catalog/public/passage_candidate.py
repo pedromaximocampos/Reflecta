@@ -12,6 +12,8 @@ class PassageSuggestion:
     exact_text: str
     paraphrase: str
     interpretation_note: str
+    reflective_value: float
+    reflective_note: str
     start_page: int
     end_page: int
     start_offset: int

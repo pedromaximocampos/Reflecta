@@ -1,0 +1,20 @@
+@startuml Service_Recommendation
+!theme plain
+title Recommendation Service (DB)
+
+entity "RECOMMENDATIONS" as recommendations {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<Ref>>
+  * entry_id : UUID <<Ref>>
+  kind : VARCHAR (book, quote, ritual)
+  payload : JSONB
+  reason : TEXT
+  created_at : TIMESTAMPTZ
+}
+
+note right of recommendations
+  Consome eventos:
+  - "entry.analyzed" via RabbitMQ
+end note
+@enduml

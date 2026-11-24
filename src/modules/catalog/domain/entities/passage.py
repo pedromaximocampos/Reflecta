@@ -41,6 +41,8 @@ class Passage:
     end_page: int | None = None
     start_offset: int | None = None
     end_offset: int | None = None
+    reflective_value: float | None = None
+    reflective_note: str | None = None
     updated_at: datetime | None = None
 
     def __post_init__(self) -> None:
@@ -60,6 +62,14 @@ class Passage:
             raise ValueError("Passage interpretation fields must not be empty.")
         if self.priority < 0:
             raise ValueError("Passage priority must not be negative.")
+        if self.reflective_value is not None and not 0 <= self.reflective_value <= 1:
+            raise ValueError("Passage reflective value must be between 0 and 1.")
+        if (self.reflective_value is None) != (self.reflective_note is None):
+            raise ValueError(
+                "Passage reflective value and note must be provided together."
+            )
+        if self.reflective_note is not None and not self.reflective_note.strip():
+            raise ValueError("Passage reflective note must not be empty.")
         if (self.start_page is None) != (self.end_page is None):
             raise ValueError("Passage page range must be complete.")
         if self.start_page is not None and (

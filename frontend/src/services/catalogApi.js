@@ -39,6 +39,9 @@ export function uploadWork(id, file) {
   body.append('document', file)
   return adminRequest(`/works/${encodeURIComponent(id)}/ingestions`, { method: 'POST', body })
 }
+export function reprocessWorkIngestion(id) {
+  return adminRequest(`/work-ingestions/${encodeURIComponent(id)}/reprocess`, { method: 'POST' })
+}
 export function listPassages(filters = {}) {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
   return adminRequest(`/passages?${query}`)

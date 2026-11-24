@@ -63,6 +63,26 @@ def test_work_ingestion_can_retry_after_failure() -> None:
     assert ingestion.error_message is None
 
 
+def test_work_ingestion_can_be_requeued_without_losing_attempt_count() -> None:
+    ingestion = make_ingestion()
+    now = datetime(2026, 10, 5, 1, tzinfo=timezone.utc)
+
+    ingestion.mark_processing(now=now)
+    ingestion.mark_failed(
+        now=now,
+        error_code="TRANSIENT_PROVIDER_ERROR",
+        error_message="The provider was temporarily unavailable.",
+    )
+    ingestion.request_reprocessing()
+
+    assert ingestion.status is WorkIngestionStatus.PENDING
+    assert ingestion.attempts == 1
+    assert ingestion.started_at is None
+    assert ingestion.finished_at is None
+    assert ingestion.error_code is None
+    assert ingestion.error_message is None
+
+
 def test_work_ingestion_can_finish_when_all_chunks_complete_after_a_failure() -> None:
     ingestion = make_ingestion()
     now = datetime(2026, 10, 5, 1, tzinfo=timezone.utc)

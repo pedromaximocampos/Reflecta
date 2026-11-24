@@ -397,6 +397,8 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
                 exact_text=passage.exact_text,
                 paraphrase=passage.paraphrase,
                 interpretation_note=passage.rationale,
+                reflective_value=passage.reflective_value,
+                reflective_note=passage.reflective_note,
                 start_page=chunk.start_page,
                 end_page=chunk.end_page,
                 start_offset=chunk.start_offset + passage.chunk_start_offset,

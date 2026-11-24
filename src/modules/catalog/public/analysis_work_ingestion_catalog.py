@@ -36,7 +36,11 @@ class AnalysisWorkIngestionCatalog:
         now: datetime,
     ) -> bool:
         async with self._uow as uow:
-            ingestion = await uow.work_ingestion_repository.find_by_id(ingestion_id)
+            ingestion = (
+                await uow.work_ingestion_repository.find_by_id_for_update(
+                    ingestion_id
+                )
+            )
             if ingestion is None:
                 raise LookupError(
                     f"Work ingestion '{ingestion_id.value}' was not found."
@@ -60,7 +64,11 @@ class AnalysisWorkIngestionCatalog:
         now: datetime,
     ) -> None:
         async with self._uow as uow:
-            ingestion = await uow.work_ingestion_repository.find_by_id(ingestion_id)
+            ingestion = (
+                await uow.work_ingestion_repository.find_by_id_for_update(
+                    ingestion_id
+                )
+            )
             if ingestion is None:
                 raise LookupError(
                     f"Work ingestion '{ingestion_id.value}' was not found."
@@ -83,7 +91,11 @@ class AnalysisWorkIngestionCatalog:
         error_message: str,
     ) -> None:
         async with self._uow as uow:
-            ingestion = await uow.work_ingestion_repository.find_by_id(ingestion_id)
+            ingestion = (
+                await uow.work_ingestion_repository.find_by_id_for_update(
+                    ingestion_id
+                )
+            )
             if ingestion is None:
                 raise LookupError(
                     f"Work ingestion '{ingestion_id.value}' was not found."

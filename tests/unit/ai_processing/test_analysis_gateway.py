@@ -58,8 +58,8 @@ async def test_save_locks_entry_and_writes_analysis_and_status_together():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("change", ["content", "status", "timestamp", "completed", "deleted"])
-async def test_stale_deleted_or_completed_result_never_adds_analysis(change):
+@pytest.mark.parametrize("change", ["content", "status", "timestamp", "deleted"])
+async def test_stale_or_deleted_result_never_adds_analysis(change):
     gateway, session, entry = setup_gateway()
     snapshot = gateway._snapshot(entry)
     expected = AnalysisConflictError
@@ -69,8 +69,6 @@ async def test_stale_deleted_or_completed_result_never_adds_analysis(change):
         entry.status = "analyzed"
     elif change == "timestamp":
         entry.updated_at = NOW
-    elif change == "completed":
-        session.scalar.return_value = "existing-analysis"
     else:
         session.execute.return_value.scalar_one_or_none.return_value = None
         expected = JournalEntryNotFoundError
@@ -166,7 +164,8 @@ async def test_analysis_lookup_returns_status_when_no_result_exists():
     assert await gateway.get_analysis("entry", "owner") == {
         "entry_id": "entry", "status": "pending_analysis", "analysis": None,
         "reprocess": {"user_limit": 3, "user_used": 0, "user_remaining": 3,
-                      "can_user_reprocess": False, "requires_admin": False, "revision": NOW.isoformat()},
+                      "can_user_reprocess": False, "can_user_reanalyze": False,
+                      "requires_admin": False, "revision": NOW.isoformat()},
     }
 
 
@@ -184,7 +183,9 @@ async def test_analysis_lookup_returns_completed_content_and_metadata():
     ]
     output = await gateway.get_analysis("entry", "owner")
     assert output["analysis"]["summary"] == "Resumo"
-    assert output["analysis"]["metadata"] == {"sentiments": ["calma"]}
+    assert output["analysis"]["metadata"] == {"sentiments": ["calma"], "themes": []}
+    assert output["analysis"]["available_themes"] == []
+    assert output["analysis"]["selected_theme_ids"] == []
     assert output["analysis"]["sentences"] == []
     query = session.execute.call_args_list[1].args[0].compile(dialect=postgresql.dialect())
     assert "completed" in query.params.values()
@@ -237,6 +238,7 @@ async def test_analysis_returns_ordered_sentences_including_sentences_without_th
     from src.modules.journal.infrastructure.persistence.postgresql.models.sentence_passage_model import SentencePassageModel
     from src.modules.journal.infrastructure.persistence.postgresql.models.sentence_theme_model import SentenceThemeModel
     gateway, session, entry = setup_gateway()
+    entry.status = "analyzed"
     result = AnalysisModel(id="analysis", content_meta={"themes": [{"id": "theme", "label": "Trabalho"}]})
     first = JournalSentenceModel(id="s1", sentence_index=0, sentence_text="Texto.", start_offset=0, end_offset=6)
     second = JournalSentenceModel(id="s2", sentence_index=1, sentence_text="Outro.", start_offset=7, end_offset=13)
@@ -281,6 +283,70 @@ async def test_analysis_returns_ordered_sentences_including_sentences_without_th
         },
     }]
     assert sentences[1]["passages"] == []
+
+
+@pytest.mark.asyncio
+async def test_analysis_curation_filters_sentences_and_passages_without_selected_theme():
+    from src.modules.journal.infrastructure.persistence.postgresql.models.analysis_model import AnalysisModel
+    from src.modules.journal.infrastructure.persistence.postgresql.models.journal_sentence_model import JournalSentenceModel
+    from src.modules.journal.infrastructure.persistence.postgresql.models.sentence_passage_model import SentencePassageModel
+    from src.modules.journal.infrastructure.persistence.postgresql.models.sentence_theme_model import SentenceThemeModel
+    gateway, session, entry = setup_gateway()
+    entry.status = "analyzed"
+    result = AnalysisModel(id="analysis", content_meta={
+        "themes": [{"id": "theme", "label": "Trabalho"}],
+        "user_theme_selection": {"theme_ids": [], "updated_at": NOW.isoformat()},
+    })
+    sentence = JournalSentenceModel(id="s1", sentence_index=0, sentence_text="Texto.", start_offset=0, end_offset=6)
+    match = SentenceThemeModel(theme_id="theme", theme_slug="trabalho", confidence=Decimal("0.7500"),
+                               source="ai", confirmed_by_user=False)
+    passage = SentencePassageModel(
+        id="sp1", sentence_id="s1", passage_id="passage-1", confidence=Decimal("0.9100"),
+        reason="Razão.", payload_snapshot={"short_text": "Passagem.", "theme_matches": [{"theme_id": "theme"}]},
+    )
+    session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=entry)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=result)),
+        MagicMock(all=MagicMock(return_value=[(sentence, match)])),
+        MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[passage])))),
+    ]
+    analysis = (await gateway.get_analysis("entry", "owner"))["analysis"]
+    assert analysis["available_themes"] == [{"id": "theme", "label": "Trabalho"}]
+    assert analysis["selected_theme_ids"] == []
+    assert analysis["metadata"]["themes"] == []
+    assert analysis["sentences"][0]["themes"] == []
+    assert analysis["sentences"][0]["passages"] == []
+
+
+@pytest.mark.asyncio
+async def test_theme_selection_preserves_original_analysis_and_returns_effective_view():
+    from src.modules.journal.infrastructure.persistence.postgresql.models.analysis_model import AnalysisModel
+    gateway, session, entry = setup_gateway()
+    entry.status = "analyzed"
+    entry.updated_at = NOW
+    result = AnalysisModel(id="analysis", content_meta={
+        "themes": [
+            {"id": "0" * 26, "label": "Primeiro"},
+            {"id": "1" * 26, "label": "Segundo"},
+        ],
+    })
+    session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=entry)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=result)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=entry)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=result)),
+        MagicMock(all=MagicMock(return_value=[])),
+    ]
+    output = await gateway.update_theme_selection(
+        "entry", "owner", theme_ids=["1" * 26], now=NOW,
+    )
+    assert result.content_meta["themes"] == [
+        {"id": "0" * 26, "label": "Primeiro"},
+        {"id": "1" * 26, "label": "Segundo"},
+    ]
+    assert result.content_meta["user_theme_selection"]["theme_ids"] == ["1" * 26]
+    assert output["analysis"]["metadata"]["themes"] == [{"id": "1" * 26, "label": "Segundo"}]
+    assert output["analysis"]["available_themes"] == result.content_meta["themes"]
 
 
 @pytest.mark.asyncio

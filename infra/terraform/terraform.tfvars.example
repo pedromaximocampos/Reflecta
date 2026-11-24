@@ -11,6 +11,6 @@ email_dlq_name            = "reflecta-emails-dlq-dev"
 work_ingestion_queue_name = "reflecta-work-ingestions-dev"
 work_ingestion_dlq_name   = "reflecta-work-ingestions-dlq-dev"
 
-max_receive_count       = 5
+max_receive_count         = 5
 message_retention_seconds = 345600
 dlq_retention_seconds     = 1209600

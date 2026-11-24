@@ -1,3 +1,11 @@
-from .user_avatar import ProcessedUserAvatarDTO, StoredUserAvatarDTO
+from .user_avatar import (
+    DownloadedUserAvatarDTO,
+    ProcessedUserAvatarDTO,
+    StoredUserAvatarDTO,
+)
 
-__all__ = ["ProcessedUserAvatarDTO", "StoredUserAvatarDTO"]
+__all__ = [
+    "DownloadedUserAvatarDTO",
+    "ProcessedUserAvatarDTO",
+    "StoredUserAvatarDTO",
+]

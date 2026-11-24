@@ -7,11 +7,17 @@ from pydantic import ValidationError
 from src.modules.catalog.application.use_cases.request_work_ingestion import (
     RequestWorkIngestionOutputDTO,
 )
+from src.modules.catalog.application.use_cases.reprocess_work_ingestion import (
+    ReprocessWorkIngestionOutputDTO,
+)
 from src.modules.catalog.domain.value_objects.work_ingestion_status import (
     WorkIngestionStatus,
 )
 from src.modules.catalog.presentation.controllers.request_work_ingestion_controller import (
     RequestWorkIngestionController,
+)
+from src.modules.catalog.presentation.controllers.reprocess_work_ingestion_controller import (
+    ReprocessWorkIngestionController,
 )
 from src.modules.catalog.presentation.validators.request_work_ingestion import (
     WorkDocumentUploadValidator,
@@ -97,4 +103,35 @@ async def test_request_work_ingestion_controller_builds_application_input() -> N
         "ingestion_id": INGESTION_ID,
         "work_id": WORK_ID,
         "status": "pending",
+    }
+
+
+@pytest.mark.asyncio
+async def test_reprocess_controller_uses_ingestion_id_from_path() -> None:
+    use_case = AsyncMock()
+    use_case.execute.return_value = ReprocessWorkIngestionOutputDTO(
+        ingestion_id=WorkIngestionId(INGESTION_ID),
+        work_id=WorkId(WORK_ID),
+        status=WorkIngestionStatus.PENDING,
+        event_created=True,
+    )
+    controller = ReprocessWorkIngestionController(use_case)
+
+    response = await controller.handle_request(
+        HttpRequest(
+            method="POST",
+            url=f"http://test/catalog/work-ingestions/{INGESTION_ID}/reprocess",
+            path_params={"ingestion_id": INGESTION_ID},
+            authenticated_user_id=ADMIN_ID,
+        )
+    )
+
+    ingestion_input = use_case.execute.await_args.args[0]
+    assert ingestion_input.ingestion_id.value == INGESTION_ID
+    assert response.status_code == 202
+    assert response.body == {
+        "ingestion_id": INGESTION_ID,
+        "work_id": WORK_ID,
+        "status": "pending",
+        "event_created": True,
     }

@@ -1,0 +1,91 @@
+@startuml ComportamentosSistemicos
+title Reflecta - Casos de Uso do Sistema de IA
+
+left to right direction
+
+actor "Sistema de IA" as AI
+
+rectangle "Reflecta" {
+
+  usecase "UC19\nInterpretar conteúdo\ntextual" as UC19
+  usecase "UC18\nCriar histórico\ncontextual dos usuários" as UC18
+  usecase "UC24\nProcessar textos usando\narquitetura modular" as UC24
+
+  usecase "UC20\nSugerir leituras\ne práticas" as UC20
+
+  usecase "UC21\nSelecionar passagem\nassociada ao tema\nda entrada" as UC21
+  usecase "UC22\nExplicar associação\nda passagem à reflexão" as UC22
+
+  usecase "UC23\nProcessar obra e\nsugerir passagens" as UC23
+
+  usecase "UC25\nSinalizar falhas\nde processamento" as UC25
+
+  usecase "Consultar catálogo\nde temas ativos" as ConsultThemes
+  usecase "Validar saída\nestruturada da IA" as ValidateOutput
+  usecase "Consultar passagens\nno catálogo" as ConsultPassages
+  usecase "Gerar vetores\nsemânticos" as GenerateEmbeddings
+  usecase "Extrair trechos\ncandidatos da obra" as ExtractPassages
+}
+
+AI --> UC18
+AI --> UC19
+AI --> UC20
+AI --> UC21
+AI --> UC22
+AI --> UC23
+AI --> UC24
+AI --> UC25
+
+UC19 ..> UC24 : <<include>>
+UC19 ..> ConsultThemes : <<include>>
+UC19 ..> ValidateOutput : <<include>>
+
+UC18 ..> GenerateEmbeddings : <<include>>
+
+UC20 ..> UC19 : <<include>>
+UC20 ..> ConsultThemes : <<include>>
+
+UC21 ..> ConsultPassages : <<include>>
+UC21 ..> ConsultThemes : <<include>>
+
+UC22 ..> UC21 : <<include>>
+
+UC23 ..> ExtractPassages : <<include>>
+UC23 ..> ConsultThemes : <<include>>
+UC23 ..> ValidateOutput : <<include>>
+
+UC25 ..> UC19 : <<extend>>
+UC25 ..> UC20 : <<extend>>
+UC25 ..> UC21 : <<extend>>
+UC25 ..> UC23 : <<extend>>
+
+note right of UC19
+A IA interpreta entradas textuais
+do journaling e retorna dados estruturados,
+como temas, resumo e frases relevantes.
+end note
+
+note right of UC18
+O histórico contextual representa a memória
+semântica do usuário, podendo usar vetores
+semânticos após validação dos temas.
+end note
+
+note right of UC21
+A passagem selecionada é uma referência
+contextual da entrada, diferente da
+recomendação cultural geral.
+end note
+
+note right of UC23
+A IA pode processar obras cadastradas
+pelo administrador e sugerir passagens
+para revisão humana.
+end note
+
+note right of UC25
+Falhas de processamento devem ser registradas
+para acompanhamento e possível reprocessamento.
+end note
+
+@enduml

@@ -326,6 +326,8 @@ class InterpretEntry:
             "short_text": canonical.short_text,
             "paraphrase": canonical.paraphrase,
             "interpretation_note": canonical.interpretation_note,
+            "reflective_value": canonical.reflective_value,
+            "reflective_note": canonical.reflective_note,
             "locator": canonical.locator,
             "priority": canonical.priority,
             "start_page": canonical.start_page,
@@ -342,6 +344,8 @@ class InterpretEntry:
                 "short_text": candidate.short_text,
                 "paraphrase": candidate.paraphrase,
                 "interpretation_note": candidate.interpretation_note,
+                "reflective_value": candidate.reflective_value,
+                "reflective_note": candidate.reflective_note,
                 "locator": candidate.locator,
                 "priority": candidate.priority,
                 "start_page": candidate.start_page,
@@ -366,7 +370,7 @@ class InterpretEntry:
                     candidate.matched_theme_confidence,
                 )
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             **catalog_data,
             "theme_matches": [
                 {"theme_id": theme_id, "confidence": confidence}

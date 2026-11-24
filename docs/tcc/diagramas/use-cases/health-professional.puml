@@ -1,0 +1,41 @@
+@startuml Profissional
+title Reflecta - Casos de Uso do Terceiro
+
+left to right direction
+
+actor "Terceiro" as Professional
+
+rectangle "Reflecta" {
+
+  usecase "UC16\nAcessar conteúdo\ncompartilhado" as UC16
+  usecase "Validar link/token\nde acesso" as ValidateToken
+
+  usecase "UC15\nVisualizar síntese\ndo usuário" as UC15
+
+  usecase "UC17\nCadastrar atividades\ne reflexões guiadas" as UC17
+  usecase "Vincular atividade\nao usuário" as LinkActivity
+}
+
+Professional --> UC16
+Professional --> UC15
+Professional --> UC17
+
+UC16 ..> ValidateToken : <<include>>
+
+UC15 ..> UC16 : <<include>>
+UC17 ..> UC16 : <<include>>
+UC17 ..> LinkActivity : <<include>>
+
+note right of UC16
+O terceiro acessa a análise contextual compartilhada
+por um link válido, sem login ou comprovação profissional.
+O sistema não verifica se é psicólogo ou terapeuta.
+end note
+
+note right of UC15
+A síntese exibida contém apenas
+os dados autorizados pelo usuário.
+end note
+
+
+@enduml

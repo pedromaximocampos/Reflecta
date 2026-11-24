@@ -1,0 +1,13 @@
+@startuml Service_Audit
+!theme plain
+title Audit Service (DB)
+
+entity "AUDIT_LOGS" as audit {
+  * id : UUID <<PK>>
+  --
+  user_id : UUID <<Ref>>
+  action : VARCHAR
+  details : JSONB
+  created_at : TIMESTAMPTZ
+}
+@enduml

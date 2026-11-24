@@ -17,6 +17,8 @@ class ContextualPassageRecord:
     short_text: str
     paraphrase: str
     interpretation_note: str
+    reflective_value: float | None
+    reflective_note: str | None
     locator: str
     priority: int
     work_id: str

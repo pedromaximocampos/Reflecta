@@ -1,0 +1,11 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.24", ranksep="0.4", splines=polyline, fontname="Arial", fontsize=15, labelloc=t, label="C  Ingestão e eventos"];
+node [shape=plain,fontname="Arial",fontsize=11]; edge [fontname="Arial",fontsize=10,color="#52606d",arrowsize=0.7];
+public_users [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>users</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+ai_processing_schema_inbox_events [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>inbox_events</B></TD></TR><TR><TD><FONT POINT-SIZE="9">ai_processing_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  consumer_name</TD></TR><TR><TD ALIGN="LEFT">PK  event_id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+ai_processing_schema_work_ingestion_chunks [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>work_ingestion_chunks</B></TD></TR><TR><TD><FONT POINT-SIZE="9">ai_processing_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  ingestion_id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+catalog_schema_work_ingestions [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>work_ingestions</B></TD></TR><TR><TD><FONT POINT-SIZE="9">catalog_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">work_id</TD></TR><TR><TD ALIGN="LEFT">FK  requested_by</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+public_outbox [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>outbox</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+catalog_schema_work_ingestions -> ai_processing_schema_work_ingestion_chunks [label="1 : 0..N"];
+public_users -> catalog_schema_work_ingestions [label="1 : 0..N"];
+}

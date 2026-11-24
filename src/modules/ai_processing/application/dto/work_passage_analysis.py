@@ -22,6 +22,8 @@ class SuggestedPassageDTO:
     chunk_end_offset: int
     paraphrase: str
     rationale: str
+    reflective_value: float
+    reflective_note: str
     themes: tuple[SuggestedPassageThemeDTO, ...]
 
     def __post_init__(self) -> None:
@@ -34,6 +36,12 @@ class SuggestedPassageDTO:
             raise ValueError("Suggested passage offsets are invalid.")
         if not self.paraphrase.strip() or not self.rationale.strip():
             raise ValueError("Suggested passage explanation must not be empty.")
+        if not 0 <= self.reflective_value <= 1:
+            raise ValueError(
+                "Suggested passage reflective value must be between 0 and 1."
+            )
+        if not self.reflective_note.strip():
+            raise ValueError("Suggested passage reflective note must not be empty.")
         theme_ids = tuple(theme.theme_id for theme in self.themes)
         if not theme_ids or len(theme_ids) != len(set(theme_ids)):
             raise ValueError("Suggested passage themes must be non-empty and unique.")

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.application.dto.journal_entry import JournalEntryOutputDTO
@@ -9,6 +10,7 @@ class CreateJournalEntryDTO:
     user_id: UserId
     title: str | None
     content_text: str
+    entry_date: date | None = None
     context_tags: ContentTags | None = None
 
 

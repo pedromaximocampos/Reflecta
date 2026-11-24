@@ -3,6 +3,8 @@ from src.modules.journal.bootstrap.use_cases import (
     get_delete_journal_entry_use_case,
     get_journal_entry_use_case,
     get_list_journal_entries_use_case,
+    get_list_journal_entry_calendar_use_case,
+    get_list_journal_entry_window_use_case,
     get_update_journal_entry_use_case,
 )
 from src.modules.journal.presentation.controllers.create_journal_entry_controller import (
@@ -16,6 +18,12 @@ from src.modules.journal.presentation.controllers.get_journal_entry_controller i
 )
 from src.modules.journal.presentation.controllers.list_journal_entries_controller import (
     ListJournalEntriesController,
+)
+from src.modules.journal.presentation.controllers.list_journal_entry_calendar_controller import (
+    ListJournalEntryCalendarController,
+)
+from src.modules.journal.presentation.controllers.list_journal_entry_window_controller import (
+    ListJournalEntryWindowController,
 )
 from src.modules.journal.presentation.controllers.update_journal_entry_controller import (
     UpdateJournalEntryController,
@@ -32,6 +40,18 @@ def get_journal_entry_controller() -> GetJournalEntryController:
 
 def get_list_journal_entries_controller() -> ListJournalEntriesController:
     return ListJournalEntriesController(get_list_journal_entries_use_case())
+
+
+def get_list_journal_entry_window_controller() -> ListJournalEntryWindowController:
+    return ListJournalEntryWindowController(
+        get_list_journal_entry_window_use_case()
+    )
+
+
+def get_list_journal_entry_calendar_controller() -> ListJournalEntryCalendarController:
+    return ListJournalEntryCalendarController(
+        get_list_journal_entry_calendar_use_case()
+    )
 
 
 def get_update_journal_entry_controller() -> UpdateJournalEntryController:

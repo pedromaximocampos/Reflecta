@@ -8,12 +8,17 @@ from src.modules.journal.application.use_cases.create_entry.icreate_journal_entr
     ICreateJournalEntryUseCase,
 )
 from src.modules.journal.domain.entities.journal_entry import JournalEntry
+from src.modules.journal.domain.exceptions.journal_exceptions import (
+    FutureJournalEntryDateError,
+    JournalEntryDateConflictError,
+)
 from src.modules.journal.domain.ports.units_of_work.ijournal_unit_of_work import (
     IJournalUnitOfWork,
 )
 from src.modules.journal.domain.value_objects.journal_entry_status import (
     JournalEntryStatus,
 )
+from src.modules.journal.domain.value_objects.journal_entry_date import journal_date_at
 from src.modules.journal.public.journal_entry_id import JournalEntryId
 from src.shared.domain.ports.system.iclock import IClock
 from src.shared.domain.ports.system.iulid_generator import IULIDGenerator
@@ -34,6 +39,11 @@ class CreateJournalEntryUseCaseImpl(ICreateJournalEntryUseCase):
         self,
         create_journal_entry_dto: CreateJournalEntryDTO,
     ) -> JournalEntryOutputDTO:
+        now = self.__system_clock.now()
+        today = journal_date_at(now)
+        entry_date = create_journal_entry_dto.entry_date or today
+        if entry_date > today:
+            raise FutureJournalEntryDateError()
         journal_entry = JournalEntry(
             id=JournalEntryId(self.__ulid_generator.generate_ulid()),
             user_id=create_journal_entry_dto.user_id,
@@ -41,13 +51,27 @@ class CreateJournalEntryUseCaseImpl(ICreateJournalEntryUseCase):
             content_text=create_journal_entry_dto.content_text,
             context_tags=create_journal_entry_dto.context_tags,
             status=JournalEntryStatus.DRAFT,
-            created_at=self.__system_clock.now(),
+            created_at=now,
+            entry_date=entry_date,
         )
 
-        event = JournalEntryCreated(journal_entry.id, journal_entry.user_id, journal_entry.created_at)
-        enqueue_created_entry(event, journal_entry)
-
         async with self.__journal_unit_of_work as uow:
+            existing = await uow.journal_entry_repository.find_by_date_for_user(
+                entry_date,
+                create_journal_entry_dto.user_id,
+            )
+            if existing is not None:
+                raise JournalEntryDateConflictError(
+                    entry_id=existing.id.value,
+                    entry_date=existing.entry_date.isoformat(),
+                )
+
+            event = JournalEntryCreated(
+                journal_entry.id,
+                journal_entry.user_id,
+                journal_entry.created_at,
+            )
+            enqueue_created_entry(event, journal_entry)
             created_entry = await uow.journal_entry_repository.create(journal_entry)
             output = JournalEntryOutputDTO.from_entity(created_entry)
             await uow.commit()

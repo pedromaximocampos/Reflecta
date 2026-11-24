@@ -23,16 +23,30 @@ class ContextGateway:
                 "period": {"start_date": row.period_start.isoformat(), "end_date": row.period_end.isoformat(),
                            "timezone": "America/Sao_Paulo"} if row.period_start else None}
 
+    @staticmethod
+    def serialize_period_entry(row):
+        return {"id": row.id, "content_text": row.content_text, "context_tags": row.context_tags,
+                "entry_date": row.entry_date.isoformat(),
+                "created_at": row.created_at.isoformat(),
+                "updated_at": row.updated_at.isoformat() if row.updated_at else None}
+
+    @staticmethod
+    def summarize_period_entry(row):
+        return {"id": row.id, "title": row.title, "entry_date": row.entry_date.isoformat(),
+                "status": row.status}
+
+    async def period_rows(self, user_id, period, session):
+        return (await session.execute(self.active(user_id).where(
+            Entry.entry_date >= period.start_date,
+            Entry.entry_date <= period.end_date,
+        ).order_by(Entry.entry_date, Entry.created_at, Entry.id))).scalars().all()
+
     async def period_entries(self, user_id, period, session=None):
         if session is None:
             async with self.db.session() as session:
                 return await self.period_entries(user_id, period, session)
-        start, stop = period.bounds()
-        rows = (await session.execute(self.active(user_id).where(Entry.created_at >= start, Entry.created_at < stop)
-                                       .order_by(Entry.created_at, Entry.id))).scalars().all()
-        return [{"id": row.id, "content_text": row.content_text, "context_tags": row.context_tags,
-                 "created_at": row.created_at.isoformat(),
-                 "updated_at": row.updated_at.isoformat() if row.updated_at else None} for row in rows]
+        rows = await self.period_rows(user_id, period, session)
+        return [self.serialize_period_entry(row) for row in rows]
 
     async def find(self, user_id, key):
         async with self.db.session() as session:
@@ -41,11 +55,13 @@ class ContextGateway:
 
     async def status(self, user_id, period):
         async with self.db.session() as session:
-            entries = await self.period_entries(user_id, period, session)
+            rows = await self.period_rows(user_id, period, session)
+            entries = [self.serialize_period_entry(row) for row in rows]
+            summaries = [self.summarize_period_entry(row) for row in rows]
             key = fingerprint(entries, period)
             row = await session.scalar(select(Context).where(Context.user_id == user_id, Context.fingerprint == key))
             return {"period": period.describe(), "entry_count": len(entries), "minimum_entries": MIN_ENTRIES, "eligible": len(entries) >= MIN_ENTRIES,
-                    "analysis": self.serialize(row) if row else None}
+                    "entries": summaries, "analysis": self.serialize(row) if row else None}
 
     async def history(self, user_id, *, limit=5, offset=0):
         async with self.db.session() as session:

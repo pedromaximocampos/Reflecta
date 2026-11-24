@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -38,6 +38,7 @@ class CreateJournalEntryValidator(BaseModel):
 
     title: str | None = Field(default=None, max_length=200)
     content_text: str = Field(..., min_length=1, max_length=20_000)
+    entry_date: date | None = None
     context_tags: ContextTagsValidator | None = None
 
     @field_validator("title")
@@ -99,6 +100,7 @@ class JournalEntryResponseValidator(BaseModel):
     context_tags: dict | None
     status: JournalEntryStatus
     created_at: datetime
+    entry_date: date
     updated_at: datetime | None
 
 
@@ -106,3 +108,29 @@ class JournalEntriesResponseValidator(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     entries: list[JournalEntryResponseValidator]
+
+
+class JournalEntryWindowResponseValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    entries: list[JournalEntryResponseValidator]
+    window_start: date | None
+    window_end: date | None
+    next_end_date: date | None
+    has_older: bool
+
+
+class JournalEntryCalendarItemResponseValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    entry_date: date
+    status: JournalEntryStatus
+
+
+class JournalEntryCalendarResponseValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    entries: list[JournalEntryCalendarItemResponseValidator]
+    start_date: date
+    end_date: date

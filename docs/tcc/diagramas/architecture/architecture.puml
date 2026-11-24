@@ -1,0 +1,102 @@
+@startuml
+title Arquitetura em Monólito Modular
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam DefaultFontName Arial
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+
+left to right direction
+
+actor "Usuário Final" as User
+actor "Terceiro" as Professional
+actor "Administrador" as Admin
+
+rectangle "Frontend Web" as Frontend
+rectangle "API Gateway / BFF" as BFF
+
+package "Diagrama Arquitetural" as Backend {
+
+  component "Auth Module" as Auth
+  component "Journal Module" as Journal
+  component "AI Processing Module" as AI
+  component "Catalog / Knowledge Module" as Catalog
+  component "Recommendation Module" as Recommendation
+  component "Sharing / Professional Module" as Sharing
+  component "Data Export Module" as DataExport
+  component "Notification Module" as Notification
+
+  component "Internal Event Dispatcher\nOutbox + Workers" as Events
+}
+
+database "PostgreSQL\nSchemas por módulo" as Postgres
+database "Neo4j\nTemas • Passagens • Obras • Autores" as Neo4j
+cloud "S3\nPDFs • Capas • Avatares" as S3
+database "Processed Events\nIdempotência interna" as ProcessedEvents
+
+cloud "Provedor de IA\nLLM / Vetores semânticos" as LLM
+cloud "Amazon SES\nE-mail" as SES
+
+User --> Frontend
+Professional --> Frontend
+Admin --> Frontend
+
+Frontend --> BFF
+BFF --> Backend
+
+Auth --> Postgres
+Journal --> Postgres
+Recommendation --> Postgres
+Sharing --> Postgres
+Events --> Postgres
+
+Catalog --> Neo4j
+
+Auth --> S3 : avatar do usuário
+Catalog --> S3 : PDFs e capas de obras
+AI --> S3 : lê PDFs de obras\npara processamento
+
+DataExport --> Auth : perfil e avatar
+DataExport --> Journal : reflexões e análises
+DataExport --> Sharing : compartilhamentos e orientações
+
+AI --> LLM
+Notification --> SES
+
+Auth --> Events
+Journal --> Events
+Catalog --> Events
+Sharing --> Events
+Recommendation --> Events
+
+Events --> AI
+Events --> Journal
+Events --> Catalog
+Events --> Recommendation
+Events --> Notification
+Events --> ProcessedEvents
+
+note bottom of Backend
+O Reflecta é implantado como um monólito modular:
+uma única aplicação backend, organizada em módulos internos
+com responsabilidades separadas.
+end note
+
+note right of Events
+O processamento assíncrono é feito por eventos internos,
+usando Outbox, workers e controle de idempotência.
+end note
+
+note bottom of Neo4j
+O Neo4j armazena o conhecimento curado do sistema.
+As entradas privadas do journaling permanecem no PostgreSQL.
+end note
+
+@enduml

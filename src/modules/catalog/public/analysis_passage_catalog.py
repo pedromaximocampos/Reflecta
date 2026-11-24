@@ -51,6 +51,8 @@ class AnalysisPassageCatalog:
                 short_text=suggestion.exact_text,
                 paraphrase=suggestion.paraphrase,
                 interpretation_note=suggestion.interpretation_note,
+                reflective_value=suggestion.reflective_value,
+                reflective_note=suggestion.reflective_note,
                 status=CatalogStatus.PENDING_REVIEW,
                 priority=0,
                 start_page=suggestion.start_page,

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1110" viewBox="0 0 1180 1110"><defs><marker id="arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#263747" stroke-width="1.3"/></marker></defs><rect width="1180" height="1110" fill="white"/>
+<text x="590" y="34" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#17212b"><tspan x="590" dy="0">Reflecta  UC06  Criar link de análise compartilhada</tspan></text>
+<rect x="0" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="90" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="90" dy="0">Usuário Final</tspan></text>
+<line x1="90" y1="135" x2="90" y2="1015" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="215" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="305" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="305" dy="0">Frontend Web</tspan></text>
+<line x1="305" y1="135" x2="305" y2="1015" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="470" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="560" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="560" dy="0">Sharing Module</tspan></text>
+<line x1="560" y1="135" x2="560" y2="1015" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="720" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="810" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="810" dy="0">Journal Module</tspan></text>
+<line x1="810" y1="135" x2="810" y2="1015" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="987.5" y="65" width="185" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="1080" y="91" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="1080" dy="0">PostgreSQL</tspan><tspan x="1080" dy="26">journal_schema</tspan></text>
+<line x1="1080" y1="135" x2="1080" y2="1015" stroke="#85909c" stroke-dasharray="6 6"/>
+<line x1="90" y1="195" x2="305" y2="195" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="102" y="157" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="102" dy="0">Conferir a análise e escolher</tspan><tspan x="102" dy="26">se inclui as reflexões</tspan></text>
+<line x1="305" y1="260" x2="560" y2="260" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="317" y="222" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="317" dy="0">POST de criação do link</tspan><tspan x="317" dy="26">confirmed e include_journals</tspan></text>
+<text x="570" y="295" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="570" dy="0">Validar autenticação e confirmação</tspan></text>
+<line x1="560" y1="365" x2="810" y2="365" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="572" y="327" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Preparar snapshot</tspan><tspan x="572" dy="26">para a análise do titular</tspan></text>
+<line x1="810" y1="415" x2="1080" y2="415" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="822" y="377" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="822" dy="0">Ler análise e conferir</tspan><tspan x="822" dy="26">conta e fontes disponíveis</tspan></text>
+<line x1="1080" y1="480" x2="810" y2="480" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="822" y="468" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="822" dy="0">Análise contextual e fontes</tspan></text>
+<text x="818" y="520" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="818" dy="0">Preparar as reflexões autorizadas</tspan></text>
+<text x="818" y="545" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="400" fill="#17212b"><tspan x="818" dy="0">se include_journals = true</tspan></text>
+<line x1="810" y1="605" x2="560" y2="605" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="572" y="593" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Retornar dados autorizados</tspan></text>
+<text x="570" y="650" text-anchor="start" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="570" dy="0">Gerar token e calcular SHA-256</tspan></text>
+<text x="570" y="680" text-anchor="start" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="570" dy="0">Definir expiração em 72 horas</tspan></text>
+<line x1="560" y1="745" x2="1080" y2="745" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="572" y="707" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Gravar context_analysis_shares:</tspan><tspan x="572" dy="26">snapshot, hash e datas</tspan></text>
+<line x1="1080" y1="805" x2="560" y2="805" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="572" y="793" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Confirmar persistência</tspan></text>
+<line x1="560" y1="865" x2="305" y2="865" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="317" y="853" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="317" dy="0">201 com token e metadados</tspan></text>
+<line x1="305" y1="925" x2="90" y2="925" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="102" y="913" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="102" dy="0">Exibir link e vencimento</tspan></text>
+<text x="590" y="984" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#17212b"><tspan x="590" dy="0">O titular copia e envia o link à pessoa escolhida.</tspan></text>
+<text x="590" y="1048" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="590" dy="0">O token original aparece somente na criação; o banco persiste seu hash.</tspan></text>
+<text x="590" y="1076" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="590" dy="0">O snapshot é salvo no PostgreSQL. Não há exportação S3 nem envio automático ao destinatário.</tspan></text>
+</svg>

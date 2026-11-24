@@ -41,6 +41,19 @@ class WorkIngestionRepository(IWorkIngestionRepository):
         model = result.scalar_one_or_none()
         return self.__mapper.to_entity(model) if model is not None else None
 
+    async def find_by_id_for_update(
+        self,
+        ingestion_id: WorkIngestionId,
+    ) -> WorkIngestion | None:
+        query = (
+            select(WorkIngestionModel)
+            .where(WorkIngestionModel.id == ingestion_id.value)
+            .with_for_update()
+        )
+        result = await self.__session.execute(query)
+        model = result.scalar_one_or_none()
+        return self.__mapper.to_entity(model) if model is not None else None
+
     async def list_recent(self, *, limit: int) -> tuple[WorkIngestion, ...]:
         status_priority = case(
             (WorkIngestionModel.status == WorkIngestionStatus.PROCESSING.value, 0),

@@ -17,6 +17,8 @@ test('contextual passages expose the persisted catalog snapshot without changing
           short_text: 'Não são as coisas que perturbam, mas os juízos sobre elas.',
           paraphrase: 'Nossa interpretação influencia a resposta aos acontecimentos.',
           interpretation_note: 'Associação com julgamento e escolha.',
+          reflective_value: 0.875,
+          reflective_note: 'O trecho amplia a perspectiva sem prescrever resposta.',
           locator: 'Enchiridion, 5',
           work: { title: 'Manual de Epicteto', author_name: 'Epicteto' },
         },
@@ -34,6 +36,8 @@ test('contextual passages expose the persisted catalog snapshot without changing
     short_text: 'Não são as coisas que perturbam, mas os juízos sobre elas.',
     paraphrase: 'Nossa interpretação influencia a resposta aos acontecimentos.',
     interpretation_note: 'Associação com julgamento e escolha.',
+    reflective_value: 0.875,
+    reflective_note: 'O trecho amplia a perspectiva sem prescrever resposta.',
     locator: 'Enchiridion, 5',
     work_title: 'Manual de Epicteto',
     author_name: 'Epicteto',
@@ -72,4 +76,23 @@ test('contextual passages expose only themes persisted as matches for navigation
     contextualPassages(analysis)[0].themes,
     [{ id: 'control', label: 'O que posso controlar' }],
   )
+})
+
+test('contextual passages never expose a passage without an effective canonical theme', () => {
+  const analysis = {
+    sentences: [{
+      id: 'sentence-1',
+      sentence_text: 'Texto sem tema mantido.',
+      themes: [],
+      passages: [{
+        id: 'association-1',
+        passage_id: 'passage-1',
+        payload_snapshot: {
+          short_text: 'Uma passagem não deve aparecer sozinha.',
+          theme_matches: [{ theme_id: 'removed-theme' }],
+        },
+      }],
+    }],
+  }
+  assert.deepEqual(contextualPassages(analysis), [])
 })

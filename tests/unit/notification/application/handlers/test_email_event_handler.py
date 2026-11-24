@@ -88,6 +88,45 @@ async def test_maps_user_recovery_event_to_confirmation_link() -> None:
 
 
 @pytest.mark.asyncio
+async def test_maps_professional_activity_without_authentication_code() -> None:
+    notifier = EmailNotifierSpy()
+    handler = EmailEventHandler(notifier, "https://app.reflecta.test/")
+
+    await handler.handle(
+        EmailsEventType.EMAIL_PROFESSIONAL_ACTIVITIES_ASSIGNED,
+        {
+            "username": "Pedro",
+            "user_email": "pedro@example.com",
+            "activities": [
+                {
+                    "activity_id": "activity-1",
+                    "activity_kind": "activity",
+                    "title": "Observar escolhas",
+                    "description": "Observe uma escolha possível.",
+                    "due_date": None,
+                },
+                {
+                    "activity_id": "activity-2",
+                    "activity_kind": "guided_reflection",
+                    "title": "Refletir sobre escolhas",
+                    "description": "Escreva sobre uma escolha possível.",
+                    "due_date": "2026-11-15",
+                },
+            ],
+        },
+    )
+
+    dto = notifier.sent[0]
+    assert dto.kind is EmailKind.PROFESSIONAL_ACTIVITY
+    assert dto.link == "https://app.reflecta.test/inicio/orientacoes"
+    assert len(dto.activities) == 2
+    assert dto.activities[1].activity_type == "guided_reflection"
+    assert dto.activities[1].activity_title == "Refletir sobre escolhas"
+    assert dto.activities[1].activity_description == "Escreva sobre uma escolha possível."
+    assert dto.activities[1].due_date == "2026-11-15"
+
+
+@pytest.mark.asyncio
 async def test_rejects_unsupported_email_event_without_sending() -> None:
     notifier = EmailNotifierSpy()
     handler = EmailEventHandler(notifier, "https://app.reflecta.test")

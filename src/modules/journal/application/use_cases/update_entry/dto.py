@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.domain.value_objects.content_tags import ContentTags
 from src.modules.journal.public.journal_entry_id import JournalEntryId

@@ -4,7 +4,11 @@ from typing import Any
 import pytest
 from botocore.exceptions import ClientError
 
-from src.modules.notification.application.ports.notifiers.dto import EmailDTO, EmailKind
+from src.modules.notification.application.ports.notifiers.dto import (
+    EmailActivityDTO,
+    EmailDTO,
+    EmailKind,
+)
 from src.modules.notification.domain.exceptions.email_notification_errors import (
     PermanentEmailError,
 )
@@ -122,6 +126,42 @@ async def test_sends_user_recovery_email_using_confirmation_template() -> None:
     assert simple_content["Subject"]["Data"] == "Recover your account for Pedro"
     assert dto.link in simple_content["Body"]["Html"]["Data"]
     assert "will remain deleted" in simple_content["Body"]["Html"]["Data"]
+
+
+@pytest.mark.asyncio
+async def test_sends_professional_activity_with_escaped_content() -> None:
+    client = FakeSESV2Client()
+    notifier = SESNotifier(client, "sender@example.com")
+    dto = EmailDTO(
+        email=RecipientEmail("user@example.com"),
+        username="Pedro",
+        link="https://app.reflecta.test/inicio/orientacoes",
+        expires_in_minutes=0,
+        kind=EmailKind.PROFESSIONAL_ACTIVITY,
+        activities=(
+            EmailActivityDTO(
+                activity_type="activity",
+                activity_title="Observar escolhas",
+                activity_description="Registre uma escolha.",
+            ),
+            EmailActivityDTO(
+                activity_type="guided_reflection",
+                activity_title="Escolhas <importantes>",
+                activity_description="Observe <script>alert(1)</script>",
+                due_date="2026-11-15",
+            ),
+        ),
+    )
+
+    await notifier.send_email(dto)
+
+    assert client.request is not None
+    simple_content = client.request["Content"]["Simple"]
+    assert "2 novas orientações" in simple_content["Subject"]["Data"]
+    html = simple_content["Body"]["Html"]["Data"]
+    assert "Escolhas &lt;importantes&gt;" in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "<script>" not in html
 
 
 @pytest.mark.asyncio

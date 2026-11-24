@@ -10,6 +10,7 @@ from src.modules.ai_processing.infrastructure.persistence.postgresql.models impo
 from src.modules.catalog.infrastructure.persistence.postgresql.models import *
 from src.modules.internal_events.infrastructure.persistence.postgresql.models import *
 from src.modules.journal.infrastructure.persistence.postgresql.models import *
+from src.modules.sharing.infrastructure.persistence.postgresql.models import *
 from alembic import context
 import os
 

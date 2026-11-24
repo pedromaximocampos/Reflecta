@@ -17,3 +17,10 @@ class StoredUserAvatarDTO:
     size_bytes: int
     etag: str | None = None
     version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DownloadedUserAvatarDTO:
+    content: bytes
+    content_type: str
+    size_bytes: int

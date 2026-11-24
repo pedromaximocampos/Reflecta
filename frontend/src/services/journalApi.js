@@ -24,6 +24,29 @@ export function listJournalEntries({ limit = 10, offset = 0, signal } = {}) {
   return authenticatedRequest(`?${new URLSearchParams({ limit, offset })}`, { signal })
 }
 
+export function listJournalEntryWindow({
+  endDate,
+  days = 15,
+  centerDate,
+  beforeDays = 15,
+  afterDays = 15,
+  signal,
+} = {}) {
+  const params = new URLSearchParams({ days })
+  if (endDate) params.set('end_date', endDate)
+  if (centerDate) {
+    params.set('center_date', centerDate)
+    params.set('before_days', beforeDays)
+    params.set('after_days', afterDays)
+  }
+  return authenticatedRequest(`/window?${params}`, { signal })
+}
+
+export function listJournalEntryCalendar({ startDate, endDate, signal } = {}) {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
+  return authenticatedRequest(`/calendar?${params}`, { signal })
+}
+
 export function getJournalEntry(id, { signal } = {}) {
   return authenticatedRequest(`/${encodeURIComponent(id)}`, { signal })
 }
@@ -40,11 +63,24 @@ export function deleteJournalEntry(id) {
   return authenticatedRequest(`/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
-export function submitJournalAnalysis(id, { expectedRevision } = {}) {
-  const options = expectedRevision ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expected_revision: expectedRevision }) } : {}
+export function submitJournalAnalysis(id, { expectedRevision, reanalyze = false } = {}) {
+  const payload = {}
+  if (expectedRevision) payload.expected_revision = expectedRevision
+  if (reanalyze) payload.reanalyze = true
+  const options = Object.keys(payload).length > 0
+    ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    : {}
   return authenticatedRequest(`/${encodeURIComponent(id)}/analysis`, { method: 'POST', ...options })
 }
 
 export function getJournalAnalysis(id, { signal } = {}) {
   return authenticatedRequest(`/${encodeURIComponent(id)}/analysis`, { signal })
+}
+
+export function updateJournalAnalysisThemes(id, themeIds) {
+  return authenticatedRequest(`/${encodeURIComponent(id)}/analysis/themes`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme_ids: themeIds }),
+  })
 }

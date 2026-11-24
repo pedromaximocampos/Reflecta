@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
-import { BookMarked, BookOpen, Home, User, List, LogOut, AlertTriangle } from 'lucide-react'
+import { BookMarked, BookOpen, Compass, Home, User, List, ListChecks, LogOut, AlertTriangle, History, Share2 } from 'lucide-react'
 import { logout } from '../services/authApi'
+import { listProfessionalActivities, PROFESSIONAL_ACTIVITIES_CHANGED } from '../services/professionalActivitiesApi'
 
 export function MainLayout({ admin = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [pendingActivities, setPendingActivities] = useState(0)
   const homePath = admin ? '/deshboard' : '/inicio'
   const menuItems = [
     { path: homePath, icon: Home, label: admin ? 'Painel administrativo' : 'Dashboard' },
@@ -18,10 +20,32 @@ export function MainLayout({ admin = false }) {
     ] : []),
     ...(!admin ? [
       { path: '/inicio/diario', icon: BookMarked, label: 'Nova reflexão' },
-      { path: '/inicio/reflexoes', icon: List, label: 'Minhas reflexões' },
+      { path: '/inicio/reflexoes', icon: BookOpen, label: 'Minhas reflexões' },
+      { path: '/inicio/analises', icon: History, label: 'Análise do histórico' },
+      { path: '/inicio/orientacoes', icon: ListChecks, label: 'Orientações', badge: pendingActivities },
+      { path: '/inicio/recomendacoes', icon: Compass, label: 'Recomendações' },
+      { path: '/inicio/compartilhamentos', icon: Share2, label: 'Compartilhamentos' },
     ] : []),
     { path: '/auth/perfil', icon: User, label: 'Perfil' },
   ]
+
+  useEffect(() => {
+    if (admin) return undefined
+    const controller = new AbortController()
+    const loadPending = () => {
+      listProfessionalActivities({ status: 'pending', limit: 1, signal: controller.signal })
+        .then(data => setPendingActivities(data.total || 0))
+        .catch(error => {
+          if (error.name !== 'AbortError') setPendingActivities(0)
+        })
+    }
+    loadPending()
+    window.addEventListener(PROFESSIONAL_ACTIVITIES_CHANGED, loadPending)
+    return () => {
+      controller.abort()
+      window.removeEventListener(PROFESSIONAL_ACTIVITIES_CHANGED, loadPending)
+    }
+  }, [admin])
 
   const handleLogout = async () => {
     if (loggingOut) return
@@ -61,6 +85,7 @@ export function MainLayout({ admin = false }) {
               >
                 <Icon className="w-5 h-5" strokeWidth={1.5} />
                 <span>{item.label}</span>
+                {item.badge > 0 && <span className="sidebar-menu-badge" aria-label={`${item.badge} orientações pendentes`}>{item.badge > 99 ? '99+' : item.badge}</span>}
               </Link>
             )
           })}

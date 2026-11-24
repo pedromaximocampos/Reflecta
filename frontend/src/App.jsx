@@ -9,6 +9,11 @@ import { AdminDashboard } from './pages/AdminDashboard'
 import { Journaling } from './pages/Journaling'
 import { Reflexoes } from './pages/Reflexoes'
 import { Reflexao } from './pages/Reflexao'
+import { HistoricoAnalises } from './pages/HistoricoAnalises'
+import { Compartilhamentos } from './pages/Compartilhamentos'
+import { Recomendacoes } from './pages/Recomendacoes'
+import { ObraRecomendada } from './pages/ObraRecomendada'
+import { Orientacoes } from './pages/Orientacoes'
 import { EsqueciSenha } from './pages/EsqueciSenha'
 import { ResetarSenha } from './pages/ResetarSenha'
 import { Login } from './pages/Login'
@@ -42,6 +47,11 @@ function App() {
             <Route path="/inicio" element={<Dashboard />} />
             <Route path="/inicio/diario" element={<Journaling />} />
             <Route path="/inicio/reflexoes" element={<Reflexoes />} />
+            <Route path="/inicio/analises" element={<HistoricoAnalises />} />
+            <Route path="/inicio/compartilhamentos" element={<Compartilhamentos />} />
+            <Route path="/inicio/recomendacoes" element={<Recomendacoes />} />
+            <Route path="/inicio/recomendacoes/:workId" element={<ObraRecomendada />} />
+            <Route path="/inicio/orientacoes" element={<Orientacoes />} />
             <Route path="/inicio/reflexoes/:id" element={<Reflexao />} />
             <Route path="/inicio/reflexoes/:id/editar" element={<Reflexao editing />} />
             <Route path="/auth/perfil" element={<Perfil />} />

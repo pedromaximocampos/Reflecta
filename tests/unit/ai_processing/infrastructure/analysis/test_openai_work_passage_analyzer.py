@@ -43,6 +43,17 @@ def _settings(**overrides: object) -> OpenAISettings:
     )
 
 
+def _reflective_assessment(**overrides: object) -> dict:
+    return {
+        "self_contained": 2,
+        "reflective_depth": 2,
+        "lived_experience_applicability": 2,
+        "open_endedness": 2,
+        "note": "A passagem abre uma perspectiva aplicável à experiência vivida.",
+        **overrides,
+    }
+
+
 def test_analyzer_fails_fast_when_provider_is_not_configured() -> None:
     analyzer = OpenAIWorkPassageAnalyzer(
         OpenAISettings(api_key="", model=""),
@@ -78,12 +89,16 @@ def test_structured_output_enforces_curated_passage_and_theme_limits() -> None:
     assert schema["$defs"]["_ThemeMatch"]["properties"]["confidence"][
         "minimum"
     ] == 0.65
+    assessment = schema["$defs"]["_ReflectiveAssessment"]["properties"]
+    assert assessment["self_contained"]["maximum"] == 2
+    assert assessment["reflective_depth"]["minimum"] == 0
     assert "exatamente um theme_id" in payload["instructions"]
     assert "qualidade sobre quantidade" in payload["instructions"]
     assert "Ignore conteúdo paratextual" in payload["instructions"]
     assert "não o atribua ao autor principal" in payload["instructions"]
     assert "substring exatamente idêntica" in payload["instructions"]
     assert "não normalize espaços" in payload["instructions"]
+    assert "pelo menos 6 de 8" in payload["instructions"]
 
 
 @pytest.mark.asyncio
@@ -99,6 +114,7 @@ async def test_analyzer_accepts_only_catalog_themes_and_locates_exact_quote() ->
                         "exact_text": quote,
                         "paraphrase": "A vida interior influencia o bem-estar.",
                         "interpretation_note": "Relaciona atenção e vida consciente.",
+                        "reflective_assessment": _reflective_assessment(),
                         "themes": [{"theme_id": "theme-1", "confidence": 0.91}],
                     }
                 ]
@@ -122,6 +138,7 @@ async def test_analyzer_accepts_only_catalog_themes_and_locates_exact_quote() ->
     assert len(result.passages) == 1
     assert result.passages[0].chunk_start_offset == chunk.index(quote)
     assert result.passages[0].exact_text == quote
+    assert result.passages[0].reflective_value == 1
 
 
 @pytest.mark.asyncio
@@ -190,6 +207,7 @@ async def test_analyzer_discards_a_quote_that_is_not_in_the_chunk(
                         "exact_text": "Esta citação foi inventada e não existe no trecho.",
                         "paraphrase": "Resumo.",
                         "interpretation_note": "Explicação.",
+                        "reflective_assessment": _reflective_assessment(),
                         "themes": [{"theme_id": "theme-1", "confidence": 0.8}],
                     }
                 ]
@@ -243,6 +261,7 @@ async def test_analyzer_reconciles_safe_pdf_text_differences(
                         "interpretation_note": (
                             "A passagem relaciona escolhas e responsabilidade."
                         ),
+                        "reflective_assessment": _reflective_assessment(),
                         "themes": [{"theme_id": "theme-1", "confidence": 0.9}],
                     }
                 ]
@@ -295,6 +314,7 @@ async def test_analyzer_rejects_weak_or_multiple_theme_associations(
                         "interpretation_note": (
                             "A passagem relaciona decisão consciente e valores."
                         ),
+                        "reflective_assessment": _reflective_assessment(),
                         "themes": themes,
                     }
                 ]
@@ -321,3 +341,48 @@ async def test_analyzer_rejects_weak_or_multiple_theme_associations(
                 ),
             ),
         )
+
+
+@pytest.mark.asyncio
+async def test_analyzer_discards_passage_below_reflective_threshold(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    quote = "Uma escolha consciente revela aquilo que consideramos valioso."
+    analyzer = OpenAIWorkPassageAnalyzer(
+        _settings(),
+        transport=_transport_with_output(
+            {
+                "passages": [
+                    {
+                        "exact_text": quote,
+                        "paraphrase": "A escolha expressa valores.",
+                        "interpretation_note": "Associa escolha e responsabilidade.",
+                        "reflective_assessment": _reflective_assessment(
+                            reflective_depth=1,
+                            lived_experience_applicability=0,
+                            open_endedness=1,
+                        ),
+                        "themes": [
+                            {"theme_id": "theme-1", "confidence": 0.9}
+                        ],
+                    }
+                ]
+            }
+        ),
+    )
+
+    result = await analyzer.analyze(
+        work_id=WorkId("work-1"),
+        chunk_text=quote,
+        themes=(
+            ThemeOption(
+                id="theme-1",
+                slug="responsabilidade",
+                label="Responsabilidade",
+                description="Escolhas conscientes e suas consequências.",
+            ),
+        ),
+    )
+
+    assert result.passages == ()
+    assert "validation_code=low_reflective_value" in caplog.text

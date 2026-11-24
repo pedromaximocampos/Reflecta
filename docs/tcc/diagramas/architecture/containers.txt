@@ -1,0 +1,43 @@
+@startuml
+title Reflecta - C4 Nível 2 - Diagrama de Contêineres
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_LEFT_RIGHT()
+
+Person(usuario, "Usuário Final", "Pessoa que utiliza o journaling e consulta análises.")
+Person(profissional, "Profissional de Saúde", "Acessa página compartilhada por token.")
+Person(admin, "Administrador", "Gerencia dados administrativos do sistema.")
+
+System_Boundary(reflecta, "Reflecta") {
+
+    Container(frontend, "Frontend Web", "Web App", "Interface utilizada por usuários, profissionais e administradores.")
+
+    Container(bff, "API Gateway / BFF", "Backend for Frontend", "Centraliza chamadas do frontend, autenticação de requisições e adaptação das APIs.")
+
+    Container(backend, "Reflecta Backend", "Monólito Modular", "Aplicação backend única, organizada em módulos internos com responsabilidades separadas.")
+
+    ContainerDb(postgres, "PostgreSQL CORE", "PostgreSQL", "Banco transacional do sistema, com schemas por módulo, eventos internos, outbox e registros de idempotência.")
+
+    ContainerDb(neo4j, "Neo4j", "Graph Database", "Banco de grafo para temas, passagens, obras e autores do catálogo curado.")
+
+    ContainerDb(s3, "S3", "Object Storage", "Armazena PDFs, capas de obras, avatares e exportações.")
+}
+
+System_Ext(ia, "Provedor de IA", "LLM e vetores semânticos.")
+System_Ext(email, "Amazon SES", "Envio de e-mails.")
+
+Rel(usuario, frontend, "Utiliza")
+Rel(profissional, frontend, "Acessa página compartilhada")
+Rel(admin, frontend, "Administra catálogo e falhas")
+
+Rel(frontend, bff, "Envia requisições HTTP")
+Rel(bff, backend, "Encaminha chamadas para operações do sistema")
+
+Rel(backend, postgres, "Lê e grava dados transacionais")
+Rel(backend, neo4j, "Consulta conhecimento curado")
+Rel(backend, s3, "Armazena e recupera arquivos")
+Rel(backend, ia, "Solicita análise textual e embeddings")
+Rel(backend, email, "Solicita envio de notificações")
+
+@enduml

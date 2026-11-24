@@ -18,9 +18,10 @@ from src.modules.auth.bootstrap.fast_api_services import get_fast_api_auth_servi
 from src.modules.auth.presentation.services.fast_api_auth_service import FastAPIAuthService
 from src.modules.journal.infrastructure.persistence.postgresql.models.journal_entry_model import JournalEntryModel as Entry
 from src.modules.journal.infrastructure.persistence.postgresql.models.context_analysis_model import ContextAnalysisModel as Analysis
-from src.modules.journal.infrastructure.persistence.postgresql.models.context_share_model import ContextShareModel as Share
-from src.modules.journal.infrastructure.persistence.postgresql.share_gateway import ContextShareGateway
-from src.modules.journal.presentation.share_routes import get_share_gateway
+from src.modules.journal.infrastructure.persistence.postgresql.journal_sharing_facade import PostgresJournalSharingFacade
+from src.modules.sharing.infrastructure.persistence.postgresql.models.context_share_model import ContextShareModel as Share
+from src.modules.sharing.infrastructure.persistence.postgresql.share_gateway import ContextShareGateway
+from src.modules.sharing.presentation.routes import get_share_gateway
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.skipif(not os.getenv('SHARING_TEST_DATABASE_URL'), reason='Opt-in PostgreSQL integration test')]
 
@@ -31,7 +32,8 @@ async def test_share_confirmation_token_privacy_expiry_revocation_and_source_del
     ids = [str(ulid.new()) for _ in range(5)]
     now = datetime(2026, 10, 29, 12, tzinfo=timezone.utc)
     clock = [now]
-    secret = 'PRIVATE-PROFILE-JOURNAL-TEXT'
+    profile_secret = 'PRIVATE-PROFILE-TEXT'
+    journal_secret = 'AUTHORIZED-JOURNAL-TEXT'
     result = {'summary': 'Síntese autorizada', 'recurring_patterns': ['Padrão observado'], 'changes_over_time': [], 'reflection_questions': ['O que mudou?']}
     try:
         async with engine.connect() as connection:
@@ -45,7 +47,13 @@ async def test_share_confirmation_token_privacy_expiry_revocation_and_source_del
                     except BaseException:
                         await session.rollback()
                         raise
-            gateway = ContextShareGateway(SimpleNamespace(session=scope), clock=lambda: clock[0])
+            database = SimpleNamespace(session=scope)
+            gateway = ContextShareGateway(
+                database,
+                journal=PostgresJournalSharingFacade(database),
+                token_secret="integration-test-share-secret",
+                clock=lambda: clock[0],
+            )
             app = create_fast_api_app()
             actor = AuthenticatedPrincipal(UserId(owner), UserRole.USER)
             async def authenticate(token):
@@ -56,11 +64,12 @@ async def test_share_confirmation_token_privacy_expiry_revocation_and_source_del
                 async with scope() as session:
                     for user_id in [owner, other]:
                         await session.execute(insert(UserModel).values(id=user_id, username='share-test-' + user_id,
-                            email=user_id + '@share-test.invalid', name=secret, date_of_birth=date(2000, 1, 1),
+                            email=user_id + '@share-test.invalid', name=profile_secret, date_of_birth=date(2000, 1, 1),
                             created_at=now, is_email_verified=False, role=UserRole.USER))
-                    for entry_id in ids:
-                        await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text=secret,
-                            title=secret, status='analyzed', created_at=now))
+                    for index, entry_id in enumerate(ids):
+                        await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text=journal_secret,
+                            title=f'Reflexão {index + 1}', status='analyzed', created_at=now,
+                            entry_date=date(2026, 10, 23) + timedelta(days=index)))
                     for analysis, start, end in [(analysis_id, date(2026, 10, 23), date(2026, 10, 29)), (legacy_id, None, None)]:
                         await session.execute(insert(Analysis).values(id=analysis, user_id=owner, fingerprint=analysis,
                             entry_ids=ids, result=result, created_at=now, period_start=start, period_end=end))
@@ -79,16 +88,19 @@ async def test_share_confirmation_token_privacy_expiry_revocation_and_source_del
                         row = await session.scalar(select(Share).where(Share.id == first['id']))
                         assert row.token_hash == hashlib.sha256(first['token'].encode()).hexdigest()
                         assert first['token'] not in str(row.snapshot)
-                        assert set(row.snapshot) == {'period', 'created_at', 'entry_count', 'result'}
+                        assert set(row.snapshot) == {'schema_version', 'period', 'created_at', 'entry_count', 'result', 'entries'}
+                        assert row.snapshot['entries'] == []
                     metadata = await client.get(base, headers=headers)
-                    assert 'token' not in metadata.text and 'snapshot' not in metadata.text
+                    assert metadata.json()['shares'][0]['token'] == first['token']
+                    assert 'snapshot' not in metadata.text
                     public = await client.post(resolve, json={'token': first['token']})
                     assert public.status_code == 200, public.text
                     shared = public.json()
                     assert shared['result'] == result
-                    assert set(shared) == {'period', 'created_at', 'entry_count', 'result', 'expires_at'}
+                    assert set(shared) == {'period', 'created_at', 'entry_count', 'result', 'entries', 'includes_journals', 'expires_at'}
                     assert shared['entry_count'] == 5
-                    for private in [secret, owner, other, analysis_id, *ids]:
+                    assert shared['entries'] == [] and shared['includes_journals'] is False
+                    for private in [profile_secret, journal_secret, owner, other, analysis_id, *ids]:
                         assert private not in public.text
                     assert public.headers['cache-control'] == 'no-store'
                     assert public.headers['referrer-policy'] == 'no-referrer'
@@ -99,8 +111,19 @@ async def test_share_confirmation_token_privacy_expiry_revocation_and_source_del
                     expired = await client.post(resolve, json={'token': first['token']})
                     assert expired.status_code == 404 and expired.headers['cache-control'] == 'no-store'
                     clock[0] = now
-                    second = (await client.post(base, headers=headers, json={'confirmed': True})).json()
+                    second = (await client.post(base, headers=headers, json={
+                        'confirmed': True, 'include_journals': True,
+                    })).json()
                     assert second['token'] != first['token']
+                    public_with_journals = await client.post(resolve, json={'token': second['token']})
+                    assert public_with_journals.status_code == 200
+                    shared_with_journals = public_with_journals.json()
+                    assert shared_with_journals['includes_journals'] is True
+                    assert len(shared_with_journals['entries']) == 5
+                    assert shared_with_journals['entries'][0]['content_text'] == journal_secret
+                    assert profile_secret not in public_with_journals.text
+                    for private_id in [owner, other, analysis_id, *ids]:
+                        assert private_id not in public_with_journals.text
                     actor = AuthenticatedPrincipal(UserId(other), UserRole.ADMIN)  # admin role does not bypass ownership
                     assert (await client.get(base, headers=headers)).status_code == 404
                     assert (await client.post(base, headers=headers, json={'confirmed': True})).status_code == 404

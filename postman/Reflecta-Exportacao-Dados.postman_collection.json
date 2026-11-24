@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "Reflecta — Exportação de dados do titular",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Exporta os dados da conta autenticada. Os arquivos são downloads privados, não são persistidos e não contêm credenciais, tokens ou embeddings."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Exportar pacote ZIP",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/account/data-export?format=zip",
+        "description": "No Postman, use Save Response to File para guardar o ZIP. O pacote contém JSONs separados e a foto do perfil quando disponível."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('ZIP privado retornado', function () { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/zip'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Exportar JSON autocontido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/account/data-export?format=json",
+        "description": "Retorna um único JSON UTF-8. A foto, quando disponível, usa Base64."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('JSON versionado retornado', function () { pm.response.to.have.status(200); const data = pm.response.json(); pm.expect(data.manifest.schema_version).to.eql('1.0'); pm.expect(data).to.have.property('account'); pm.expect(data).to.have.property('journal'); pm.expect(data).to.have.property('sharing'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

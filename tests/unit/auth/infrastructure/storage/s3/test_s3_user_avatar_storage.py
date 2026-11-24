@@ -15,6 +15,7 @@ class FakeS3Client:
     def __init__(self) -> None:
         self.put: dict[str, Any] | None = None
         self.deleted: dict[str, Any] | None = None
+        self.downloaded: dict[str, Any] | None = None
 
     def put_object(self, **kwargs: Any) -> dict[str, str]:
         self.put = kwargs
@@ -28,6 +29,10 @@ class FakeS3Client:
         assert operation == "get_object"
         assert kwargs["ExpiresIn"] == 900
         return "https://signed.example.test/avatar.webp"
+
+    def get_object(self, **kwargs: Any) -> dict[str, Any]:
+        self.downloaded = kwargs
+        return {"Body": BytesIO(b"downloaded-webp"), "ContentType": "image/webp"}
 
 
 def make_storage(client: FakeS3Client) -> S3UserAvatarStorage:
@@ -74,3 +79,17 @@ async def test_avatar_storage_deletes_only_expected_avatar_keys() -> None:
     assert client.deleted == {"Bucket": "reflecta-media", "Key": key}
     with pytest.raises(ValueError):
         await storage.delete(object_key="users/user-id/document.pdf")
+
+
+@pytest.mark.asyncio
+async def test_avatar_storage_downloads_the_normalized_profile_photo() -> None:
+    client = FakeS3Client()
+    storage = make_storage(client)
+    key = "users/user-id/avatar/avatar-id.webp"
+
+    downloaded = await storage.download(object_key=key)
+
+    assert downloaded.content == b"downloaded-webp"
+    assert downloaded.content_type == "image/webp"
+    assert downloaded.size_bytes == len(b"downloaded-webp")
+    assert client.downloaded == {"Bucket": "reflecta-media", "Key": key}

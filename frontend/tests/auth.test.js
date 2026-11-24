@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   confirmAccountDeletion,
   confirmAccountRecovery,
+  exportUserData,
   getUserProfile,
   login,
   logout,
@@ -174,6 +175,70 @@ test('profile PATCH sends the access token and partial JSON body', async () => {
     return new Response(JSON.stringify({ name: 'Ana', surname: 'Silva' }))
   }
   assert.equal((await updateUserInfo({ surname: 'Silva' })).surname, 'Silva')
+})
+
+test('data export downloads the selected portable format with the server filename', async () => {
+  sessionStorage.setItem('access_token', 'access-test')
+  globalThis.fetch = async (url, options) => {
+    const parsed = new URL(url)
+    assert.equal(parsed.pathname, '/account/data-export')
+    assert.equal(parsed.searchParams.get('format'), 'zip')
+    assert.equal(options.method, 'GET')
+    assert.equal(options.headers.Authorization, 'Bearer access-test')
+    return new Response(new Blob(['portable-data']), {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': 'attachment; filename="reflecta-meus-dados-2026-11-20.zip"',
+      },
+    })
+  }
+
+  const result = await exportUserData('zip')
+
+  assert.equal(result.filename, 'reflecta-meus-dados-2026-11-20.zip')
+  assert.equal(await result.blob.text(), 'portable-data')
+})
+
+test('data export validates its format before calling the API', () => {
+  sessionStorage.setItem('access_token', 'access-test')
+  globalThis.fetch = () => assert.fail('Should not call API')
+
+  assert.throws(() => exportUserData('csv'), { status: 400 })
+})
+
+test('data export refreshes an expired access token and retries the binary response once', async () => {
+  saveSession({
+    access_token: 'expired-token',
+    user: { name: 'Ana', role: 'USER' },
+  })
+  let exportCalls = 0
+  let refreshCalls = 0
+  globalThis.fetch = async (url, options) => {
+    const path = new URL(url).pathname
+    if (path === '/auth/refresh') {
+      refreshCalls += 1
+      return new Response(JSON.stringify({
+        access_token: 'renewed-token',
+        user: { name: 'Ana', role: 'USER' },
+      }))
+    }
+    exportCalls += 1
+    if (exportCalls === 1) {
+      assert.equal(options.headers.Authorization, 'Bearer expired-token')
+      return new Response('{}', { status: 401 })
+    }
+    assert.equal(options.headers.Authorization, 'Bearer renewed-token')
+    return new Response(new Blob(['json-data']), {
+      headers: { 'Content-Disposition': 'attachment; filename="dados.json"' },
+    })
+  }
+
+  const result = await exportUserData('json')
+
+  assert.equal(await result.blob.text(), 'json-data')
+  assert.equal(result.filename, 'dados.json')
+  assert.equal(refreshCalls, 1)
+  assert.equal(exportCalls, 2)
 })
 
 test('expired access token refreshes once and retries the protected request', async () => {

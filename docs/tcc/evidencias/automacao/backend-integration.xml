@@ -1,0 +1,1356 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="5" time="10.739" timestamp="2026-11-22T09:07:45.249651-03:00" hostname="MacBook-Pro-de-Gutinleitegmailcom.local"><testcase classname="tests.integration.test_context_history" name="test_explicit_analysis_history_pagination_owner_isolation_and_deleted_sources" time="0.130"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;entry_date&quot; of relation &quot;journal_entries&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (01M81JFPVXFWQP1RA78R1AH3BE, 01M81JFPRA8PHE1VVWEF41EGQ7, null, Não incluir na análise, null, pending_analysis, 2026-11-22 02:59:59.999999+00, null, null, 0, null, null).&#10;[SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at, deleted_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE, $7::TIMESTAMP WITH TIME ZONE)]&#10;[parameters: ('01M81JFPVXFWQP1RA78R1AH3BE', '01M81JFPRA8PHE1VVWEF41EGQ7', 'Não incluir na análise', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 2, 59, 59, 999999, tzinfo=datetime.timezone.utc), None)]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">self = &lt;sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x11c8aabc0&gt;
+operation = 'INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at, dele...RCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE, $7::TIMESTAMP WITH TIME ZONE)'
+parameters = ('01M81JFPVXFWQP1RA78R1AH3BE', '01M81JFPRA8PHE1VVWEF41EGQ7', 'Não incluir na análise', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 2, 59, 59, 999999, tzinfo=datetime.timezone.utc), ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+&gt;                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E   DETAIL:  Failing row contains (01M81JFPVXFWQP1RA78R1AH3BE, 01M81JFPRA8PHE1VVWEF41EGQ7, null, Não incluir na análise, null, pending_analysis, 2026-11-22 02:59:59.999999+00, null, null, 0, null, null).
+
+asyncpg/protocol/protocol.pyx:205: NotNullViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;sqlalchemy.engine.base.Connection object at 0x11c3f4e00&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x11c8c4470&gt;
+context = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x11c957ef0&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x11c957440&gt;
+parameters = [('01M81JFPVXFWQP1RA78R1AH3BE', '01M81JFPRA8PHE1VVWEF41EGQ7', 'Não incluir na análise', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 2, 59, 59, 999999, tzinfo=datetime.timezone.utc), ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11c7f3a70&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFPVXFWQP1RA78R1AH3BE, 01M81JFPRA8PHE1VVWEF41EGQ7, null, Não incluir na análise, null, pending_analysis, 2026-11-22 02:59:59.999999+00, null, null, 0, null, null).
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    async def test_explicit_analysis_history_pagination_owner_isolation_and_deleted_sources():
+        engine = create_async_engine(os.environ["CONTEXT_TEST_DATABASE_URL"])
+        owner, other = str(ulid.new()), str(ulid.new())
+        now = datetime.now(timezone.utc)
+        start = now.astimezone(ZoneInfo("America/Sao_Paulo")).date()
+        period = {"start_date": start.isoformat(), "end_date": (start + timedelta(days=6)).isoformat()}
+        result = {"summary": "Síntese fictícia", "recurring_patterns": ["Padrão fictício"],
+                  "changes_over_time": [], "reflection_questions": []}
+        provider = SimpleNamespace(respond=AsyncMock(return_value=result))
+        try:
+            async with engine.connect() as connection:
+                transaction = await connection.begin()
+    
+                @asynccontextmanager
+                async def session_scope():
+                    async with AsyncSession(bind=connection, expire_on_commit=False,
+                                            join_transaction_mode="create_savepoint") as session:
+                        try:
+                            yield session
+                            await session.commit()
+                        except BaseException:
+                            await session.rollback()
+                            raise
+    
+                gateway = ContextGateway(SimpleNamespace(session=session_scope))
+                app = FastAPI()
+                app.include_router(journal_router)
+                app.dependency_overrides[get_current_user] = lambda: AuthenticatedPrincipal(UserId(owner), UserRole.USER)
+                app.dependency_overrides[get_context_gateway] = lambda: gateway
+                app.dependency_overrides[get_context_case] = lambda: AnalyzeContext(gateway, provider)
+                try:
+                    async with session_scope() as session:
+                        await session.execute(insert(UserModel), [{
+                            "id": user_id, "username": "context-test-" + user_id,
+                            "email": user_id + "@context-test.invalid", "name": "Context Test",
+                            "date_of_birth": date(2000, 1, 1), "created_at": now,
+                            "is_email_verified": False, "role": UserRole.USER,
+                        } for user_id in (owner, other)])
+                    ids = [str(ulid.new()) for _ in range(8)]
+                    lower, upper = ContextPeriod(**period).bounds()
+                    async with session_scope() as session:
+                        # Entries outside the local seven-day bounds and deleted entries
+                        # cannot turn an ineligible four-entry interval into an eligible one.
+                        for timestamp, deleted in [(lower - timedelta(microseconds=1), False), (upper, False), (now, True)]:
+&gt;                           await session.execute(insert(Entry).values(id=str(ulid.new()), user_id=owner,
+                                content_text="Não incluir na análise", status="deleted" if deleted else "pending_analysis",
+                                created_at=timestamp, deleted_at=now if deleted else None))
+
+tests/integration/test_context_history.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2249: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:1306: in orm_execute_statement
+    result = conn.execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11c7f3a70&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFPVXFWQP1RA78R1AH3BE, 01M81JFPRA8PHE1VVWEF41EGQ7, null, Não incluir na análise, null, pending_analysis, 2026-11-22 02:59:59.999999+00, null, null, 0, null, null).
+E                   [SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at, deleted_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE, $7::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('01M81JFPVXFWQP1RA78R1AH3BE', '01M81JFPRA8PHE1VVWEF41EGQ7', 'Não incluir na análise', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 2, 59, 59, 999999, tzinfo=datetime.timezone.utc), None)]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError</failure></testcase><testcase classname="tests.integration.test_context_sharing" name="test_share_confirmation_token_privacy_expiry_revocation_and_source_deletion" time="0.647" /><testcase classname="tests.integration.test_operational_failures" name="test_admin_failures_all_sources_filters_details_and_user_diagnostic_denial" time="0.110"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;entry_date&quot; of relation &quot;journal_entries&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (01M81JFQZDMKSFM86NJSD8HGR6, 01M81JFQZDM5FPVQW1DQBPSPRQ, DO-NOT-EXPOSE-private-journal-key-payload, DO-NOT-EXPOSE-private-journal-key-payload, {&quot;private&quot;: &quot;DO-NOT-EXPOSE-private-journal-key-payload&quot;}, analysis_failed, 2026-11-22 12:07:54.605171+00, null, null, 0, null, null).&#10;[SQL: INSERT INTO journal_schema.journal_entries (id, user_id, title, content_text, context_tags, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::JSONB, $6::VARCHAR, $7::INTEGER, $8::TIMESTAMP WITH TIME ZONE)]&#10;[parameters: ('01M81JFQZDMKSFM86NJSD8HGR6', '01M81JFQZDM5FPVQW1DQBPSPRQ', 'DO-NOT-EXPOSE-private-journal-key-payload', 'DO-NOT-EXPOSE-private-journal-key-payload', '{&quot;private&quot;: &quot;DO-NOT-EXPOSE-private-journal-key-payload&quot;}', 'analysis_failed', 0, datetime.datetime(2026, 11, 22, 12, 7, 54, 605171, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">self = &lt;sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x11d566f80&gt;
+operation = 'INSERT INTO journal_schema.journal_entries (id, user_id, title, content_text, context_tags, status, user_reprocess_co...$1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::JSONB, $6::VARCHAR, $7::INTEGER, $8::TIMESTAMP WITH TIME ZONE)'
+parameters = ('01M81JFQZDMKSFM86NJSD8HGR6', '01M81JFQZDM5FPVQW1DQBPSPRQ', 'DO-NOT-EXPOSE-private-journal-key-payload', 'DO-NOT-EXPOSE-private-journal-key-payload', '{"private": "DO-NOT-EXPOSE-private-journal-key-payload"}', 'analysis_failed', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+&gt;                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E   DETAIL:  Failing row contains (01M81JFQZDMKSFM86NJSD8HGR6, 01M81JFQZDM5FPVQW1DQBPSPRQ, DO-NOT-EXPOSE-private-journal-key-payload, DO-NOT-EXPOSE-private-journal-key-payload, {"private": "DO-NOT-EXPOSE-private-journal-key-payload"}, analysis_failed, 2026-11-22 12:07:54.605171+00, null, null, 0, null, null).
+
+asyncpg/protocol/protocol.pyx:205: NotNullViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;sqlalchemy.engine.base.Connection object at 0x11c8f8ec0&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x11c8f93d0&gt;
+context = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x11c8c6690&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x11d525250&gt;
+parameters = [('01M81JFQZDMKSFM86NJSD8HGR6', '01M81JFQZDM5FPVQW1DQBPSPRQ', 'DO-NOT-EXPOSE-private-journal-key-payload', 'DO-NOT-EXPOSE-private-journal-key-payload', '{"private": "DO-NOT-EXPOSE-private-journal-key-payload"}', 'analysis_failed', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11c7f3e30&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFQZDMKSFM86NJSD8HGR6, 01M81JFQZDM5FPVQW1DQBPSPRQ, DO-NOT-EXPOSE-private-journal-key-payload, DO-NOT-EXPOSE-private-journal-key-payload, {"private": "DO-NOT-EXPOSE-private-journal-key-payload"}, analysis_failed, 2026-11-22 12:07:54.605171+00, null, null, 0, null, null).
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    async def test_admin_failures_all_sources_filters_details_and_user_diagnostic_denial():
+        engine = create_async_engine(os.environ["OPERATIONS_TEST_DATABASE_URL"])
+        owner, entry_id, analysis_id, legacy_id, ingestion_id, chunk_id, event_id, outbox_id = [str(ulid.new()) for _ in range(8)]
+        now = datetime.now(timezone.utc)
+        secret = "DO-NOT-EXPOSE-private-journal-key-payload"
+        try:
+            async with engine.connect() as connection:
+                transaction = await connection.begin()
+    
+                @asynccontextmanager
+                async def session_scope():
+                    async with AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint") as session:
+                        try:
+                            yield session
+                            await session.commit()
+                        except BaseException:
+                            await session.rollback()
+                            raise
+    
+                gateway = OperationalFailureGateway(SimpleNamespace(session=session_scope))
+                app = FastAPI()
+                app.include_router(operations_router)
+                app.include_router(journal_router)
+                actor = AuthenticatedPrincipal(UserId(owner), UserRole.USER)
+                async def authenticate(token):
+                    return actor
+                auth = FastAPIAuthService(SimpleNamespace(authenticate_request=AsyncMock(side_effect=authenticate)))
+                app.dependency_overrides[get_fast_api_auth_service] = lambda: auth
+                app.dependency_overrides[get_failure_gateway] = lambda: gateway
+                try:
+                    async with session_scope() as session:
+                        await session.execute(insert(UserModel).values(id=owner, username="op-test-" + owner,
+                            email=owner + "@op-test.invalid", name="Operations Test", date_of_birth=date(2000, 1, 1),
+                            created_at=now, is_email_verified=False, role=UserRole.USER))
+&gt;                       await session.execute(insert(Entry).values(id=entry_id, user_id=owner, title=secret,
+                            content_text=secret, context_tags={"private": secret}, status="analysis_failed", created_at=now))
+
+tests/integration/test_operational_failures.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2249: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:1306: in orm_execute_statement
+    result = conn.execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11c7f3e30&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFQZDMKSFM86NJSD8HGR6, 01M81JFQZDM5FPVQW1DQBPSPRQ, DO-NOT-EXPOSE-private-journal-key-payload, DO-NOT-EXPOSE-private-journal-key-payload, {"private": "DO-NOT-EXPOSE-private-journal-key-payload"}, analysis_failed, 2026-11-22 12:07:54.605171+00, null, null, 0, null, null).
+E                   [SQL: INSERT INTO journal_schema.journal_entries (id, user_id, title, content_text, context_tags, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::JSONB, $6::VARCHAR, $7::INTEGER, $8::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('01M81JFQZDMKSFM86NJSD8HGR6', '01M81JFQZDM5FPVQW1DQBPSPRQ', 'DO-NOT-EXPOSE-private-journal-key-payload', 'DO-NOT-EXPOSE-private-journal-key-payload', '{"private": "DO-NOT-EXPOSE-private-journal-key-payload"}', 'analysis_failed', 0, datetime.datetime(2026, 11, 22, 12, 7, 54, 605171, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError</failure></testcase><testcase classname="tests.integration.test_reprocess_limit" name="test_http_three_user_requests_then_admin_only_and_auditing" time="0.098"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;entry_date&quot; of relation &quot;journal_entries&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (01M81JFREN48VJ9EXYJ7QSJR6G, 01M81JFRENH7NZH02DMVMCZNPX, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.162514+00, null, null, 0, null, null).&#10;[SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)]&#10;[parameters: ('01M81JFREN48VJ9EXYJ7QSJR6G', '01M81JFRENH7NZH02DMVMCZNPX', 'Texto fictício de teste.', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 12, 7, 55, 162514, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">self = &lt;sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x11d5ef4c0&gt;
+operation = 'INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)'
+parameters = ('01M81JFREN48VJ9EXYJ7QSJR6G', '01M81JFRENH7NZH02DMVMCZNPX', 'Texto fictício de teste.', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 12, 7, 55, 162514, tzinfo=datetime.timezone.utc))
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+&gt;                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E   DETAIL:  Failing row contains (01M81JFREN48VJ9EXYJ7QSJR6G, 01M81JFRENH7NZH02DMVMCZNPX, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.162514+00, null, null, 0, null, null).
+
+asyncpg/protocol/protocol.pyx:205: NotNullViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;sqlalchemy.engine.base.Connection object at 0x11c8fcb90&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x11c8fd7c0&gt;
+context = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x11d5aae10&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x11d5aa6f0&gt;
+parameters = [('01M81JFREN48VJ9EXYJ7QSJR6G', '01M81JFRENH7NZH02DMVMCZNPX', 'Texto fictício de teste.', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 12, 7, 55, 162514, tzinfo=datetime.timezone.utc))]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11cc66c60&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFREN48VJ9EXYJ7QSJR6G, 01M81JFRENH7NZH02DMVMCZNPX, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.162514+00, null, null, 0, null, null).
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    async def test_http_three_user_requests_then_admin_only_and_auditing():
+        engine = create_async_engine(os.environ["REPROCESS_TEST_DATABASE_URL"])
+        owner, admin, other, entry_id = [str(ulid.new()) for _ in range(4)]
+        try:
+            async with engine.connect() as connection:
+                transaction = await connection.begin()
+                @asynccontextmanager
+                async def scope():
+                    async with AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint") as session:
+                        try:
+                            yield session
+                            await session.commit()
+                        except BaseException:
+                            await session.rollback()
+                            raise
+                gateway = JournalAnalysisGateway(SimpleNamespace(session=scope))
+                operations = OperationalFailureGateway(SimpleNamespace(session=scope))
+                app = FastAPI()
+                app.include_router(journal_router)
+                app.include_router(operations_router)
+                add_exception_handlers(app)
+                actor = AuthenticatedPrincipal(UserId(owner), UserRole.USER)
+                async def authenticate(token):
+                    return actor
+                app.dependency_overrides[get_fast_api_auth_service] = lambda: FastAPIAuthService(SimpleNamespace(authenticate_request=AsyncMock(side_effect=authenticate)))
+                app.dependency_overrides[get_analysis_gateway] = lambda: gateway
+                app.dependency_overrides[get_reprocess_gateway] = lambda: gateway
+                app.dependency_overrides[get_failure_gateway] = lambda: operations
+                try:
+                    async with scope() as session:
+&gt;                       await seed(session, owner, entry_id)
+
+tests/integration/test_reprocess_limit.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_reprocess_limit.py:40: in seed
+    await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text="Texto fictício de teste.",
+.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2249: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:1306: in orm_execute_statement
+    result = conn.execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11cc66c60&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFREN48VJ9EXYJ7QSJR6G, 01M81JFRENH7NZH02DMVMCZNPX, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.162514+00, null, null, 0, null, null).
+E                   [SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('01M81JFREN48VJ9EXYJ7QSJR6G', '01M81JFRENH7NZH02DMVMCZNPX', 'Texto fictício de teste.', 'pending_analysis', 0, datetime.datetime(2026, 11, 22, 12, 7, 55, 162514, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError</failure></testcase><testcase classname="tests.integration.test_reprocess_limit" name="test_real_parallel_sessions_charge_once_and_save_only_one_result" time="0.137"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;entry_date&quot; of relation &quot;journal_entries&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (01M81JFRW62KRKJZN8ME46WKBB, 01M81JFRW6TB3K05ETVT6NQYV4, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.58473+00, null, null, 2, null, null).&#10;[SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)]&#10;[parameters: ('01M81JFRW62KRKJZN8ME46WKBB', '01M81JFRW6TB3K05ETVT6NQYV4', 'Texto fictício de teste.', 'pending_analysis', 2, datetime.datetime(2026, 11, 22, 12, 7, 55, 584730, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">self = &lt;sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x11d5b31c0&gt;
+operation = 'INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)'
+parameters = ('01M81JFRW62KRKJZN8ME46WKBB', '01M81JFRW6TB3K05ETVT6NQYV4', 'Texto fictício de teste.', 'pending_analysis', 2, datetime.datetime(2026, 11, 22, 12, 7, 55, 584730, tzinfo=datetime.timezone.utc))
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+&gt;                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E   DETAIL:  Failing row contains (01M81JFRW62KRKJZN8ME46WKBB, 01M81JFRW6TB3K05ETVT6NQYV4, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.58473+00, null, null, 2, null, null).
+
+asyncpg/protocol/protocol.pyx:205: NotNullViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;sqlalchemy.engine.base.Connection object at 0x11d5e2870&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x11d5e1370&gt;
+context = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x11d5c4bf0&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x11d5c4710&gt;
+parameters = [('01M81JFRW62KRKJZN8ME46WKBB', '01M81JFRW6TB3K05ETVT6NQYV4', 'Texto fictício de teste.', 'pending_analysis', 2, datetime.datetime(2026, 11, 22, 12, 7, 55, 584730, tzinfo=datetime.timezone.utc))]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11d5d8140&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFRW62KRKJZN8ME46WKBB, 01M81JFRW6TB3K05ETVT6NQYV4, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.58473+00, null, null, 2, null, null).
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    async def test_real_parallel_sessions_charge_once_and_save_only_one_result():
+        engine = create_async_engine(os.environ["REPROCESS_TEST_DATABASE_URL"])
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        owner, entry_id = str(ulid.new()), str(ulid.new())
+        @asynccontextmanager
+        async def scope():
+            async with factory() as session:
+                try:
+                    yield session
+                    await session.commit()
+                except BaseException:
+                    await session.rollback()
+                    raise
+        gateway = JournalAnalysisGateway(SimpleNamespace(session=scope))
+        # Hold the same advisory lock used by the worker. Committed fictitious pending
+        # rows cannot be picked by a live worker or trigger any paid provider request.
+        lock_connection = await engine.connect()
+        try:
+            await lock_connection.execute(text("SELECT pg_advisory_lock(:id)"), {"id": LOCK_ID})
+            async with scope() as session:
+&gt;               await seed(session, owner, entry_id, used=2)
+
+tests/integration/test_reprocess_limit.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_reprocess_limit.py:40: in seed
+    await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text="Texto fictício de teste.",
+.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2249: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:1306: in orm_execute_statement
+    result = conn.execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:951: in do_execute
+    cursor.execute(statement, parameters)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x11d5d8140&gt;&gt;
+error = NotNullViolationError('null value in column "entry_date" of relation "journal_entries" violates not-null constraint')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "entry_date" of relation "journal_entries" violates not-null constraint
+E                   DETAIL:  Failing row contains (01M81JFRW62KRKJZN8ME46WKBB, 01M81JFRW6TB3K05ETVT6NQYV4, null, Texto fictício de teste., null, pending_analysis, 2026-11-22 12:07:55.58473+00, null, null, 2, null, null).
+E                   [SQL: INSERT INTO journal_schema.journal_entries (id, user_id, content_text, status, user_reprocess_count, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('01M81JFRW62KRKJZN8ME46WKBB', '01M81JFRW6TB3K05ETVT6NQYV4', 'Texto fictício de teste.', 'pending_analysis', 2, datetime.datetime(2026, 11, 22, 12, 7, 55, 584730, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError</failure></testcase></testsuite></testsuites>

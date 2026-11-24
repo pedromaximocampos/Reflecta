@@ -2,7 +2,7 @@ from src.modules.journal.public.context_analysis import ContextPeriod
 from datetime import date
 from datetime import datetime
 import logging
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = logging.getLogger(__name__)
 from src.modules.operations.presentation.routes import require_admin, get_failure_gateway
@@ -16,6 +16,8 @@ from src.modules.journal.bootstrap.controllers import (
     get_delete_journal_entry_controller,
     get_journal_entry_controller,
     get_list_journal_entries_controller,
+    get_list_journal_entry_calendar_controller,
+    get_list_journal_entry_window_controller,
     get_update_journal_entry_controller,
 )
 from src.modules.journal.presentation.controllers.create_journal_entry_controller import (
@@ -30,13 +32,21 @@ from src.modules.journal.presentation.controllers.get_journal_entry_controller i
 from src.modules.journal.presentation.controllers.list_journal_entries_controller import (
     ListJournalEntriesController,
 )
+from src.modules.journal.presentation.controllers.list_journal_entry_calendar_controller import (
+    ListJournalEntryCalendarController,
+)
+from src.modules.journal.presentation.controllers.list_journal_entry_window_controller import (
+    ListJournalEntryWindowController,
+)
 from src.modules.journal.presentation.controllers.update_journal_entry_controller import (
     UpdateJournalEntryController,
 )
 from src.modules.journal.presentation.validators.journal_entry import (
     CreateJournalEntryValidator,
     JournalEntriesResponseValidator,
+    JournalEntryCalendarResponseValidator,
     JournalEntryResponseValidator,
+    JournalEntryWindowResponseValidator,
     UpdateJournalEntryValidator,
 )
 from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
@@ -56,6 +66,17 @@ def get_context_gateway():
     return ContextGateway(individuum_mvp_provider)
 
 
+def get_dashboard_gateway():
+    from src.modules.journal.infrastructure.persistence.postgresql.dashboard_gateway import (
+        JournalDashboardGateway,
+    )
+    from src.shared.infrastructure.persistence.postgresql.provider import (
+        individuum_mvp_provider,
+    )
+
+    return JournalDashboardGateway(individuum_mvp_provider)
+
+
 def get_context_case():
     from src.modules.ai_processing.application.contextual_analysis import AnalyzeContext
     from src.modules.ai_processing.infrastructure.openai_interpreter import OpenAIInterpreter, OpenAISettings
@@ -68,6 +89,22 @@ def get_context_period(start_date: date, end_date: date):
         return ContextPeriod(start_date=start_date, end_date=end_date)
     except ValidationError:
         raise HTTPException(status_code=422, detail="Selecione um período de exatamente 7 dias, incluindo início e fim.") from None
+
+
+@journal_router.get("/dashboard")
+async def get_dashboard_summary(
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_dashboard_gateway),
+):
+    from sqlalchemy.exc import SQLAlchemyError
+
+    try:
+        return await gateway.summary(current_user.user_id.value)
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Resumo indisponível. Tente novamente mais tarde.",
+        ) from None
 
 
 @journal_router.get("/context-analysis")
@@ -152,6 +189,21 @@ async def get_journal_analysis_failures(
 class AnalysisSubmission(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: datetime | None = None
+    reanalyze: bool = False
+
+
+class AnalysisThemeSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    theme_ids: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("theme_ids")
+    @classmethod
+    def validate_theme_ids(cls, value: list[str]) -> list[str]:
+        if any(len(theme_id) != 26 for theme_id in value):
+            raise ValueError("Theme identifiers must be valid ULIDs.")
+        if len(value) != len(set(value)):
+            raise ValueError("Theme identifiers must be unique.")
+        return value
 
 
 @journal_router.post("/entries/{journal_entry_id}/analysis", status_code=202)
@@ -166,7 +218,8 @@ async def submit_journal_analysis(
     from sqlalchemy.exc import SQLAlchemyError
     try:
         return await gateway.submit(journal_entry_id, current_user.user_id.value, now=datetime.now(timezone.utc),
-                                    expected_revision=body.expected_revision if body else None)
+                                    expected_revision=body.expected_revision if body else None,
+                                    reanalyze=body.reanalyze if body else False)
     except UserReprocessLimitError:
         raise HTTPException(status_code=403, detail="Após três reprocessamentos sem sucesso, somente um administrador pode solicitar nova tentativa.") from None
     except AnalysisConflictError:
@@ -175,6 +228,37 @@ async def submit_journal_analysis(
         raise HTTPException(status_code=400, detail="A reflexão deve conter entre 1 e 20000 caracteres.") from None
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="Não foi possível solicitar a análise. Tente novamente.") from None
+
+
+@journal_router.put("/entries/{journal_entry_id}/analysis/themes")
+async def update_journal_analysis_themes(
+    body: AnalysisThemeSelection,
+    journal_entry_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    gateway=Depends(get_analysis_gateway),
+):
+    from datetime import timezone
+    from src.modules.journal.public.analysis import AnalysisConflictError
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        return await gateway.update_theme_selection(
+            journal_entry_id,
+            current_user.user_id.value,
+            theme_ids=body.theme_ids,
+            now=datetime.now(timezone.utc),
+        )
+    except AnalysisConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="A análise mudou ou ainda não foi concluída. Atualize a página antes de editar os temas.",
+        ) from None
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível atualizar os temas da análise. Tente novamente.",
+        ) from None
 
 
 @journal_router.post(
@@ -209,6 +293,49 @@ async def list_journal_entries(
     current_user: AuthenticatedPrincipal = Depends(get_current_user),
     controller: ListJournalEntriesController = Depends(
         get_list_journal_entries_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@journal_router.get(
+    "/entries/window",
+    response_model=JournalEntryWindowResponseValidator,
+)
+async def list_journal_entry_window(
+    request: Request,
+    end_date: date | None = Query(default=None),
+    days: int = Query(default=15, ge=1, le=31),
+    center_date: date | None = Query(default=None),
+    before_days: int = Query(default=15, ge=0, le=31),
+    after_days: int = Query(default=15, ge=0, le=31),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    controller: ListJournalEntryWindowController = Depends(
+        get_list_journal_entry_window_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@journal_router.get(
+    "/entries/calendar",
+    response_model=JournalEntryCalendarResponseValidator,
+)
+async def list_journal_entry_calendar(
+    request: Request,
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    controller: ListJournalEntryCalendarController = Depends(
+        get_list_journal_entry_calendar_controller
     ),
 ) -> Response:
     return await adapter_fastapi_request(

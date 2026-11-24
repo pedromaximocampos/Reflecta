@@ -18,6 +18,17 @@ class ContextualPassageCandidate(BaseModel):
     short_text: str = Field(min_length=1)
     paraphrase: str = Field(min_length=1)
     interpretation_note: str = Field(min_length=1)
+    reflective_value: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+    )
+    reflective_note: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1000,
+    )
     locator: str = Field(min_length=1)
     priority: int = Field(ge=0)
     work_id: str = Field(min_length=1)

@@ -188,7 +188,7 @@ export function AdminObras() {
   const failedWorkIds = useMemo(
     () => new Set(
       ingestions
-        .filter((ingestion) => ingestion.failure)
+        .filter((ingestion) => ingestion.status === 'failed' && ingestion.failure)
         .map((ingestion) => ingestion.work_id),
     ),
     [ingestions],

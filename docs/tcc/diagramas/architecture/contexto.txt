@@ -1,0 +1,28 @@
+@startuml
+title Reflecta - C4 Nível 1 - Diagrama de Contexto
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_LEFT_RIGHT()
+
+Person(usuario, "Usuário Final", "Pessoa que registra entradas de diário, visualiza análises e recebe recomendações.")
+Person(profissional, "Terceiro", "Acessa o conteúdo autorizado por link válido e sugere atividades, sem login ou comprovação profissional.")
+Person(admin, "Administrador", "Gerencia catálogo, temas, conteúdos e falhas de processamento.")
+
+System(reflecta, "Reflecta", "Plataforma de journaling com IA para autodesenvolvimento, análise textual e recomendações culturais mediadas.")
+
+System_Ext(ia, "Provedor de IA", "LLM e vetores semânticos utilizados para análise textual e apoio às recomendações.")
+System_Ext(email, "Amazon SES", "Serviço externo de envio de e-mails e notificações.")
+System_Ext(storage, "S3", "Armazena PDFs, capas e avatares.")
+System_Ext(neo4j, "Neo4j", "Armazena conhecimento curado: temas, passagens, obras e autores.")
+
+Rel(usuario, reflecta, "Cria entradas de diário, consulta análises e recomendações")
+Rel(profissional, reflecta, "Acessa sínteses compartilhadas e envia atividades")
+Rel(admin, reflecta, "Administra catálogo, temas e falhas")
+
+Rel(reflecta, ia, "Solicita análise textual e geração de embeddings")
+Rel(reflecta, email, "Envia notificações por e-mail")
+Rel(reflecta, storage, "Armazena e recupera arquivos")
+Rel(reflecta, neo4j, "Consulta conhecimento curado para recomendações e referências")
+
+@enduml

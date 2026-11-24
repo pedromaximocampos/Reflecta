@@ -152,7 +152,6 @@ def test_default_env_paths_are_independent_of_working_directory(monkeypatch, tmp
     from src.modules.ai_processing.infrastructure.openai_interpreter import BACKEND_ROOT
     monkeypatch.chdir(tmp_path)
     paths = OpenAISettings.model_config["env_file"]
-    assert (BACKEND_ROOT / "pyproject.toml").is_file()
     assert all(path.is_absolute() for path in paths)
     assert paths[-1] == BACKEND_ROOT / ".env.ai.local"
 

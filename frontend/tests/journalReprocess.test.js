@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { submitJournalAnalysis, getJournalAnalysis } from '../src/services/journalApi.js'
+import { submitJournalAnalysis, getJournalAnalysis, updateJournalAnalysisThemes } from '../src/services/journalApi.js'
 
 test('owner reads retry policy and submits the current failure revision without caller-supplied quota or role', async () => {
   const previousFetch = globalThis.fetch
@@ -21,6 +21,18 @@ test('owner reads retry policy and submits the current failure revision without 
     assert.deepEqual(JSON.parse(calls[1].body), { expected_revision: status.reprocess.revision })
     await submitJournalAnalysis('legacy-draft')
     assert.equal(calls[2].body, undefined) // initial submission is not a reprocessing request
+    await submitJournalAnalysis('completed-entry', {
+      expectedRevision: status.reprocess.revision,
+      reanalyze: true,
+    })
+    assert.deepEqual(JSON.parse(calls[3].body), {
+      expected_revision: status.reprocess.revision,
+      reanalyze: true,
+    })
+    await updateJournalAnalysisThemes('completed-entry', ['01M6BZX6J1JWRTEZER3PXPHBEZ'])
+    assert.equal(calls[4].method, 'PUT')
+    assert.match(calls[4].url, /\/analysis\/themes$/)
+    assert.deepEqual(JSON.parse(calls[4].body), { theme_ids: ['01M6BZX6J1JWRTEZER3PXPHBEZ'] })
   } finally {
     globalThis.fetch = previousFetch
     globalThis.sessionStorage = previousStorage

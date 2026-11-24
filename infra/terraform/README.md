@@ -32,7 +32,7 @@ Lambda, SES, S3, databases, networking, and application deployment are intention
 
 The development resources may already exist because they were created manually. Terraform configuration alone does not adopt them. Running `apply` before import can produce name conflicts or unintended changes.
 
-Use this order:
+Use this order from `Codigo/BACK`:
 
 ```powershell
 cd infra/terraform

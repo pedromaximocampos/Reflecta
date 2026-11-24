@@ -1,0 +1,47 @@
+@startuml Service_Auth
+!theme plain
+title Auth & Identity Service (DB)
+
+entity "USERS" as users {
+  * id : UUID <<PK>>
+  --
+  external_id : VARCHAR
+  provider : VARCHAR
+  email : VARCHAR <<UNIQUE>>
+  name : VARCHAR
+  avatar_url : VARCHAR
+  created_at : TIMESTAMPTZ
+  last_login_at : TIMESTAMPTZ
+}
+
+entity "AUTH_CREDENTIALS" as auth_creds {
+  * user_id : UUID <<PK, FK>>
+  --
+  credential_type : VARCHAR
+  password_hash : VARCHAR
+  password_salt : VARCHAR
+  mfa_enabled : BOOLEAN
+  created_at : TIMESTAMPTZ
+}
+
+entity "AUTH_SESSIONS" as sessions {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  issued_at : TIMESTAMPTZ
+  expires_at : TIMESTAMPTZ
+  revoked_at : TIMESTAMPTZ
+}
+
+entity "PASSWORD_RESETS" as resets {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  token_hash : VARCHAR
+  expires_at : TIMESTAMPTZ
+}
+
+users ||--|| auth_creds
+users ||--o{ sessions
+users ||--o{ resets
+@enduml

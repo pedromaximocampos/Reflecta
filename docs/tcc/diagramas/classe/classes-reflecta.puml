@@ -1,0 +1,457 @@
+@startuml
+title Reflecta - Diagrama de Classes Conceitual\nMonólito Modular
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+hide empty methods
+
+' =========================
+' AUTH MODULE
+' =========================
+package "Auth Module" {
+
+  enum UserStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+  }
+
+  class User {
+    +id: UUID
+    +email: String
+    +name: String
+    +avatarUrl: String
+    +status: UserStatus
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    +lastLoginAt: DateTime
+    --
+    +updateProfile(name, avatarUrl)
+    +markAsDeleted()
+  }
+
+  class AuthCredential {
+    +userId: UUID
+    +credentialType: String
+    +passwordHash: String
+    +mfaEnabled: Boolean
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +changePassword(passwordHash)
+    +enableMfa()
+    +disableMfa()
+  }
+
+  class AuthSession {
+    +id: UUID
+    +userId: UUID
+    +issuedAt: DateTime
+    +expiresAt: DateTime
+    +revokedAt: DateTime
+    +ip: String
+    +userAgent: String
+    --
+    +revoke()
+    +isExpired(): Boolean
+  }
+
+  class PasswordReset {
+    +id: UUID
+    +userId: UUID
+    +tokenHash: String
+    +expiresAt: DateTime
+    +usedAt: DateTime
+    +createdAt: DateTime
+    --
+    +markAsUsed()
+    +isExpired(): Boolean
+  }
+}
+
+' =========================
+' JOURNAL MODULE
+' =========================
+package "Journal Module" {
+
+  enum JournalEntryStatus {
+    DRAFT
+    PENDING_ANALYSIS
+    ANALYZED
+    ANALYSIS_FAILED
+    DELETED
+  }
+
+  enum AnalysisStatus {
+    PENDING
+    COMPLETED
+    FAILED
+  }
+
+  class JournalEntry {
+    +id: UUID
+    +userId: UUID
+    +title: String
+    +contentText: Text
+    +contextTags: Json
+    +status: JournalEntryStatus
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    +deletedAt: DateTime
+    --
+    +edit(title, contentText, contextTags)
+    +markPendingAnalysis()
+    +markAnalyzed()
+    +markAnalysisFailed()
+    +delete()
+  }
+
+  class Analysis {
+    +id: UUID
+    +journalEntryId: UUID
+    +summary: Text
+    +mainMessage: Text
+    +contentMeta: Json
+    +status: AnalysisStatus
+    +analyzedAt: DateTime
+    +analysisError: Text
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +complete(summary, mainMessage, contentMeta)
+    +fail(error)
+  }
+
+  class JournalSentence {
+    +id: UUID
+    +journalEntryId: UUID
+    +analysisId: UUID
+    +sentenceIndex: Integer
+    +sentenceText: Text
+    +startOffset: Integer
+    +endOffset: Integer
+    +createdAt: DateTime
+  }
+
+  class SentenceTheme {
+    +sentenceId: UUID
+    +themeId: UUID
+    +themeSlug: String
+    +confidence: Decimal
+    +source: String
+    +confirmedByUser: Boolean
+    +createdAt: DateTime
+    --
+    +confirm()
+    +reject()
+  }
+
+  class SentencePassage {
+    +id: UUID
+    +sentenceId: UUID
+    +passageId: UUID
+    +confidence: Decimal
+    +reason: Text
+    +payloadSnapshot: Json
+    +createdAt: DateTime
+  }
+
+  class EntryEmbedding {
+    +entryId: UUID
+    +embedding: Vector
+    +modelName: String
+    +createdAt: DateTime
+  }
+
+  class SentenceEmbedding {
+    +sentenceId: UUID
+    +embedding: Vector
+    +modelName: String
+    +createdAt: DateTime
+  }
+}
+
+' =========================
+' CATALOG / KNOWLEDGE MODULE
+' =========================
+package "Catalog / Knowledge Module" {
+
+  enum CatalogStatus {
+    PENDING_REVIEW
+    APPROVED
+    REJECTED
+    ACTIVE
+    INACTIVE
+  }
+
+  class Theme {
+    +themeId: UUID
+    +slug: String
+    +label: String
+    +description: Text
+    +isActive: Boolean
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +activate()
+    +deactivate()
+    +rename(label)
+  }
+
+  class Passage {
+    +passageId: UUID
+    +locator: String
+    +shortText: Text
+    +paraphrase: Text
+    +interpretationNote: Text
+    +status: CatalogStatus
+    +priority: Integer
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +approve()
+    +reject()
+    +associateTheme(theme)
+  }
+
+  class Work {
+    +workId: UUID
+    +slug: String
+    +title: String
+    +synopsis: Text
+    +type: String
+    +language: String
+    +coverImageUrl: String
+    +sourceFileUrl: String
+    +status: CatalogStatus
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +markProcessing()
+    +approve()
+    +reject()
+  }
+
+  class Author {
+    +authorId: UUID
+    +name: String
+    +normalizedName: String
+    +description: Text
+    +createdAt: DateTime
+    +updatedAt: DateTime
+  }
+}
+
+' =========================
+' RECOMMENDATION MODULE
+' =========================
+package "Recommendation Module" {
+
+  enum RecommendationStatus {
+    AVAILABLE
+    VIEWED
+    SAVED
+    DISMISSED
+  }
+
+  class RecommendationItem {
+    +id: UUID
+    +title: String
+    +type: String
+    +description: Text
+    +imageUrl: String
+    +externalUrl: String
+    +status: String
+    +metadata: Json
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +activate()
+    +deactivate()
+  }
+
+  class Recommendation {
+    +id: UUID
+    +userId: UUID
+    +journalEntryId: UUID
+    +recommendationItemId: UUID
+    +reason: Text
+    +sourceThemes: Json
+    +status: RecommendationStatus
+    +createdAt: DateTime
+    +viewedAt: DateTime
+    +savedAt: DateTime
+    --
+    +markViewed()
+    +save()
+    +dismiss()
+  }
+}
+
+' =========================
+' SHARING / PROFESSIONAL MODULE
+' =========================
+package "Sharing / Professional Module" {
+
+  enum SharedExportStatus {
+    ACTIVE
+    EXPIRED
+    REVOKED
+  }
+
+  enum ActivityStatus {
+    PENDING
+    COMPLETED
+  }
+
+  class SharedExport {
+    +id: UUID
+    +userId: UUID
+    +tokenHash: String
+    +s3Url: String
+    +periodStart: Date
+    +periodEnd: Date
+    +permissions: Json
+    +status: SharedExportStatus
+    +expiresAt: DateTime
+    +createdAt: DateTime
+    +revokedAt: DateTime
+    --
+    +revoke()
+    +expire()
+    +isAccessible(): Boolean
+  }
+
+  class ProfessionalActivity {
+    +id: UUID
+    +sharedExportId: UUID
+    +userId: UUID
+    +title: String
+    +description: Text
+    +status: ActivityStatus
+    +createdAt: DateTime
+    +completedAt: DateTime
+    --
+    +complete()
+  }
+}
+
+' =========================
+' INTERNAL EVENTS MODULE
+' =========================
+package "Internal Events Module" {
+
+  enum OutboxEventStatus {
+    PENDING
+    PROCESSING
+    PROCESSED
+    FAILED
+  }
+
+  class OutboxEvent {
+    +id: UUID
+    +eventType: String
+    +aggregateType: String
+    +aggregateId: UUID
+    +payload: Json
+    +status: OutboxEventStatus
+    +attempts: Integer
+    +nextAttemptAt: DateTime
+    +lastError: Text
+    +createdAt: DateTime
+    +processedAt: DateTime
+    --
+    +markProcessing()
+    +markProcessed()
+    +markFailed(error)
+    +scheduleRetry()
+  }
+
+  class ProcessedEvent {
+    +eventId: UUID
+    +consumerName: String
+    +processedAt: DateTime
+  }
+
+  class NotificationLog {
+    +id: UUID
+    +userId: UUID
+    +eventId: UUID
+    +channel: String
+    +recipient: String
+    +template: String
+    +status: String
+    +error: Text
+    +sentAt: DateTime
+    +createdAt: DateTime
+    --
+    +markSent()
+    +markFailed(error)
+  }
+
+  class AuditLog {
+    +id: UUID
+    +userId: UUID
+    +action: String
+    +entityType: String
+    +entityId: UUID
+    +details: Json
+    +createdAt: DateTime
+  }
+}
+
+' =========================
+' RELACIONAMENTOS
+' =========================
+User "1" *-- "1" AuthCredential
+User "1" o-- "0..*" AuthSession
+User "1" o-- "0..*" PasswordReset
+
+User "1" o-- "0..*" JournalEntry
+JournalEntry "1" *-- "0..*" Analysis
+JournalEntry "1" *-- "0..*" JournalSentence
+Analysis "1" *-- "0..*" JournalSentence
+
+JournalSentence "1" *-- "0..*" SentenceTheme
+JournalSentence "1" *-- "0..*" SentencePassage
+JournalEntry "1" o-- "0..1" EntryEmbedding
+JournalSentence "1" o-- "0..1" SentenceEmbedding
+
+SentenceTheme ..> Theme : referencia tema
+SentencePassage ..> Passage : referencia passagem
+
+Author "1" o-- "0..*" Work
+Work "1" o-- "0..*" Passage
+Passage "0..*" -- "0..*" Theme : relacionado a
+
+User "1" o-- "0..*" Recommendation
+JournalEntry "0..1" o-- "0..*" Recommendation
+RecommendationItem "1" o-- "0..*" Recommendation
+
+User "1" o-- "0..*" SharedExport
+SharedExport "1" o-- "0..*" ProfessionalActivity
+User "1" o-- "0..*" ProfessionalActivity
+
+OutboxEvent "1" ..> "0..*" ProcessedEvent : controle de idempotência
+User "0..1" o-- "0..*" NotificationLog
+User "0..1" o-- "0..*" AuditLog
+
+note bottom of Theme
+Theme, Passage, Work e Author representam
+o grafo de conhecimento mantido no Neo4j.
+end note
+
+note bottom of JournalEntry
+As entradas privadas do journaling
+ficam no domínio transacional do PostgreSQL.
+end note
+
+note right of OutboxEvent
+Eventos internos permitem processamento
+assíncrono dentro do monólito modular.
+end note
+
+@enduml

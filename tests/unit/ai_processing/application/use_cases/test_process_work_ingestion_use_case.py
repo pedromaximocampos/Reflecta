@@ -197,6 +197,10 @@ class _Analyzer:
                     chunk_end_offset=len(quote),
                     paraphrase="Síntese da passagem.",
                     rationale="A passagem se relaciona à virtude.",
+                    reflective_value=0.875,
+                    reflective_note=(
+                        "A passagem convida a examinar escolhas e valores."
+                    ),
                     themes=(SuggestedPassageThemeDTO("theme-1", 0.9),),
                 ),
             )

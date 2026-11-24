@@ -71,3 +71,10 @@ Consulte o passo a passo e os cURLs em `Diagnostico-e-Reprocessamento.md`.
 A collection do proprietário consulta apenas estado e resultado. Para diagnósticos,
 use uma conta ADMIN e a collection `Reflecta-Falhas-Administrativas.postman_collection.json`.
 O endpoint legado `/analysis/failures` agora recusa usuários comuns com 403.
+
+## Exportar os dados do titular
+
+Importe também `Reflecta-Exportacao-Dados.postman_collection.json` para validar o
+UC07. A collection reutiliza `baseUrl` e `accessToken` e possui chamadas separadas
+para ZIP e JSON. Para o ZIP, use **Save Response to File**; nenhum dos formatos é
+salvo pelo backend ou enviado para filas.

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from src.modules.auth.public.user_id import UserId
 from src.modules.journal.domain.entities.journal_entry import JournalEntry
@@ -19,6 +19,7 @@ class JournalEntryOutputDTO:
     context_tags: ContentTags | None
     status: JournalEntryStatus
     created_at: datetime
+    entry_date: date
     updated_at: datetime | None
 
     @classmethod
@@ -31,6 +32,7 @@ class JournalEntryOutputDTO:
             context_tags=journal_entry.context_tags,
             status=journal_entry.status,
             created_at=journal_entry.created_at,
+            entry_date=journal_entry.entry_date,
             updated_at=journal_entry.updated_at,
         )
 
@@ -43,6 +45,7 @@ class JournalEntryOutputDTO:
             "context_tags": self.context_tags,
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
+            "entry_date": self.entry_date.isoformat(),
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
@@ -64,3 +67,24 @@ class JournalEntriesOutputDTO:
 
     def to_dict(self) -> dict:
         return {"entries": [entry.to_dict() for entry in self.entries]}
+
+
+@dataclass(frozen=True, slots=True)
+class JournalEntryWindowOutputDTO:
+    entries: tuple[JournalEntryOutputDTO, ...]
+    window_start: date | None
+    window_end: date | None
+    next_end_date: date | None
+
+    def to_dict(self) -> dict:
+        return {
+            "entries": [entry.to_dict() for entry in self.entries],
+            "window_start": (
+                self.window_start.isoformat() if self.window_start else None
+            ),
+            "window_end": self.window_end.isoformat() if self.window_end else None,
+            "next_end_date": (
+                self.next_end_date.isoformat() if self.next_end_date else None
+            ),
+            "has_older": self.next_end_date is not None,
+        }

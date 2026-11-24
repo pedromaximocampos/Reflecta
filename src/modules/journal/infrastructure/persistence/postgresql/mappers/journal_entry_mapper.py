@@ -20,6 +20,7 @@ class JournalEntryMapper(IMapper[JournalEntryModel, JournalEntry]):
             context_tags=model.context_tags,
             status=JournalEntryStatus(model.status),
             created_at=model.created_at,
+            entry_date=model.entry_date,
             updated_at=model.updated_at,
             deleted_at=model.deleted_at,
         )
@@ -33,6 +34,7 @@ class JournalEntryMapper(IMapper[JournalEntryModel, JournalEntry]):
             context_tags=entity.context_tags,
             status=entity.status.value,
             created_at=entity.created_at,
+            entry_date=entity.entry_date,
             updated_at=entity.updated_at,
             deleted_at=entity.deleted_at,
         )

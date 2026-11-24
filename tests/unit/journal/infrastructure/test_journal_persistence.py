@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -105,7 +105,7 @@ async def test_repository_find_by_id_is_scoped_by_owner_and_active_state() -> No
 async def test_repository_create_executes_insert_and_returns_entity() -> None:
     session = AsyncMock()
     result = MagicMock()
-    result.scalar_one.return_value = JournalEntryMapper().to_model(make_entry())
+    result.scalar_one_or_none.return_value = JournalEntryMapper().to_model(make_entry())
     session.execute.return_value = result
     repository = JournalEntryRepository(session, JournalEntryMapper())
 
@@ -125,8 +125,7 @@ async def test_repository_rejects_unknown_update_fields() -> None:
 
 
 @pytest.mark.asyncio
-async def test_repository_update_requires_draft_at_write_time() -> None:
-    # The entry may have been analyzed after the application read the draft.
+async def test_repository_update_guards_editable_statuses_at_write_time() -> None:
     session = AsyncMock()
     result = MagicMock()
     result.scalar_one_or_none.return_value = JournalEntryMapper().to_model(make_entry())
@@ -134,5 +133,30 @@ async def test_repository_update_requires_draft_at_write_time() -> None:
     repository = JournalEntryRepository(session, JournalEntryMapper())
     await repository.update(make_entry(), frozenset({"content_text"}))
     statement = session.execute.await_args.args[0]
-    assert "journal_entries.status =" in str(statement)
-    assert "draft" in statement.compile().params.values()
+    assert "journal_entries.status IN" in str(statement)
+    assert ["draft", "analyzed", "analysis_failed"] in list(
+        statement.compile().params.values()
+    )
+
+
+@pytest.mark.asyncio
+async def test_repository_window_uses_dates_and_returns_next_nonempty_anchor() -> None:
+    session = AsyncMock()
+    session.scalar.side_effect = [date(2026, 9, 18), date(2026, 8, 30)]
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = [
+        JournalEntryMapper().to_model(make_entry())
+    ]
+    session.execute.return_value = result
+    repository = JournalEntryRepository(session, JournalEntryMapper())
+
+    window = await repository.list_window_by_user(
+        USER_ID,
+        end_date=None,
+        days=15,
+    )
+
+    assert window.end_date == date(2026, 9, 18)
+    assert window.start_date == date(2026, 9, 4)
+    assert window.next_end_date == date(2026, 8, 30)
+    assert [entry.id for entry in window.entries] == [ENTRY_ID]

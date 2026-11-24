@@ -24,6 +24,8 @@ async def test_find_active_contextual_candidates_maps_catalog_projection() -> No
             "short_text": "A passagem literal da obra.",
             "paraphrase": "Uma paráfrase da passagem.",
             "interpretation_note": "A relação reflexiva com o tema.",
+            "reflective_value": 0.875,
+            "reflective_note": "A passagem abre uma perspectiva não prescritiva.",
             "locator": "p. 10",
             "priority": 2,
             "start_page": 10,
@@ -46,6 +48,7 @@ async def test_find_active_contextual_candidates_maps_catalog_projection() -> No
     assert candidates[0].passage_id == "passage-1"
     assert candidates[0].matched_theme_id == "theme-1"
     assert candidates[0].matched_theme_confidence == 0.94
+    assert candidates[0].reflective_value == 0.875
     assert candidates[0].work_title == "Meditações"
     assert candidates[0].author_name == "Marco Aurélio"
     assert transaction.run.await_args.kwargs == {
@@ -58,6 +61,7 @@ async def test_find_active_contextual_candidates_maps_catalog_projection() -> No
     assert "is_active: true" in query
     assert "[:BELONGS_TO]" in query
     assert "[:WRITTEN_BY]" in query
+    assert "coalesce(passage.reflective_value, 0) DESC" in query
     assert "[..$limit_per_theme]" in query
 
 

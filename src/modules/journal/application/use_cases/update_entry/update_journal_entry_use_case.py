@@ -17,7 +17,9 @@ from src.shared.domain.ports.system.iclock import IClock
 
 
 class UpdateJournalEntryUseCase(IUpdateJournalEntryUseCase):
-    _ALLOWED_FIELDS = frozenset({"title", "content_text", "context_tags"})
+    _ALLOWED_FIELDS = frozenset(
+        {"title", "content_text", "context_tags"}
+    )
 
     def __init__(
         self,
@@ -53,6 +55,7 @@ class UpdateJournalEntryUseCase(IUpdateJournalEntryUseCase):
                 entry.update_content(journal_input.content_text, now=now)
             if "context_tags" in journal_input.fields_to_update:
                 entry.update_context_tags(journal_input.context_tags, now=now)
+            entry.prepare_revision(now=now)
 
             updated_entry = await uow.journal_entry_repository.update(
                 entry,

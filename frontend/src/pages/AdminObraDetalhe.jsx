@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
-import { ArrowLeft, CircleAlert, FileText, ImagePlus, Upload } from 'lucide-react'
+import { ArrowLeft, CircleAlert, FileText, ImagePlus, RefreshCw, Upload } from 'lucide-react'
 import { WorkCover } from '../components/WorkCover'
-import { getWork, listWorkIngestions, removeWorkCover, uploadWorkCover } from '../services/catalogApi'
+import { getWork, listWorkIngestions, removeWorkCover, reprocessWorkIngestion, uploadWorkCover } from '../services/catalogApi'
 import { rememberCatalog } from '../services/catalogState'
 import { formatCatalogDate, formatCatalogDateTime } from '../services/workCatalog'
 
@@ -21,6 +21,9 @@ export function AdminObraDetalhe() {
   const [coverError, setCoverError] = useState(location.state?.coverUploadError || '')
   const [coverMessage, setCoverMessage] = useState('')
   const [ingestions, setIngestions] = useState([])
+  const [reprocessBusy, setReprocessBusy] = useState(false)
+  const [reprocessError, setReprocessError] = useState('')
+  const [reprocessMessage, setReprocessMessage] = useState('')
 
   useEffect(() => {
     let active = true
@@ -116,6 +119,36 @@ export function AdminObraDetalhe() {
     }
   }
 
+  async function reprocessIngestion(ingestion) {
+    if (reprocessBusy) return
+    setReprocessBusy(true)
+    setReprocessError('')
+    setReprocessMessage('')
+    try {
+      const result = await reprocessWorkIngestion(ingestion.ingestion_id)
+      const updated = {
+        ...ingestion,
+        status: result.status,
+        error_code: null,
+        failure: null,
+        finished_at: null,
+      }
+      setIngestions((current) => current.map((item) => (
+        item.ingestion_id === ingestion.ingestion_id ? updated : item
+      )))
+      rememberCatalog('ingestions', updated)
+      setReprocessMessage(
+        result.event_created
+          ? 'Ingestão reenviada para processamento. Os chunks concluídos serão preservados.'
+          : 'Esta ingestão já possui uma tentativa ativa.',
+      )
+    } catch (err) {
+      setReprocessError(err.message)
+    } finally {
+      setReprocessBusy(false)
+    }
+  }
+
   if (loading) return <div className="catalog-page"><p role="status">Carregando obra…</p></div>
   if (error || !work) return <div className="catalog-page"><div className="catalog-card"><h1>Não foi possível carregar a obra</h1><p role="alert" className="text-destructive">{error || 'Obra não encontrada.'}</p><Link className="catalog-button inline-flex items-center gap-2 mt-4" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link></div></div>
 
@@ -123,7 +156,7 @@ export function AdminObraDetalhe() {
   const displayedWork = coverPreviewUrl ? { ...work, cover_image_url: coverPreviewUrl } : work
   const coverAction = work.cover_image_url ? 'Alterar capa' : 'Adicionar capa'
   const latestFailure = ingestions
-    .filter((ingestion) => ingestion.work_id === work.id && ingestion.failure)
+    .filter((ingestion) => ingestion.work_id === work.id && ingestion.status === 'failed' && ingestion.failure)
     .sort((left, right) => new Date(right.failure.occurred_at) - new Date(left.failure.occurred_at))[0]
   return <div className="catalog-page work-detail-page">
     <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
@@ -136,8 +169,13 @@ export function AdminObraDetalhe() {
         <p>{latestFailure.failure.message}</p>
         <span>{formatCatalogDateTime(latestFailure.failure.occurred_at)} · Código: {latestFailure.failure.code}</span>
       </div>
-      <Link className="catalog-button catalog-hover-destructive" to={`/deshboard/falhas?source=${encodeURIComponent(latestFailure.failure.source)}&failure_id=${encodeURIComponent(latestFailure.failure.failure_id)}`}>Ver falha operacional</Link>
+      <div className="work-operational-failure-actions">
+        <Link className="catalog-button catalog-hover-destructive" to={`/deshboard/falhas?source=${encodeURIComponent(latestFailure.failure.source)}&failure_id=${encodeURIComponent(latestFailure.failure.failure_id)}`}>Ver falha operacional</Link>
+        <button className="catalog-primary catalog-hover-primary" type="button" disabled={reprocessBusy} onClick={() => reprocessIngestion(latestFailure)}><RefreshCw size={15} className={reprocessBusy ? 'animate-spin' : ''} aria-hidden="true" />{reprocessBusy ? 'Reprocessando…' : 'Reprocessar ingestão'}</button>
+      </div>
     </section>}
+    {reprocessError && <p className="text-destructive" role="alert">{reprocessError}</p>}
+    {reprocessMessage && <p className="text-primary" role="status">{reprocessMessage}</p>}
 
     <section className="catalog-summary-grid" aria-label="Resumo das passagens da obra">
       {[['Passagens associadas', counts.total], ['Passagens ativas', counts.active], ['Passagens não ativas', counts.inactive]].map(([label, value]) => <article className="catalog-card catalog-summary-card" key={label}><FileText size={22} aria-hidden="true" /><div><p>{label}</p><strong>{value}</strong></div></article>)}

@@ -1,0 +1,9 @@
+digraph G {
+graph [rankdir=TB,bgcolor="white",pad="0.3",ranksep="0.8",nodesep="0.7",fontname="Arial",fontsize=16,labelloc=t,label="D  Catálogo no Neo4j"];
+node [shape=record,fontname="Arial",fontsize=14,style=filled,fillcolor="#edf1f4",margin="0.2"];
+edge [fontname="Arial",fontsize=12];
+Passage [label="{Passage|passage_id\ltext\lstatus\l}"]; Theme [label="{Theme|theme_id\lslug\lcolor\l}"]; Work [label="{Work|work_id\ltitle\l}"]; Author [label="{Author|author_id\lname\l}"];
+Passage -> Theme [label="RELATES_TO\nconfidence, source",headlabel="0..N",taillabel="0..N"];
+Passage -> Work [label="BELONGS_TO",headlabel="1",taillabel="0..N"];
+Work -> Author [label="WRITTEN_BY",headlabel="1",taillabel="0..N"];
+}

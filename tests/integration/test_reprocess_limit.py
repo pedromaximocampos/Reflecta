@@ -38,7 +38,7 @@ async def seed(session, owner, entry_id, *, used=0):
         email=owner + "@retry-test.invalid", name="Reprocess Test", date_of_birth=date(2000, 1, 1),
         created_at=now, is_email_verified=False, role=UserRole.USER))
     await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text="Texto fictício de teste.",
-        status="pending_analysis", created_at=now, user_reprocess_count=used))
+        status="pending_analysis", entry_date=now.date(), created_at=now, user_reprocess_count=used))
 
 
 async def mark_failure(gateway, entry_id, owner):

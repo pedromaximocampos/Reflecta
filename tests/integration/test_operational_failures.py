@@ -63,7 +63,8 @@ async def test_admin_failures_all_sources_filters_details_and_user_diagnostic_de
                         email=owner + "@op-test.invalid", name="Operations Test", date_of_birth=date(2000, 1, 1),
                         created_at=now, is_email_verified=False, role=UserRole.USER))
                     await session.execute(insert(Entry).values(id=entry_id, user_id=owner, title=secret,
-                        content_text=secret, context_tags={"private": secret}, status="analysis_failed", created_at=now))
+                        content_text=secret, context_tags={"private": secret}, status="analysis_failed",
+                        entry_date=now.date(), created_at=now))
                     await session.execute(insert(Analysis), [dict(id=analysis_id, journal_entry_id=entry_id,
                         status="failed", created_at=now, analysis_error=json.dumps({"code": "provider_timeout", "message": secret, "attempts": 2})),
                         dict(id=legacy_id, journal_entry_id=entry_id, status="failed", created_at=now - timedelta(seconds=1), analysis_error=secret)])

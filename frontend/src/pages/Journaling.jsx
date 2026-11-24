@@ -3,49 +3,58 @@ import { useNavigate } from 'react-router';
 import { Lock, Save, FileText } from 'lucide-react';
 import { createJournalEntry } from '../services/journalApi';
 import { clearSession } from '../services/authSession';
+import { defaultContextPeriod } from '../services/contextPeriod';
+import { JournalDatePicker } from '../components/journal/JournalDatePicker';
 
 export function Journaling() {
   const navigate = useNavigate();
   const [titulo, setTitulo] = useState('');
   const [conteudo, setConteudo] = useState('');
-  const [contexto, setContexto] = useState('');
+  const [peopleContext, setPeopleContext] = useState('');
+  const [placesContext, setPlacesContext] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [entryDate, setEntryDate] = useState(() => defaultContextPeriod().end_date);
 
 
-  const hoje = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const today = defaultContextPeriod().end_date;
+
+  function openExistingEntry(entry) {
+    const params = new URLSearchParams({
+      entry_id: entry.id,
+      center_date: entry.entry_date,
+    })
+    navigate(`/inicio/reflexoes?${params}`)
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-5 md:p-8">
-      <div className="w-full max-w-4xl">
-        <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
-          <div>
-            <h1 className="text-3xl mb-1">Meu Diário</h1>
-            <p className="text-sm text-muted-foreground capitalize">{hoje}</p>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Reflexão pessoal</span>
-          </div>
+    <div className="max-w-screen-2xl mx-auto p-5 md:p-8">
+      <header className="catalog-page-header catalog-page-intro mb-6">
+        <div className="catalog-page-intro-copy">
+          <h1 className="text-3xl">Nova reflexão</h1>
+          <p>Registre seus pensamentos no dia em que eles aconteceram.</p>
         </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Lock className="w-4 h-4" aria-hidden="true" />
+          <span>Reflexão pessoal</span>
+        </div>
+      </header>
 
-        <p role="note" className="mb-4 text-sm text-muted-foreground">Ao salvar, sua reflexão será enviada automaticamente para análise de IA e não poderá mais ser editada. Você poderá acompanhar o resultado na próxima tela.</p>
+      <div className="w-full max-w-4xl mx-auto">
+        <p role="note" className="mb-4 text-sm text-muted-foreground">Ao salvar, sua reflexão será enviada automaticamente para análise de IA. Depois, você ainda poderá revisá-la e solicitar uma nova análise.</p>
 
         <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
-          <div className="bg-gradient-to-r from-secondary/10 to-accent/10 px-8 py-6 border-b border-border">
+          <div className="bg-gradient-to-r from-secondary/10 to-accent/10 px-5 md:px-8 py-5 border-b border-border flex flex-col sm:flex-row sm:items-center gap-4">
             <input
               aria-label="Título da reflexão"
               type="text"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Título da reflexão (opcional)"
-              className="w-full bg-transparent border-none outline-none text-2xl placeholder:text-muted-foreground/50"
+              className="w-full min-w-0 flex-1 bg-transparent border-none outline-none text-2xl placeholder:text-muted-foreground/50"
             />
+            <JournalDatePicker value={entryDate} maxDate={today} onChange={setEntryDate}
+              onExistingEntry={openExistingEntry} />
           </div>
 
           <div className="p-5 md:p-8">
@@ -70,18 +79,21 @@ export function Journaling() {
           </div>
 
           <div className="px-8 pb-6">
-            <div className="mb-6">
-              <label htmlFor="journal-context" className="block mb-2 text-sm text-muted-foreground">
-                Contexto ou tags (opcional)
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <label htmlFor="journal-people" className="space-y-2 text-sm text-muted-foreground">
+                <span className="block font-medium text-foreground">Pessoas (opcional)</span>
+                <input id="journal-people" type="text" value={peopleContext}
+                  onChange={(event) => setPeopleContext(event.target.value)}
+                  placeholder="Ex: mãe; João; equipe..."
+                  className="w-full px-4 py-2 bg-input-background rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-ring" />
               </label>
-              <input
-                id="journal-context"
-                type="text"
-                value={contexto}
-                onChange={(e) => setContexto(e.target.value)}
-                placeholder="Ex: trabalho, família, objetivos..."
-                className="w-full px-4 py-2 bg-input-background rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <label htmlFor="journal-places" className="space-y-2 text-sm text-muted-foreground">
+                <span className="block font-medium text-foreground">Lugares (opcional)</span>
+                <input id="journal-places" type="text" value={placesContext}
+                  onChange={(event) => setPlacesContext(event.target.value)}
+                  placeholder="Ex: casa; trabalho; faculdade..."
+                  className="w-full px-4 py-2 bg-input-background rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-ring" />
+              </label>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -92,15 +104,28 @@ export function Journaling() {
                   setError('');
                   setSaving(true);
                   try {
-                    const contextTags = contexto.split(',').map((tag) => tag.trim()).filter(Boolean);
+                    const toTags = (value) => [...new Set(value.split(';').map((tag) => tag.trim()).filter(Boolean))]
+                      .map((label) => ({ label, source: 'user' }));
                     const entry = await createJournalEntry({
                       title: titulo.trim() || null,
                       content_text: conteudo.trim(),
-                      context_tags: { people: [], places: [], domains: contextTags.map((label) => ({ label, source: 'user' })) },
+                      entry_date: entryDate,
+                      context_tags: {
+                        people: toTags(peopleContext),
+                        places: toTags(placesContext),
+                        domains: [],
+                      },
                     });
                     navigate(`/inicio/reflexoes/${entry.id}`);
                   } catch (err) {
                     if (err.status === 401) clearSession();
+                    if (err.status === 409 && err.details?.existing_entry_id) {
+                      openExistingEntry({
+                        id: err.details.existing_entry_id,
+                        entry_date: err.details.entry_date || entryDate,
+                      })
+                      return
+                    }
                     setError(err.message || 'Não foi possível salvar a reflexão.');
                   } finally { setSaving(false); }
                 }}

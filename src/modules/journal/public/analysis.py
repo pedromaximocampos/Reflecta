@@ -17,9 +17,11 @@ USER_REPROCESS_LIMIT = 3
 def reprocess_policy(entry):
     used = entry.user_reprocess_count or 0
     failed = entry.status == "analysis_failed"
+    analyzed = entry.status == "analyzed"
     return {"user_limit": USER_REPROCESS_LIMIT, "user_used": used,
             "user_remaining": max(0, USER_REPROCESS_LIMIT - used),
             "can_user_reprocess": failed and used < USER_REPROCESS_LIMIT,
+            "can_user_reanalyze": analyzed and used < USER_REPROCESS_LIMIT,
             "requires_admin": failed and used >= USER_REPROCESS_LIMIT,
             "revision": (entry.updated_at or entry.created_at).isoformat()}
 
@@ -63,7 +65,18 @@ class SentenceAnalysis:
 
 
 class IJournalAnalysisGateway(Protocol):
+    async def submit(
+        self, entry_id: str, user_id: str, *, now: datetime,
+        expected_revision: datetime | None = None, reanalyze: bool = False,
+    ) -> dict[str, Any]: ...
+
     async def read(self, entry_id: str, user_id: str) -> EntrySnapshot: ...
+
+    async def get_analysis(self, entry_id: str, user_id: str) -> dict[str, Any]: ...
+
+    async def update_theme_selection(
+        self, entry_id: str, user_id: str, *, theme_ids: list[str], now: datetime,
+    ) -> dict[str, Any]: ...
 
     async def save(
         self, snapshot: EntrySnapshot, *, analysis_id: str, summary: str,

@@ -78,6 +78,18 @@ class WorkIngestion:
         self.error_code = error_code
         self.error_message = error_message
 
+    def request_reprocessing(self) -> None:
+        """Requeue a failed ingestion without discarding durable chunk checkpoints."""
+        self._ensure_transition_to(
+            WorkIngestionStatus.PENDING,
+            allowed_from={WorkIngestionStatus.FAILED},
+        )
+        self.status = WorkIngestionStatus.PENDING
+        self.started_at = None
+        self.finished_at = None
+        self.error_code = None
+        self.error_message = None
+
     def _ensure_transition_to(
         self,
         target: WorkIngestionStatus,

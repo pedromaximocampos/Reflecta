@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1040" viewBox="0 0 1180 1040"><defs><marker id="arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#263747" stroke-width="1.3"/></marker></defs><rect width="1180" height="1040" fill="white"/>
+<text x="590" y="34" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#17212b"><tspan x="590" dy="0">Reflecta  UC16  Consultar conteúdo compartilhado</tspan></text>
+<rect x="0" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="90" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="90" dy="0">Destinatário</tspan></text>
+<line x1="90" y1="135" x2="90" y2="948" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="215" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="305" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="305" dy="0">Frontend público</tspan></text>
+<line x1="305" y1="135" x2="305" y2="948" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="470" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="560" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="560" dy="0">Sharing Module</tspan></text>
+<line x1="560" y1="135" x2="560" y2="948" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="720" y="65" width="180" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="810" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="810" dy="0">Journal Module</tspan></text>
+<line x1="810" y1="135" x2="810" y2="948" stroke="#85909c" stroke-dasharray="6 6"/>
+<rect x="987.5" y="65" width="185" height="70" rx="2" fill="#e9edf3" stroke="#667381"/>
+<text x="1080" y="91" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="1080" dy="0">PostgreSQL</tspan><tspan x="1080" dy="26">journal_schema</tspan></text>
+<line x1="1080" y1="135" x2="1080" y2="948" stroke="#85909c" stroke-dasharray="6 6"/>
+<line x1="90" y1="190" x2="305" y2="190" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="102" y="152" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="102" dy="0">Abrir /compartilhamento</tspan><tspan x="102" dy="26">com token no fragmento</tspan></text>
+<line x1="305" y1="260" x2="560" y2="260" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="317" y="222" text-anchor="start" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="317" dy="0">POST /shared/context-analysis/resolve</tspan><tspan x="317" dy="26">token no corpo; sem login</tspan></text>
+<line x1="560" y1="330" x2="1080" y2="330" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="572" y="292" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Buscar hash do token com acesso não revogado</tspan><tspan x="572" dy="26">e vencimento posterior ao instante atual</tspan></text>
+<line x1="1080" y1="395" x2="560" y2="395" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="572" y="383" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Snapshot ou ausência de link válido</tspan></text>
+<line x1="560" y1="460" x2="810" y2="460" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="572" y="422" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Se encontrado, verificar</tspan><tspan x="572" dy="26">a disponibilidade das fontes</tspan></text>
+<line x1="810" y1="525" x2="1080" y2="525" stroke="#263747" stroke-width="1.5"  marker-end="url(#arr)"/>
+<text x="822" y="513" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="822" dy="0">Conferir conta e entradas não excluídas</tspan></text>
+<line x1="1080" y1="580" x2="810" y2="580" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="822" y="568" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="822" dy="0">Disponibilidade das fontes</tspan></text>
+<line x1="810" y1="635" x2="560" y2="635" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="572" y="623" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="572" dy="0">Confirmar ou recusar acesso</tspan></text>
+<rect x="280" y="660" width="880" height="220" rx="2" fill="none" stroke="#667381"/>
+<text x="292" y="685" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b"><tspan x="292" dy="0">alt</tspan></text>
+<text x="350" y="685" text-anchor="start" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b"><tspan x="350" dy="0">[acesso válido]</tspan></text>
+<line x1="560" y1="735" x2="305" y2="735" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="317" y="723" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="317" dy="0">200 com snapshot e vencimento</tspan></text>
+<line x1="280" y1="758" x2="1160" y2="758" stroke="#667381" stroke-dasharray="5 4"/>
+<text x="350" y="790" text-anchor="start" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#17212b"><tspan x="350" dy="0">[token desconhecido, expirado, revogado ou fontes indisponíveis]</tspan></text>
+<line x1="560" y1="840" x2="305" y2="840" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="317" y="828" text-anchor="start" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#17212b"><tspan x="317" dy="0">404 genérico sem conteúdo privado</tspan></text>
+<line x1="305" y1="930" x2="90" y2="930" stroke="#263747" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="102" y="918" text-anchor="start" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="102" dy="0">Exibir conteúdo autorizado ou indisponibilidade</tspan></text>
+<text x="590" y="984" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="590" dy="0">A resposta contém a síntese e, quando autorizado, as reflexões do snapshot.</tspan></text>
+<text x="590" y="1014" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="400" fill="#17212b"><tspan x="590" dy="0">A página reconsulta o acesso a cada minuto e oculta o conteúdo ao vencer.</tspan></text>
+</svg>

@@ -65,3 +65,12 @@ class WorkIngestionAcceptedValidator(BaseModel):
     ingestion_id: str = Field(..., min_length=26, max_length=26)
     work_id: str = Field(..., min_length=26, max_length=26)
     status: Literal["pending"]
+
+
+class WorkIngestionReprocessedValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ingestion_id: str = Field(..., min_length=26, max_length=26)
+    work_id: str = Field(..., min_length=26, max_length=26)
+    status: Literal["pending", "processing"]
+    event_created: bool

@@ -60,6 +60,8 @@ async def test_gateway_creates_pending_review_candidate_with_stable_source_key()
         exact_text="A qualidade dos pensamentos transforma a experiência da vida.",
         paraphrase="Pensamentos influenciam a experiência.",
         interpretation_note="Relaciona atenção, julgamento e bem-estar.",
+        reflective_value=0.875,
+        reflective_note="O trecho permite rever como julgamentos moldam experiências.",
         start_page=4,
         end_page=5,
         start_offset=120,
@@ -87,6 +89,7 @@ async def test_gateway_creates_pending_review_candidate_with_stable_source_key()
     assert first.status is CatalogStatus.PENDING_REVIEW
     assert first.locator == "pp. 4-5"
     assert first.source_key == second.source_key
+    assert first.reflective_value == 0.875
     assert first.id != second.id
     assert uow.commits == 2
 
@@ -99,6 +102,8 @@ async def test_overlapping_chunks_share_the_same_passage_source_key() -> None:
         exact_text="A mesma passagem apareceu na sobreposição entre dois chunks.",
         paraphrase="Uma passagem repetida pelo overlap.",
         interpretation_note="A identidade deve considerar sua posição na obra.",
+        reflective_value=0.75,
+        reflective_note="O trecho oferece uma perspectiva aplicável à reflexão.",
         start_page=10,
         end_page=10,
         start_offset=900,

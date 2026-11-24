@@ -33,6 +33,8 @@ def contextual_candidate(
         short_text="A passagem canônica da obra.",
         paraphrase="Uma paráfrase da passagem.",
         interpretation_note="Uma nota editorial sobre seu sentido.",
+        reflective_value=0.875,
+        reflective_note="A passagem amplia perspectivas sem prescrever resposta.",
         locator="p. 10",
         priority=1,
         work_id="work-1",
@@ -153,11 +155,15 @@ async def test_contextual_selector_receives_only_trusted_ids_and_candidates():
         "A passagem amplia a reflexão presente na frase."
     )
     assert saved_passage.payload_snapshot == {
-        "schema_version": 1,
+        "schema_version": 2,
         "passage_id": "passage-1",
         "short_text": "A passagem canônica da obra.",
         "paraphrase": "Uma paráfrase da passagem.",
         "interpretation_note": "Uma nota editorial sobre seu sentido.",
+        "reflective_value": 0.875,
+        "reflective_note": (
+            "A passagem amplia perspectivas sem prescrever resposta."
+        ),
         "locator": "p. 10",
         "priority": 1,
         "start_page": 10,

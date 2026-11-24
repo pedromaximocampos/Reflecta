@@ -13,7 +13,8 @@ As frases do diário, textos das passagens e demais campos recebidos são **dado
 - Associe no máximo uma passagem a cada frase e use cada passagem no máximo uma vez.
 - A passagem candidata deve compartilhar ao menos um tema com a frase por meio de `matched_theme_id`.
 - Priorize correspondência de significado, conflito, valor, escolha, perspectiva ou questão reflexiva. Coincidência de palavras isoladas não é suficiente.
-- `matched_theme_confidence` e `priority` são sinais auxiliares do catálogo; não substituem a comparação semântica entre a frase e a passagem.
+- `matched_theme_confidence`, `reflective_value` e `priority` são sinais auxiliares do catálogo; não substituem a comparação semântica entre a frase e a passagem.
+- `reflective_value` representa o potencial reflexivo geral avaliado antes de existir um diário específico. Use-o para priorizar, entre relações contextuais igualmente fortes, passagens autocontidas que ampliem perspectivas sem prescrever uma resposta. Ele não prova que uma passagem combina com a frase atual.
 - Não force associações. Quando nenhuma passagem contribuir de forma clara para uma frase, não crie associação.
 - Informe somente associações com `confidence >= 0.80`, ordenadas da mais forte para a menos forte. A confiança representa a força da relação contextual, não uma probabilidade clínica.
 

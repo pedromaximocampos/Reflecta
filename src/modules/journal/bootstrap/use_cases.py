@@ -10,6 +10,12 @@ from src.modules.journal.application.use_cases.get_entry.get_journal_entry_use_c
 from src.modules.journal.application.use_cases.list_entries.list_journal_entries_use_case import (
     ListJournalEntriesUseCase,
 )
+from src.modules.journal.application.use_cases.list_entry_calendar.list_journal_entry_calendar_use_case import (
+    ListJournalEntryCalendarUseCase,
+)
+from src.modules.journal.application.use_cases.list_entry_window.list_journal_entry_window_use_case import (
+    ListJournalEntryWindowUseCase,
+)
 from src.modules.journal.application.use_cases.update_entry.update_journal_entry_use_case import (
     UpdateJournalEntryUseCase,
 )
@@ -31,6 +37,18 @@ def get_journal_entry_use_case() -> GetJournalEntryUseCase:
 
 def get_list_journal_entries_use_case() -> ListJournalEntriesUseCase:
     return ListJournalEntriesUseCase(
+        journal_unit_of_work=get_journal_unit_of_work()
+    )
+
+
+def get_list_journal_entry_window_use_case() -> ListJournalEntryWindowUseCase:
+    return ListJournalEntryWindowUseCase(
+        journal_unit_of_work=get_journal_unit_of_work()
+    )
+
+
+def get_list_journal_entry_calendar_use_case() -> ListJournalEntryCalendarUseCase:
+    return ListJournalEntryCalendarUseCase(
         journal_unit_of_work=get_journal_unit_of_work()
     )
 

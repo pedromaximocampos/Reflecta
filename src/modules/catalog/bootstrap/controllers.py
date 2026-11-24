@@ -7,6 +7,7 @@ from src.modules.catalog.bootstrap.use_cases import (
     get_remove_work_cover_use_case,
     get_replace_work_cover_use_case,
     get_request_work_ingestion_use_case,
+    get_reprocess_work_ingestion_use_case,
     get_delete_theme_by_id_use_case,
     get_theme_by_id_use_case,
     get_update_theme_use_case,
@@ -41,6 +42,9 @@ from src.modules.catalog.presentation.controllers.update_work_cover_controller i
 )
 from src.modules.catalog.presentation.controllers.request_work_ingestion_controller import (
     RequestWorkIngestionController,
+)
+from src.modules.catalog.presentation.controllers.reprocess_work_ingestion_controller import (
+    ReprocessWorkIngestionController,
 )
 from src.modules.catalog.presentation.controllers.delete_themes_controller import (
     DeleteThemeByIdController,
@@ -87,6 +91,12 @@ def get_remove_work_cover_controller() -> RemoveWorkCoverController:
 def get_request_work_ingestion_controller() -> RequestWorkIngestionController:
     return RequestWorkIngestionController(
         request_work_ingestion_use_case=get_request_work_ingestion_use_case(),
+    )
+
+
+def get_reprocess_work_ingestion_controller() -> ReprocessWorkIngestionController:
+    return ReprocessWorkIngestionController(
+        reprocess_work_ingestion_use_case=get_reprocess_work_ingestion_use_case(),
     )
 
 

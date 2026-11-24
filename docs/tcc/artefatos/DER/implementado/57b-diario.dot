@@ -1,0 +1,20 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.24", ranksep="0.4", splines=polyline, fontname="Arial", fontsize=15, labelloc=t, label="B  Diário e análise individual"];
+node [shape=plain,fontname="Arial",fontsize=11]; edge [fontname="Arial",fontsize=10,color="#52606d",arrowsize=0.7];
+public_users [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>users</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+journal_schema_analysis [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>analysis</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  journal_entry_id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+journal_schema_entry_embeddings [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>entry_embeddings</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK FK  entry_id</TD></TR></TABLE>>];
+journal_schema_journal_entries [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>journal_entries</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">entry_date</TD></TR><TR><TD ALIGN="LEFT">UQ parcial (user_id, entry_date)</TD></TR><TR><TD ALIGN="LEFT">deleted_at IS NULL</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+journal_schema_journal_sentences [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>journal_sentences</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  journal_entry_id</TD></TR><TR><TD ALIGN="LEFT">FK  analysis_id</TD></TR></TABLE>>];
+journal_schema_sentence_embeddings [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>sentence_embeddings</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK FK  sentence_id</TD></TR></TABLE>>];
+journal_schema_sentence_passages [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>sentence_passages</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  sentence_id</TD></TR><TR><TD ALIGN="LEFT">passage_id</TD></TR></TABLE>>];
+journal_schema_sentence_themes [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>sentence_themes</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK FK  sentence_id</TD></TR><TR><TD ALIGN="LEFT">PK  theme_id</TD></TR></TABLE>>];
+journal_schema_journal_entries -> journal_schema_analysis [label="1 : 0..N"];
+journal_schema_journal_entries -> journal_schema_entry_embeddings [label="1 : 0..1"];
+public_users -> journal_schema_journal_entries [label="1 : 0..N"];
+journal_schema_analysis -> journal_schema_journal_sentences [label="1 : 0..N"];
+journal_schema_journal_entries -> journal_schema_journal_sentences [label="1 : 0..N"];
+journal_schema_journal_sentences -> journal_schema_sentence_embeddings [label="1 : 0..1"];
+journal_schema_journal_sentences -> journal_schema_sentence_passages [label="1 : 0..N"];
+journal_schema_journal_sentences -> journal_schema_sentence_themes [label="1 : 0..N"];
+}

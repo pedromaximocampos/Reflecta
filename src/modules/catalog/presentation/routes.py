@@ -12,6 +12,7 @@ from src.modules.catalog.bootstrap.controllers import (
     get_remove_work_cover_controller,
     get_replace_work_cover_controller,
     get_request_work_ingestion_controller,
+    get_reprocess_work_ingestion_controller,
     get_delete_theme_by_id_controller,
     get_theme_by_id_controller,
     get_update_theme_controller,
@@ -50,6 +51,9 @@ from src.modules.catalog.presentation.controllers.update_work_cover_controller i
 from src.modules.catalog.presentation.controllers.request_work_ingestion_controller import (
     RequestWorkIngestionController,
 )
+from src.modules.catalog.presentation.controllers.reprocess_work_ingestion_controller import (
+    ReprocessWorkIngestionController,
+)
 from src.modules.catalog.presentation.controllers.delete_themes_controller import (
     DeleteThemeByIdController,
 )
@@ -79,6 +83,7 @@ from src.modules.catalog.presentation.validators.work_cover import (
 from src.modules.catalog.presentation.validators.request_work_ingestion import (
     ValidatedWorkDocumentUpload,
     WorkIngestionAcceptedValidator,
+    WorkIngestionReprocessedValidator,
     validate_work_document_upload,
 )
 from src.modules.catalog.presentation.validators.passage import (
@@ -392,6 +397,27 @@ async def request_work_ingestion(
             "size_bytes": document.size_bytes,
             "content": document.content,
         },
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.post(
+    "/work-ingestions/{ingestion_id}/reprocess",
+    summary="Reprocess a failed work ingestion",
+    response_model=WorkIngestionReprocessedValidator,
+    status_code=202,
+)
+async def reprocess_work_ingestion(
+    request: Request,
+    ingestion_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: ReprocessWorkIngestionController = Depends(
+        get_reprocess_work_ingestion_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
         authenticated_user_id=current_user.user_id.value,
     )
 

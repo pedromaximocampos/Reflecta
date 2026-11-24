@@ -1,4 +1,5 @@
-from src.modules.journal.presentation.share_routes import share_router
+from src.modules.sharing.presentation import share_router
+from src.modules.recommendation.presentation import recommendation_router
 from src.modules.operations.presentation.routes import operations_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +7,7 @@ from src.modules.auth.presentation.routes import auth_router
 from src.modules.catalog.presentation.routes import catalog_router
 from src.modules.journal.presentation.routes import journal_router
 from src.modules.ai_processing.presentation.routes import ai_processing_router
+from src.modules.data_export.presentation import data_export_router
 from src.shared.config.constants import API_VERSION
 from src.shared.config.settings import get_settings
 from src.main.server.fast_api.fast_api_exception_handler import add_exception_handlers
@@ -26,6 +28,7 @@ def create_fast_api_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["Content-Disposition"],
     )
 
     @app.middleware("http")
@@ -43,7 +46,9 @@ def create_fast_api_app() -> FastAPI:
     app.include_router(catalog_router)
     app.include_router(journal_router)
     app.include_router(share_router)
+    app.include_router(recommendation_router)
     app.include_router(operations_router)
     app.include_router(ai_processing_router)
+    app.include_router(data_export_router)
 
     return app

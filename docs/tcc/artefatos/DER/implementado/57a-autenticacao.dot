@@ -1,0 +1,24 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.24", ranksep="0.4", splines=polyline, fontname="Arial", fontsize=15, labelloc=t, label="A  Autenticação e recuperação de conta"];
+node [shape=plain,fontname="Arial",fontsize=11]; edge [fontname="Arial",fontsize=10,color="#52606d",arrowsize=0.7];
+public_auth_credentials [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>auth_credentials</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK FK  user_id</TD></TR></TABLE>>];
+public_auth_sessions [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>auth_sessions</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR></TABLE>>];
+public_passwords_reset [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>passwords_reset</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">UQ  token_hash</TD></TR></TABLE>>];
+public_user_deletion_requests [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>user_deletion_requests</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">UQ  token_hash</TD></TR></TABLE>>];
+public_user_email_verifications [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>user_email_verifications</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">UQ  token_hash</TD></TR></TABLE>>];
+public_user_recovery_requests [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>user_recovery_requests</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">UQ  token_hash</TD></TR></TABLE>>];
+public_users [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>users</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+public_users -> public_auth_credentials [label="1 : 0..1"];
+public_users -> public_auth_sessions [label="1 : 0..N"];
+public_users -> public_passwords_reset [label="1 : 0..N"];
+public_users -> public_user_deletion_requests [label="1 : 0..N"];
+public_users -> public_user_email_verifications [label="1 : 0..N"];
+public_users -> public_user_recovery_requests [label="1 : 0..N"];
+{rank=same;public_auth_credentials;public_auth_sessions;}
+{rank=same;public_passwords_reset;public_user_email_verifications;}
+{rank=same;public_user_deletion_requests;public_user_recovery_requests;}
+public_auth_credentials -> public_passwords_reset [style=invis,weight=10];
+public_auth_sessions -> public_user_email_verifications [style=invis,weight=10];
+public_passwords_reset -> public_user_deletion_requests [style=invis,weight=10];
+public_user_email_verifications -> public_user_recovery_requests [style=invis,weight=10];
+}

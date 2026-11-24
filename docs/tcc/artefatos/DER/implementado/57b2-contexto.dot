@@ -1,0 +1,21 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.24", ranksep="0.4", splines=polyline, fontname="Arial", fontsize=15, labelloc=t, label="B2  Histórico, compartilhamento, atividades e reprocessamento"];
+node [shape=plain,fontname="Arial",fontsize=11]; edge [fontname="Arial",fontsize=10,color="#52606d",arrowsize=0.7];
+public_users [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>users</B></TD></TR><TR><TD><FONT POINT-SIZE="9">public</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+journal_schema_journal_entries [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>journal_entries</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">entry_date</TD></TR><TR><TD ALIGN="LEFT">UQ parcial (user_id, entry_date)</TD></TR><TR><TD ALIGN="LEFT">deleted_at IS NULL</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR><TR><TD ALIGN="LEFT">deleted_at [NULL]</TD></TR></TABLE>>];
+journal_schema_analysis [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>analysis</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  journal_entry_id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR></TABLE>>];
+journal_schema_analysis_reprocess_requests [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>analysis_reprocess_requests</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  entry_id</TD></TR><TR><TD ALIGN="LEFT">FK UQ  failure_id [NULL]</TD></TR><TR><TD ALIGN="LEFT">FK  requested_by [NULL]</TD></TR></TABLE>>];
+journal_schema_context_analyses [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>context_analyses</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR></TABLE>>];
+journal_schema_context_analysis_shares [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>context_analysis_shares</B></TD></TR><TR><TD><FONT POINT-SIZE="9">journal_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">FK  analysis_id</TD></TR><TR><TD ALIGN="LEFT">UQ  token_hash</TD></TR></TABLE>>];
+sharing_schema_professional_activities [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3"><TR><TD BGCOLOR="#e8edf2"><B>professional_activities</B></TD></TR><TR><TD><FONT POINT-SIZE="9">sharing_schema</FONT></TD></TR><TR><TD ALIGN="LEFT">PK  id</TD></TR><TR><TD ALIGN="LEFT">FK  share_id</TD></TR><TR><TD ALIGN="LEFT">FK  user_id</TD></TR><TR><TD ALIGN="LEFT">kind</TD></TR><TR><TD ALIGN="LEFT">title</TD></TR><TR><TD ALIGN="LEFT">due_date [NULL]</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR><TR><TD ALIGN="LEFT">completed_at [NULL]</TD></TR></TABLE>>];
+public_users -> journal_schema_journal_entries [label="1 : 0..N"];
+journal_schema_journal_entries -> journal_schema_analysis [label="1 : 0..N"];
+journal_schema_journal_entries -> journal_schema_analysis_reprocess_requests [label="1 : 0..N"];
+journal_schema_analysis -> journal_schema_analysis_reprocess_requests [label="0..1 : 0..1"];
+public_users -> journal_schema_analysis_reprocess_requests [label="0..1 : 0..N"];
+public_users -> journal_schema_context_analyses [label="1 : 0..N"];
+journal_schema_context_analyses -> journal_schema_context_analysis_shares [label="1 : 0..N"];
+public_users -> journal_schema_context_analysis_shares [label="1 : 0..N"];
+journal_schema_context_analysis_shares -> sharing_schema_professional_activities [label="1 : 0..N"];
+public_users -> sharing_schema_professional_activities [label="1 : 0..N"];
+}

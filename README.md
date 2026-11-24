@@ -1,100 +1,87 @@
 # Reflecta
 
-![Status](https://img.shields.io/badge/status-in%20development-orange)
+![Status](https://img.shields.io/badge/status-functional%20academic%20MVP-2f4a38)
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
 ![Architecture](https://img.shields.io/badge/architecture-modular%20monolith-4B5563)
-![Backend tests](https://img.shields.io/badge/backend%20tests-557%20passing-brightgreen)
-![Frontend tests](https://img.shields.io/badge/frontend%20tests-73%20passing-brightgreen)
+![Backend unit tests](https://img.shields.io/badge/backend%20unit%20tests-617%20passing-brightgreen)
+![Frontend tests](https://img.shields.io/badge/frontend%20tests-87%20passing-brightgreen)
 
-> **Work in progress:** Reflecta is actively being developed as a Software Engineering capstone project. The repository already contains working vertical slices, but it is not yet a production-ready application.
+Reflecta is a private, text-based journaling platform that uses structured AI analysis and a curated knowledge catalog to help people revisit their reflections, identify recurring themes, and connect them with philosophical and literary passages.
 
-Reflecta is a private, text-based journaling platform designed to help people understand recurring themes in their reflections and connect them with curated philosophical, literary, and cultural knowledge.
+The system was developed as a Software Engineering capstone project. AI supports reflection and content association; it does not produce clinical diagnoses or replace professional care.
 
-The long-term product combines private journaling, structured AI-assisted interpretation, a curated knowledge graph, personalized recommendations, and controlled sharing with healthcare professionals. AI is intended to support reflection—not diagnose users or replace professional care.
+## Product overview
 
-## Why this project exists
+Reflecta combines:
 
-Journaling can produce valuable personal insights, but isolated entries are often difficult to revisit and connect over time. Reflecta explores how software architecture, semantic processing, and curated knowledge can turn those entries into structured and explainable reflection paths while preserving privacy and user ownership.
+- private journal entries with explicit ownership rules;
+- structured, validated AI interpretation;
+- human-curated themes, works, authors, and passages;
+- explainable passage selection for each reflection;
+- contextual history analyses across a selected period;
+- cultural and philosophical work recommendations;
+- controlled, revocable sharing with a professional;
+- professional activities and guided reflections;
+- private data export in JSON or ZIP;
+- administrative ingestion, review, diagnostics, and reprocessing flows.
 
-This project is also a practical study of:
+Private journal content remains in PostgreSQL. Neo4j stores the curated knowledge graph and does not act as storage for private journal entries.
 
-- modular monolith design;
-- Clean Architecture and Domain-Driven Design;
-- transactional consistency and the Outbox Pattern;
-- asynchronous event processing on AWS;
-- relational, vector, and graph persistence;
-- authentication, authorization, ownership, and privacy boundaries;
-- testable application design with explicit ports and adapters.
+## Implemented capabilities
 
-## Current implementation
+### Identity and privacy
 
-### Authentication and account lifecycle
+- sign-up, login, refresh rotation, logout, and automatic session restoration;
+- email verification and password recovery;
+- authenticated profile and avatar management;
+- account deletion, deleted-account recovery, and session invalidation;
+- `USER` and `ADMIN` authorization boundaries;
+- user-scoped JSON and ZIP data export.
 
-- sign-up, login, logout, and token refresh;
-- password hashing with Argon2 and JWT-based authentication;
-- email verification and password reset flows;
-- `USER` and `ADMIN` roles with route guards;
-- authenticated profile updates;
-- soft account deletion by confirmation token;
-- deleted-account recovery;
-- session invalidation and transactional event creation.
+### Journal and analysis
 
-### Journal
+- create, edit, list, retrieve, and logically delete reflections;
+- one active entry per user and reflection date;
+- calendar and 15-day navigation window for historical entries;
+- structured analysis with sentences, canonical themes, sentiments, and conclusion;
+- up to five ranked reflective themes and contextual passage snapshots;
+- user curation of identified themes without exposing unrelated passages;
+- bounded reanalysis and operational failure tracking;
+- contextual history analysis with explicit entry selection and authorization.
 
-- authenticated journal entry creation;
-- entry listing and retrieval with ownership enforcement;
-- draft editing and logical deletion;
-- PostgreSQL `journal_schema` with tables prepared for analyses, sentences, themes, passages, and embeddings;
-- pgvector extension and vector columns prepared for the future semantic pipeline.
+### Catalog and AI ingestion
 
-Journal entries are text-only in the current scope. Audio and image journaling are intentionally excluded from the MVP.
+- administrative Theme CRUD with generated, non-repeated visual colors;
+- work, author, cover, and PDF ingestion management;
+- Amazon S3 document storage and SNS/SQS event delivery;
+- resumable PDF processing with durable chunks and Inbox idempotency;
+- strict OpenAI Responses API schemas;
+- literal quote, page, offset, theme, and duplicate validation;
+- passage confidence and reflective-value metadata;
+- human approval, rejection, editing, activation, and catalog removal;
+- controlled reprocessing of an existing ingestion without repeating completed chunks.
 
-### Catalog and knowledge graph
+### Recommendations and sharing
 
-- administrator-protected Theme CRUD;
-- deterministic, unique, and stable slugs;
-- work and author creation in Neo4j;
-- PDF ingestion requests backed by PostgreSQL and Amazon S3;
-- AI-suggested passage persistence and human review workflows;
-- passage editing, approval, rejection, activation, and deactivation;
-- Neo4j repositories and Unit of Work abstractions;
-- constraints and transaction handling for graph persistence;
-- separation between the Catalog module and consumers of catalog knowledge.
+- personalized thematic recommendations and exploratory works;
+- recommendation details with cover, synopsis, author, and related themes;
+- contextual-analysis sharing through revocable, expiring tokens;
+- immutable journal snapshots selected by the owner;
+- professional activities and guided reflections associated with a share;
+- consolidated email notification for an activity assignment batch;
+- user activity list, status filters, details, and completion.
 
-### AI processing
+### Administration and operations
 
-- PDF text extraction, Unicode normalization, and boundary-aware chunking;
-- durable per-chunk processing state in PostgreSQL;
-- Inbox Pattern for idempotent SQS event consumption;
-- SQS visibility and processing-lease heartbeats;
-- structured OpenAI Responses API output validated against active catalog themes;
-- literal quote, page, offset, and theme validation before graph persistence;
-- retryable chunk processing without repeating successfully completed chunks;
-- journal analysis submission, worker execution, and structured result persistence.
-
-### Events and notifications
-
-- transactional Outbox persistence in PostgreSQL;
-- event routing and retry-aware dispatching;
-- Amazon SNS publishing;
-- SNS-to-SQS delivery architecture;
-- AWS Lambda batch consumer with partial batch failure responses;
-- Amazon SES and SMTP notification adapters;
-- email templates for verification, password reset, account deletion, and account recovery;
-- local RabbitMQ infrastructure retained as a development path while the AWS flow evolves.
-
-### Web application
-
-- React and Vite application in [`frontend/`](frontend/);
-- authenticated user and administrator areas with automatic session restoration;
-- journal creation, history, editing, deletion, AI analysis, contextual passages, and explainable theme highlights;
-- administrative management of themes, works, covers, PDF ingestions, passages, and operational failures;
-- client-side caching for low-volatility catalog data, local filtering, pagination, and responsive layouts;
-- profile management with avatar upload and controlled sharing of contextual analyses.
+- dashboards for themes, works, ingestions, passages, and operational failures;
+- ingestion progress based on persisted chunk states;
+- administrative failure details and bounded reprocessing;
+- local filtering, pagination, caching, and consistent responsive navigation.
 
 ## Architecture
 
-Reflecta is implemented as a **modular monolith**. Modules are deployed as one backend but maintain explicit business and dependency boundaries.
+The backend is a **modular monolith**. Modules are deployed together while preserving application, domain, infrastructure, and presentation boundaries.
 
 ```text
 Presentation / Infrastructure
@@ -104,114 +91,90 @@ Presentation / Infrastructure
            Domain
 ```
 
-The domain does not depend on FastAPI, SQLAlchemy, Neo4j, AWS SDKs, or messaging implementations. Infrastructure implements ports defined by inner layers, while bootstrap modules compose concrete dependencies.
-
 ```text
 src/
-├── main/                    # FastAPI application entry point
+├── main/                    # FastAPI composition root
 ├── modules/
-│   ├── auth/                # Identity, sessions, roles, and account lifecycle
-│   ├── journal/             # Private text entries and analysis data
-│   ├── catalog/             # Curated themes, works, authors, and passages
-│   ├── ai_processing/       # Journal interpretation and work ingestion
-│   ├── internal_events/     # Outbox, routing, and publishers
-│   ├── operations/          # Failure diagnostics and administrative reprocessing
-│   └── notification/        # Event handlers and email delivery
-└── shared/                  # Cross-cutting contracts and infrastructure
+│   ├── auth/                # Identity, sessions, account lifecycle
+│   ├── journal/             # Entries, analyses, history, snapshots
+│   ├── catalog/             # Themes, works, authors, passages
+│   ├── ai_processing/       # Journal analysis and PDF ingestion
+│   ├── recommendation/      # Personalized and exploratory works
+│   ├── sharing/             # Shares and professional activities
+│   ├── data_export/         # Portable JSON and ZIP exports
+│   ├── internal_events/     # Transactional Outbox and publishers
+│   ├── notification/        # Email event handling and delivery
+│   └── operations/          # Failure diagnostics and reprocessing
+└── shared/                  # Cross-cutting contracts and adapters
 
 frontend/
-├── src/                     # React pages, components, services, and styles
-└── tests/                   # Frontend contract and behavior tests
+├── src/                     # React pages, components, and API clients
+└── tests/                   # Frontend behavior and contract tests
 ```
 
-Recommendation remains planned. Sharing / Professional currently provides controlled, token-based read-only analysis sharing, but the broader professional workflow is still incomplete.
-
-## Main processing flows
-
-### Transactional event delivery
-
-```text
-Use case
-  └── business state + Outbox event committed together in PostgreSQL
-        └── Outbox dispatcher
-              └── Amazon SNS
-                    └── Amazon SQS
-                          └── AWS Lambda
-                                └── Amazon SES
-```
-
-### Work ingestion and passage curation
+### Work ingestion flow
 
 ```text
 Admin uploads a PDF
-  └── Amazon S3 + PostgreSQL ingestion + Outbox event
-        └── Amazon SNS → Amazon SQS
-              └── AI Processing worker
-                    ├── PDF extraction and normalized text
-                    ├── resumable chunks and Inbox idempotency
-                    ├── OpenAI structured passage suggestions
-                    └── Neo4j passages pending human review
+  └── S3 + PostgreSQL ingestion + transactional Outbox
+        └── SNS → SQS
+              └── ingestion worker
+                    ├── extract and normalize text
+                    ├── persist resumable chunks
+                    ├── request structured AI suggestions
+                    ├── validate literal source evidence
+                    └── persist passages in Neo4j for human review
 ```
 
-### Journal analysis
+### Journal analysis flow
 
 ```text
-Journal draft
+Journal entry
   └── submit for analysis
-        └── AI Processing worker
-              ├── structured OpenAI analysis
-              ├── validation against active catalog themes
-              └── persisted analysis and entry state transition
+        └── journal-analysis worker
+              ├── structured interpretation
+              ├── canonical theme validation
+              ├── contextual passage selection
+              └── persisted conclusion and explainable associations
 ```
 
-Journal analysis persists sentence/theme matches, ranks up to five reflective themes, selects contextual passages from the curated catalog, and exposes an explainable conclusion to the frontend. Embeddings and vector similarity remain future increments.
+### Transactional event flow
 
-## Verified repository snapshot
-
-The following figures were verified from the current branch rather than inferred from planning documents:
-
-- 25 OpenAPI paths and 36 HTTP operations;
-- 287 passing automated tests;
-- 12 versioned Alembic migration files, with revision `a3d9e7f4b612` as the current head;
-- PostgreSQL/pgvector, Neo4j, and RabbitMQ services defined for local development;
-- Terraform configuration for the SNS/SQS messaging slice, validated syntactically but not applied automatically.
+```text
+Business state + Outbox event
+  └── one PostgreSQL transaction
+        └── Outbox dispatcher → SNS → SQS/Lambda → SES
+```
 
 ## Technology stack
 
 | Area | Technologies |
 |---|---|
 | API | Python, FastAPI, Pydantic, Uvicorn |
-| Dependency management | uv |
-| Relational persistence | PostgreSQL, SQLAlchemy, Alembic, asyncpg |
-| Vector persistence | pgvector |
+| Relational and vector data | PostgreSQL, SQLAlchemy, Alembic, asyncpg, pgvector |
 | Knowledge graph | Neo4j |
-| Authentication | JWT, Argon2 |
-| Async messaging | Transactional Outbox, Amazon SNS, Amazon SQS, RabbitMQ |
-| AI | OpenAI Responses API, strict JSON Schema validation, HTTPX |
-| Document processing | pypdf, normalized text, boundary-aware chunking |
-| Object storage | Amazon S3 |
+| Authentication | JWT, Argon2, HttpOnly refresh cookie |
+| AI | OpenAI Responses API, strict JSON Schema, HTTPX |
+| Documents and storage | pypdf, Amazon S3 |
+| Messaging | Transactional Outbox, Amazon SNS, Amazon SQS, RabbitMQ |
 | Notifications | AWS Lambda, Amazon SES, SMTP |
+| Web application | React 19, Vite, React Router, Lucide |
 | Infrastructure | Docker, Docker Compose, Terraform |
-| Testing | pytest, pytest-asyncio |
-| Frontend | React 19, Vite, React Router, Tailwind CSS, Lucide |
+| Tests | pytest, pytest-asyncio, Node test runner, oxlint |
 
-## API surface
+## Verified snapshot
 
-The current API exposes 39 paths and 58 HTTP operations across Auth, Journal, Catalog, AI Processing, Sharing, and Operations:
+Verified on **2026-11-24** from the synchronized academic `main` branch:
 
-- `/auth`: authentication, verification, password reset, profile, deletion, and recovery;
-- `/journal/entries`: authenticated Journal CRUD plus analysis submission and retrieval;
-- `/catalog/themes`: administrator-protected Theme CRUD;
-- `/catalog/works`: work listing, detail, cover management, creation, and PDF ingestion;
-- `/catalog/passages`: passage listing, editing, review, and availability management.
-- `/journal/context-analysis`: contextual analysis, history, and controlled sharing;
-- `/admin/operational-failures`: diagnostics and bounded administrative reprocessing;
-- `/ai-processing/work-ingestions`: ingestion progress for the administrative interface.
+- 53 OpenAPI paths and 72 HTTP operations;
+- 21 Alembic migrations with head `f13a4c600006`;
+- 617 backend unit tests passing;
+- 87 frontend tests passing;
+- frontend lint and production build passing;
+- local PostgreSQL, Neo4j, RabbitMQ, API, and worker definitions in Docker Compose;
+- Terraform configuration for the SNS/SQS/DLQ messaging slice.
 
-After starting the API, the generated documentation is available at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+Cloud-backed flows were also exercised during the academic project with S3, SNS, SQS, OpenAI, Neo4j, and SES. Production deployment and full infrastructure coverage remain separate work.
 
 ## Running locally
 
@@ -219,68 +182,40 @@ After starting the API, the generated documentation is available at:
 
 - Python 3.12 or newer;
 - [uv](https://docs.astral.sh/uv/);
+- Node.js and npm;
 - Docker Desktop with Docker Compose;
 - Git.
 
-### 1. Install the dependencies
+### Backend dependencies
 
 ```bash
 uv sync --locked
 ```
 
-The recommended interpreter for IDE configuration is:
+Create local environment files from the provided examples. Never commit AWS credentials, provider keys, SMTP passwords, JWT secrets, or production connection strings.
 
-```text
-.venv/Scripts/python.exe   # Windows
-.venv/bin/python           # Linux/macOS
+### Infrastructure, API, and workers
+
+```powershell
+docker compose -f docker-compose.infra.yml -f docker-compose.api_workers.yml --profile ai up -d --build
 ```
 
-### 2. Configure the environment
-
-Create a local `.env.dev` file. It is intentionally excluded from version control because it contains credentials and environment-specific resource identifiers.
-
-The required settings are declared in [`src/shared/config/settings.py`](src/shared/config/settings.py). They cover PostgreSQL, Neo4j, JWT, RabbitMQ, SMTP/SES, Amazon S3, SNS, SQS, and the AI provider.
-
-Never commit real AWS credentials, SMTP passwords, JWT secrets, or production connection strings.
-
-### 3. Start the local infrastructure
-
-```bash
-docker compose -f docker-compose.infra.yml up -d
-```
-
-Default local services:
-
-- PostgreSQL development database: `localhost:5432`;
-- PostgreSQL test database: `localhost:5433`;
-- Neo4j Browser: `http://localhost:7474`;
-- Neo4j Bolt: `localhost:7687`;
-- RabbitMQ Management: `http://localhost:15672`.
-
-### 4. Apply the migrations
-
-PowerShell:
+Apply migrations when the database schema has not been updated:
 
 ```powershell
 $env:ENV = "dev"
 uv run alembic upgrade head
 ```
 
-Linux/macOS:
+Main local endpoints:
 
-```bash
-ENV=dev uv run alembic upgrade head
-```
+- API: `http://localhost:8000`;
+- Swagger UI: `http://localhost:8000/docs`;
+- ReDoc: `http://localhost:8000/redoc`;
+- Neo4j Browser: `http://localhost:7474`;
+- RabbitMQ Management: `http://localhost:15672`.
 
-### 5. Start the API
-
-```bash
-uv run uvicorn src.main.server.fast_api.run:app --reload
-```
-
-The API will be available at `http://localhost:8000`.
-
-### 6. Start the frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -288,121 +223,66 @@ npm ci
 npm run dev
 ```
 
-Copy `frontend/.env.example` to `frontend/.env.local` when an API URL different from the local default is required. The web application will normally be available at `http://localhost:5173`.
+The web application is normally available at `http://localhost:5173`.
 
-### Optional: run the containerized API and workers
+### Stop the environment
 
-Start the infrastructure first, then run:
-
-```bash
-docker compose -f docker-compose.api_workers.yml up --build
+```powershell
+docker compose -f docker-compose.infra.yml -f docker-compose.api_workers.yml --profile ai stop
 ```
 
-AWS-backed workers require valid IAM permissions and configured SNS, SQS, Lambda, and SES resources.
-
-To include the AI workers declared under the Compose profile:
-
-```bash
-docker compose -f docker-compose.api_workers.yml --profile ai up --build
-```
-
-## Infrastructure as Code
-
-The first Terraform slice is available in [`infra/terraform`](infra/terraform). It models the integration SNS topic, the email and work-ingestion SQS queues, one DLQ per consumer, redrive policies, subscription filters, and least-privilege queue policies.
-
-The configuration is intentionally not applied automatically. Its HCL files have been parsed successfully, but full `terraform init` and `terraform validate` verification still requires the Terraform CLI. Existing development resources must be imported into Terraform state before any reviewed `apply`. See the [Terraform messaging guide](infra/terraform/README.md) for the safe workflow.
+This preserves the local database volumes.
 
 ## Tests
 
-Run the complete suite with:
-
 ```bash
-uv run pytest -q
+uv run pytest tests/unit -q
 ```
-
-Current verified result:
-
-```text
-557 passed, 5 skipped
-```
-
-The frontend is independently validated with:
 
 ```bash
 cd frontend
-npm test
+npm test -- --run
 npm run lint
 npm run build
 ```
 
-Current frontend result: **73 tests passed**, lint succeeded, and the production build completed.
+Integration tests require the corresponding PostgreSQL/Neo4j infrastructure and environment configuration. The academic evidence and execution matrix are available in [`docs/tcc/evidencias`](docs/tcc/evidencias/).
 
-The suite covers domain rules, application use cases, authentication, account lifecycle, notification handlers, Catalog/Neo4j behavior, Journal persistence, S3 adapters, Inbox idempotency, SQS consumption, PDF chunking, OpenAI contracts, controllers, and validation.
+## Infrastructure as Code and deployment
 
-The repository still needs broader automated integration, API, and end-to-end coverage.
+[`infra/terraform`](infra/terraform/) contains the first Terraform slice for SNS, SQS, DLQs, subscriptions, filters, and queue policies. Existing AWS resources must be imported and compared with a reviewed plan before Terraform becomes their source of truth.
 
-## Development status and roadmap
+The current Terraform scope does not yet provision the complete production platform. A production deployment still needs, at minimum:
 
-### Implemented or available as a working vertical slice
-
-- Auth and account lifecycle;
-- administrator authorization for Catalog operations;
-- Theme CRUD backed by Neo4j;
-- work and author creation backed by Neo4j;
-- PDF upload and ingestion state backed by S3 and PostgreSQL;
-- resumable AI processing with durable chunks and Inbox idempotency;
-- passage suggestion, explanation, review, and lifecycle management;
-- Journal draft CRUD backed by PostgreSQL;
-- initial structured Journal analysis pipeline;
-- contextual passage selection and explainable journal conclusions;
-- React user and administrative interfaces;
-- work listing, cover/avatar uploads, ingestion progress, and operational failure diagnostics;
-- controlled contextual-analysis sharing and history;
-- Outbox persistence and event dispatch infrastructure;
-- email event handling and AWS/local notification adapters;
-- Docker-based PostgreSQL, Neo4j, and RabbitMQ infrastructure.
-
-### In progress or planned
-
-- embeddings generation and vector similarity search;
-- broader work editing and automated ingestion recovery;
-- recommendation generation;
-- expansion of the professional workflow beyond controlled read-only sharing;
-- generalized consumer idempotency outside the AI ingestion Inbox;
-- production-grade monitoring, tracing, and failure recovery;
-- operational monitoring and failure recovery;
-- a reproducible, versioned frontend application package;
-- expansion of Terraform coverage beyond the initial SNS/SQS messaging slice;
-- CI/CD and production deployment.
-
-### Known boundaries
-
-- recommendation and professional-sharing modules are still planned;
-- contextual passage matching is not part of the current Journal analysis result;
-- the initial Terraform slice does not yet cover PostgreSQL, Neo4j, S3, SES, Lambda, application deployment, or remote state;
-- AWS development resources still require controlled import before Terraform can become their source of truth;
-- broader integration, end-to-end, security, and failure-recovery testing remains necessary.
-
-## Engineering considerations
-
-Reflecta processes highly sensitive personal content. Production readiness requires additional work around encryption, retention, auditability, secrets management, observability, provider privacy policies, and security testing.
-
-The project deliberately keeps private journal text in PostgreSQL. Neo4j stores curated knowledge and must not become a storage location for private journal entries.
+- remote Terraform state and environment separation;
+- managed PostgreSQL and a production Neo4j strategy;
+- application and worker compute;
+- networking, TLS, DNS, and frontend hosting;
+- S3, Lambda, SES, secrets, IAM, monitoring, and budgets;
+- CI/CD with migrations and rollback controls.
 
 ## Documentation
 
-The [`docs`](docs/) directory contains architecture diagrams, use cases, the data glossary, development setup guidance, and academic project material.
+Start with the [documentation index](docs/README.md). It links the final TCC document, architecture diagrams, user stories, operational guides, traceability matrix, and test evidence.
 
-The project context and implementation status documents distinguish planned behavior from code that is already implemented. Documentation is not treated as evidence of implementation without matching code, migrations, or tests.
+Useful technical references:
 
-## Academic and portfolio context
+- [real implementation status](reflecta_IMPLEMENTATION_STATUS.md);
+- [project context](reflecta_PROJECT_CONTEXT.md);
+- [development environment guide](docs/GUIA_AMBIENTE_DESENVOLVIMENTO.md);
+- [backend operations](docs/BACKEND_OPERATIONS.md);
+- [Terraform messaging guide](infra/terraform/README.md).
 
-Reflecta is being developed as a Software Engineering capstone project and as a portfolio demonstration of backend architecture and cloud integration. The repository shows the evolution of a real system, including architectural trade-offs, incomplete modules, technical debt, and incremental vertical delivery.
+## Security and production boundaries
+
+Reflecta processes sensitive personal text. Production use requires reviewed encryption, retention, auditability, secrets management, provider privacy policies, observability, backup/restore procedures, penetration testing, and incident response.
+
+The repository demonstrates a functional academic MVP; it should not be presented as a clinically validated or production-hardened healthcare system.
 
 ## License
 
-This repository does not currently publish an open-source license. All rights are reserved unless stated otherwise.
+This public portfolio repository does not currently grant an open-source license. All rights are reserved unless explicitly stated otherwise.
 
----
+## Academic context
 
-Developed by [Pedro Maximo Campos](https://github.com/pedromaximocampos).
+Reflecta was developed by **Pedro Máximo Campos do Carmo** and **Augusto Noronha Leite** as a Software Engineering capstone project at PUC Minas. This repository is maintained by [Pedro Maximo Campos](https://github.com/pedromaximocampos) as a public portfolio version of the project.

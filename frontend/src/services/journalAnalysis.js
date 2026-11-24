@@ -16,6 +16,7 @@ export function contextualPassages(analysis) {
       const passageThemes = matchedThemeIds.size > 0
         ? sentenceThemes.filter(theme => matchedThemeIds.has(theme.id))
         : sentenceThemes
+      if (passageThemes.length === 0) return []
 
       return [{
         id: passage.id || `${sentence.id}-${passage.passage_id}`,
@@ -27,6 +28,10 @@ export function contextualPassages(analysis) {
         short_text: snapshot.short_text,
         paraphrase: snapshot.paraphrase,
         interpretation_note: snapshot.interpretation_note,
+        ...(Number.isFinite(snapshot.reflective_value) ? {
+          reflective_value: snapshot.reflective_value,
+          reflective_note: snapshot.reflective_note,
+        } : {}),
         locator: snapshot.locator,
         work_title: snapshot.work?.title,
         author_name: snapshot.work?.author_name,

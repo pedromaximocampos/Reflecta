@@ -1,0 +1,69 @@
+diff --git a/Codigo/BACK/tests/integration/test_context_history.py b/Codigo/BACK/tests/integration/test_context_history.py
+index 478c899..4a8a04b 100644
+--- a/Codigo/BACK/tests/integration/test_context_history.py
++++ b/Codigo/BACK/tests/integration/test_context_history.py
+@@ -1,4 +1,3 @@
+-from src.modules.journal.public.context_analysis import ContextPeriod
+ from zoneinfo import ZoneInfo
+ """Opt-in real PostgreSQL + HTTP check. All fixture writes are rolled back.
+ 
+@@ -71,22 +70,27 @@ async def test_explicit_analysis_history_pagination_owner_isolation_and_deleted_
+                         "is_email_verified": False, "role": UserRole.USER,
+                     } for user_id in (owner, other)])
+                 ids = [str(ulid.new()) for _ in range(8)]
+-                lower, upper = ContextPeriod(**period).bounds()
++                end = start + timedelta(days=6)
+                 async with session_scope() as session:
+                     # Entries outside the local seven-day bounds and deleted entries
+                     # cannot turn an ineligible four-entry interval into an eligible one.
+-                    for timestamp, deleted in [(lower - timedelta(microseconds=1), False), (upper, False), (now, True)]:
++                    for entry_date, deleted in [
++                        (start - timedelta(days=1), False),
++                        (end + timedelta(days=1), False),
++                        (start, True),
++                    ]:
+                         await session.execute(insert(Entry).values(id=str(ulid.new()), user_id=owner,
+                             content_text="Não incluir na análise", status="deleted" if deleted else "pending_analysis",
+-                            created_at=timestamp, deleted_at=now if deleted else None))
++                            entry_date=entry_date, created_at=now, deleted_at=now if deleted else None))
+                     await session.execute(insert(Entry).values(id=str(ulid.new()), user_id=other,
+-                        content_text="Entrada privada de outra conta", status="pending_analysis", created_at=lower))
++                        content_text="Entrada privada de outra conta", status="pending_analysis",
++                        entry_date=start, created_at=now))
+ 
+                 async def add_entry(index):
+                     async with session_scope() as session:
+                         await session.execute(insert(Entry).values(id=ids[index], user_id=owner,
+                             content_text=f"Reflexão fictícia {index}", status="pending_analysis",
+-                            created_at=lower if index == 0 else upper - timedelta(microseconds=1) if index == 4 else now + timedelta(seconds=index)))
++                            entry_date=end if index == 4 else start + timedelta(days=index), created_at=now))
+ 
+                 for index in range(4):
+                     await add_entry(index)
+diff --git a/Codigo/BACK/tests/integration/test_operational_failures.py b/Codigo/BACK/tests/integration/test_operational_failures.py
+index aa7d59d..78feb18 100644
+--- a/Codigo/BACK/tests/integration/test_operational_failures.py
++++ b/Codigo/BACK/tests/integration/test_operational_failures.py
+@@ -63,7 +63,8 @@ async def test_admin_failures_all_sources_filters_details_and_user_diagnostic_de
+                         email=owner + "@op-test.invalid", name="Operations Test", date_of_birth=date(2000, 1, 1),
+                         created_at=now, is_email_verified=False, role=UserRole.USER))
+                     await session.execute(insert(Entry).values(id=entry_id, user_id=owner, title=secret,
+-                        content_text=secret, context_tags={"private": secret}, status="analysis_failed", created_at=now))
++                        content_text=secret, context_tags={"private": secret}, status="analysis_failed",
++                        entry_date=now.date(), created_at=now))
+                     await session.execute(insert(Analysis), [dict(id=analysis_id, journal_entry_id=entry_id,
+                         status="failed", created_at=now, analysis_error=json.dumps({"code": "provider_timeout", "message": secret, "attempts": 2})),
+                         dict(id=legacy_id, journal_entry_id=entry_id, status="failed", created_at=now - timedelta(seconds=1), analysis_error=secret)])
+diff --git a/Codigo/BACK/tests/integration/test_reprocess_limit.py b/Codigo/BACK/tests/integration/test_reprocess_limit.py
+index a27faaf..c60ef9d 100644
+--- a/Codigo/BACK/tests/integration/test_reprocess_limit.py
++++ b/Codigo/BACK/tests/integration/test_reprocess_limit.py
+@@ -38,7 +38,7 @@ async def seed(session, owner, entry_id, *, used=0):
+         email=owner + "@retry-test.invalid", name="Reprocess Test", date_of_birth=date(2000, 1, 1),
+         created_at=now, is_email_verified=False, role=UserRole.USER))
+     await session.execute(insert(Entry).values(id=entry_id, user_id=owner, content_text="Texto fictício de teste.",
+-        status="pending_analysis", created_at=now, user_reprocess_count=used))
++        status="pending_analysis", entry_date=now.date(), created_at=now, user_reprocess_count=used))
+ 
+ 
+ async def mark_failure(gateway, entry_id, owner):

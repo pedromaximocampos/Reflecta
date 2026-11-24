@@ -21,9 +21,9 @@ output "dead_letter_queue_urls" {
 output "application_environment" {
   description = "Non-secret application settings produced by this stack."
   value = {
-    AWS_SNS_REGION                   = var.aws_region
-    AWS_SNS_ARN                      = aws_sns_topic.integration_events.arn
-    AWS_SQS_EMAILS_QUEUE_URL         = aws_sqs_queue.consumer["emails"].id
+    AWS_SNS_REGION                    = var.aws_region
+    AWS_SNS_ARN                       = aws_sns_topic.integration_events.arn
+    AWS_SQS_EMAILS_QUEUE_URL          = aws_sqs_queue.consumer["emails"].id
     AWS_SQS_WORK_INGESTIONS_QUEUE_URL = aws_sqs_queue.consumer["work_ingestions"].id
   }
 }

@@ -129,6 +129,25 @@ async def test_sends_user_recovery_email_using_confirmation_template() -> None:
 
 
 @pytest.mark.asyncio
+async def test_sends_admin_invitation_with_safe_portuguese_template() -> None:
+    client = FakeSESV2Client()
+    notifier = SESNotifier(client, "sender@example.com")
+    dto = _dto(
+        EmailKind.ADMIN_INVITATION,
+        "https://app.reflecta.test/auth/admin-invitation?code=invite-code",
+    )
+
+    await notifier.send_email(dto)
+
+    assert client.request is not None
+    simple_content = client.request["Content"]["Simple"]
+    assert simple_content["Subject"]["Data"] == "Convite para administrar o Reflecta"
+    html = simple_content["Body"]["Html"]["Data"]
+    assert dto.link.replace("&", "&amp;") in html
+    assert "Nenhuma permissão será alterada" in html
+
+
+@pytest.mark.asyncio
 async def test_sends_professional_activity_with_escaped_content() -> None:
     client = FakeSESV2Client()
     notifier = SESNotifier(client, "sender@example.com")

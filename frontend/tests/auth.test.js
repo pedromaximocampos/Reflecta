@@ -3,6 +3,10 @@ import assert from 'node:assert/strict'
 import {
   confirmAccountDeletion,
   confirmAccountRecovery,
+  createAdminInvitation,
+  listAdminInvitations,
+  revokeAdminInvitation,
+  acceptAdminInvitation,
   exportUserData,
   getUserProfile,
   login,
@@ -21,6 +25,7 @@ import {
   saveSession,
   SESSION_EXPIRED_EVENT,
   updateSessionProfile,
+  updateSessionRole,
 } from '../src/services/authSession.js'
 import { restoreSessionFromCookie } from '../src/services/apiClient.js'
 
@@ -530,6 +535,32 @@ test('login preserves role and birth date for navigation and profile editing', a
   const updated = JSON.parse(sessionStorage.getItem('auth_user'))
   assert.equal(updated.role, 'ADMIN')
   assert.equal(updated.date_of_birth, '2001-02-03')
+  updateSessionRole('USER')
+  assert.equal(JSON.parse(sessionStorage.getItem('auth_user')).role, 'USER')
+})
+
+test('administrator invitation management and acceptance use authenticated endpoints', async () => {
+  saveSession({ access_token: 'admin-token', user: { email: 'admin@example.com', role: 'ADMIN' } })
+  const calls = []
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: new URL(url), options })
+    return new Response(JSON.stringify({ invitations: [], role: 'ADMIN' }))
+  }
+
+  await createAdminInvitation(' user@example.com ')
+  await listAdminInvitations()
+  await revokeAdminInvitation('invite/1')
+  await acceptAdminInvitation('token+/=')
+
+  assert.deepEqual(calls.map(call => [call.url.pathname, call.options.method]), [
+    ['/auth/admin-invitations', 'POST'],
+    ['/auth/admin-invitations', 'GET'],
+    ['/auth/admin-invitations/invite%2F1', 'DELETE'],
+    ['/auth/admin-invitations/accept', 'POST'],
+  ])
+  assert.equal(JSON.parse(calls[0].options.body).email, 'user@example.com')
+  assert.equal(calls[3].url.searchParams.get('code'), 'token+/=')
+  for (const call of calls) assert.equal(call.options.headers.Authorization, 'Bearer admin-token')
 })
 
 test('API errors support domain, FastAPI and refresh response formats', async () => {

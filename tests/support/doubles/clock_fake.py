@@ -22,6 +22,7 @@ class ClockFake(IClock):
         password_reset_exp_seconds: int = 15 * 60,
         user_deletion_exp_seconds: int = 15 * 60,
         user_recovery_exp_seconds: int = 15 * 60,
+        admin_invitation_exp_seconds: int = 24 * 60 * 60,
     ) -> None:
         self._now = now or datetime.utcnow()
         self._access_token_exp_seconds = access_token_exp_seconds
@@ -30,6 +31,7 @@ class ClockFake(IClock):
         self._password_reset_exp_seconds = password_reset_exp_seconds
         self._user_deletion_exp_seconds = user_deletion_exp_seconds
         self._user_recovery_exp_seconds = user_recovery_exp_seconds
+        self._admin_invitation_exp_seconds = admin_invitation_exp_seconds
 
         self.calls_now = 0
 
@@ -57,3 +59,6 @@ class ClockFake(IClock):
 
     def user_recovery_expiration_in_seconds(self) -> int:
         return self._user_recovery_exp_seconds
+
+    def admin_invitation_expiration_in_seconds(self) -> int:
+        return self._admin_invitation_exp_seconds

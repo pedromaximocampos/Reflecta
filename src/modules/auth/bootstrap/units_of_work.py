@@ -11,6 +11,9 @@ from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_deletio
 from src.modules.auth.infrastructure.persistence.postgresql.mappers.user_recovery_request_mapper import (
     UserRecoveryRequestMapper,
 )
+from src.modules.auth.infrastructure.persistence.postgresql.mappers.admin_invitation_mapper import (
+    AdminInvitationMapper,
+)
 from src.modules.auth.infrastructure.persistence.postgresql.units_of_work.auth_unit_of_work_impl import AuthUnitOfWorkImpl
 from src.shared.infrastructure.system.providers import get_clock
 
@@ -27,5 +30,6 @@ def get_auth_unit_of_work() -> AuthUnitOfWorkImpl:
         reset_password_mapper=ResetPasswordMapper(),
         user_deletion_request_mapper=UserDeletionRequestMapper(),
         user_recovery_request_mapper=UserRecoveryRequestMapper(),
+        admin_invitation_mapper=AdminInvitationMapper(),
         outbox_mapper=OutboxMapper(),
     )

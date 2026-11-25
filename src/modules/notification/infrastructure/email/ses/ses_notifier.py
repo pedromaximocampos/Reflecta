@@ -24,6 +24,9 @@ from src.modules.notification.infrastructure.email.templates.user_recovery_templ
 from src.modules.notification.infrastructure.email.templates.professional_activity_template_html import (
     ProfessionalActivityTemplateHTML,
 )
+from src.modules.notification.infrastructure.email.templates.admin_invitation_template_html import (
+    AdminInvitationTemplateHTML,
+)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -74,6 +77,11 @@ class SESNotifier(IEmailNotifier):
             return (
                 ProfessionalActivityTemplateHTML.get_subject_template(dto),
                 ProfessionalActivityTemplateHTML.get_email_template(dto),
+            )
+        if dto.kind is EmailKind.ADMIN_INVITATION:
+            return (
+                AdminInvitationTemplateHTML.get_subject_template(dto),
+                AdminInvitationTemplateHTML.get_email_template(dto),
             )
         raise PermanentEmailError(f"Unsupported email kind: {dto.kind}")
 

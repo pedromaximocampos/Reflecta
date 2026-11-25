@@ -5,3 +5,4 @@ from .user_email_verification_model import UserEmailVerificationModel
 from .reset_password_model import ResetPasswordModel
 from .user_deletion_request_model import UserDeletionRequestModel
 from .user_recovery_request_model import UserRecoveryRequestModel
+from .admin_invitation_model import AdminInvitationModel

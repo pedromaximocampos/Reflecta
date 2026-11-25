@@ -88,6 +88,19 @@ async def test_maps_user_recovery_event_to_confirmation_link() -> None:
 
 
 @pytest.mark.asyncio
+async def test_maps_admin_invitation_to_authenticated_confirmation_page() -> None:
+    notifier = EmailNotifierSpy()
+    handler = EmailEventHandler(notifier, "https://app.reflecta.test")
+
+    await handler.handle(EmailsEventType.EMAIL_ADMIN_INVITATION_REQUESTED, _payload())
+
+    assert notifier.sent[0].kind is EmailKind.ADMIN_INVITATION
+    assert notifier.sent[0].link == (
+        "https://app.reflecta.test/auth/admin-invitation?code=abc%2F%2B%3D"
+    )
+
+
+@pytest.mark.asyncio
 async def test_maps_professional_activity_without_authentication_code() -> None:
     notifier = EmailNotifierSpy()
     handler = EmailEventHandler(notifier, "https://app.reflecta.test/")

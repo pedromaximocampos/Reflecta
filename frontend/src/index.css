@@ -981,6 +981,30 @@ button:disabled { cursor: not-allowed; }
 .sharing-status-active { color: #3f7b45; background: rgba(63, 123, 69, .09); }
 .sharing-status-expired { color: #b8574d; background: rgba(184, 87, 77, .09); }
 .sharing-status-revoked { color: #6b6b6b; background: rgba(107, 107, 107, .09); }
+.admin-invitation-form { display: grid; gap: 18px; max-width: 720px; }
+.admin-invitation-form h2 { margin: 0 0 3px; font-size: 1.1rem; }
+.admin-invitation-form p { color: var(--muted-foreground); font-size: .8rem; }
+.admin-invitation-form label { display: grid; gap: 7px; font-size: .82rem; font-weight: 600; }
+.admin-invitation-form input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--input-background); font-weight: 400; }
+.admin-invitation-feedback { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--primary) 6%, var(--card)); color: var(--primary); font-size: .82rem; }
+.admin-invitation-list { display: grid; gap: 10px; }
+.admin-invitation-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 18px; }
+.admin-invitation-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 11px; background: color-mix(in srgb, var(--primary) 9%, var(--card)); color: var(--primary); }
+.admin-invitation-copy { display: grid; min-width: 0; gap: 4px; }
+.admin-invitation-title { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.admin-invitation-title h2 { overflow: hidden; margin: 0; font-size: .98rem; text-overflow: ellipsis; white-space: nowrap; }
+.admin-invitation-copy > p { color: var(--muted-foreground); font-size: .8rem; }
+.admin-invitation-copy dl { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 4px; }
+.admin-invitation-copy dl > div { display: flex; gap: 5px; font-size: .72rem; }
+.admin-invitation-copy dt { color: var(--muted-foreground); }
+.admin-invitation-status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 99px; font-size: .7rem; font-weight: 700; }
+.admin-invitation-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.admin-invitation-pending { color: #8a6a2f; background: rgba(138, 106, 47, .1); }
+.admin-invitation-accepted { color: #3f7b45; background: rgba(63, 123, 69, .1); }
+.admin-invitation-expired { color: #b8574d; background: rgba(184, 87, 77, .09); }
+.admin-invitation-revoked { color: #6b6b6b; background: rgba(107, 107, 107, .09); }
+.admin-invitation-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.admin-invitation-actions .catalog-button { display: inline-flex; align-items: center; gap: 5px; }
 .sharing-scroll-region { gap: 10px; }
 .sharing-link-panel { display: grid; gap: 6px; padding: 11px; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--primary) 4%, var(--card)); }
 .sharing-link-panel > label { color: var(--muted-foreground); font-size: .72rem; font-weight: 500; }
@@ -1040,6 +1064,10 @@ button:disabled { cursor: not-allowed; }
   .works-catalog-page .catalog-empty-state > svg { width: 24px; height: 24px; }
   .works-catalog-page .catalog-empty-state h2 { margin: 0; font-size: .92rem; }
   .works-catalog-page .catalog-empty-state p { font-size: .75rem; }
+}
+@media (max-width: 767px) {
+  .admin-invitation-card { grid-template-columns: auto minmax(0, 1fr); }
+  .admin-invitation-actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
 @media (min-width: 1024px) {
   .dashboard-page { height: 100dvh; min-height: 0; overflow: hidden; }

@@ -38,6 +38,7 @@ from src.modules.auth.application.use_cases.update_user_avatar import (
 )
 from src.modules.auth.bootstrap.media import get_user_avatar_processor
 from src.modules.auth.bootstrap.storage import get_user_avatar_storage
+from src.modules.auth.application.use_cases.admin_invitations import AdminInvitationUseCases
 
 def get_login_use_case() -> LoginUseCaseImpl:
     """ Retorna uma instância do caso de uso de login com todas as dependências injetadas."""
@@ -183,4 +184,14 @@ def get_remove_user_avatar_use_case() -> RemoveUserAvatarUseCase:
     return RemoveUserAvatarUseCase(
         auth_unit_of_work=get_auth_unit_of_work(),
         avatar_storage=get_user_avatar_storage(),
+    )
+
+
+def get_admin_invitation_use_cases() -> AdminInvitationUseCases:
+    return AdminInvitationUseCases(
+        auth_unit_of_work=get_auth_unit_of_work(),
+        outbox_service=get_outbox_service(),
+        system_clock=get_clock(),
+        ulid_generator=get_ulid_generator(),
+        hasher_generator=get_jti_hasher(),
     )

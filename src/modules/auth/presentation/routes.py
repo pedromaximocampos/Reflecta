@@ -3,7 +3,8 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import RedirectResponse
 from src.modules.auth.public import AuthenticatedPrincipal
-from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
+from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user, require_role
+from src.modules.auth.public import UserRole
 from src.shared.presentation.fast_api.fast_api_adapter import adapter_fastapi_request
 from src.shared.config.settings import get_settings
 from src.modules.auth.bootstrap.controllers import (
@@ -22,6 +23,7 @@ from src.modules.auth.bootstrap.controllers import (
     get_user_profile_controller,
     get_replace_user_avatar_controller,
     get_remove_user_avatar_controller,
+    get_admin_invitation_controller,
 )
 from src.modules.auth.presentation.validators.login import LoginResponseValidator
 from src.modules.auth.presentation.validators.sign_up import SignUpValidator
@@ -33,6 +35,9 @@ from src.modules.auth.presentation.validators.update_user_info import (
 from src.modules.auth.presentation.validators.user_avatar import (
     ValidatedUserAvatarUpload,
     validate_user_avatar_upload,
+)
+from src.modules.auth.presentation.validators.admin_invitation import (
+    CreateAdminInvitationValidator,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -53,6 +58,7 @@ _UPDATE_USER_INFO_CONTROLLER = get_update_user_info_controller()
 _GET_USER_PROFILE_CONTROLLER = get_user_profile_controller()
 _REPLACE_USER_AVATAR_CONTROLLER = get_replace_user_avatar_controller()
 _REMOVE_USER_AVATAR_CONTROLLER = get_remove_user_avatar_controller()
+_ADMIN_INVITATION_CONTROLLER = get_admin_invitation_controller()
 
 
 @auth_router.post("/login", response_model=LoginResponseValidator)
@@ -223,5 +229,61 @@ async def auth_remove_user_avatar(
     return await adapter_fastapi_request(
         request,
         _REMOVE_USER_AVATAR_CONTROLLER.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.post("/admin-invitations", status_code=202)
+async def create_admin_invitation(
+    body: CreateAdminInvitationValidator,
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+):
+    """Invite an existing verified user to become an administrator."""
+    return await adapter_fastapi_request(
+        request,
+        _ADMIN_INVITATION_CONTROLLER.invite,
+        body,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.get("/admin-invitations")
+async def list_admin_invitations(
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+):
+    """List recent administrator invitations for auditing."""
+    return await adapter_fastapi_request(
+        request,
+        _ADMIN_INVITATION_CONTROLLER.list,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.delete("/admin-invitations/{invitation_id}")
+async def revoke_admin_invitation(
+    invitation_id: str,
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+):
+    """Revoke a pending administrator invitation."""
+    return await adapter_fastapi_request(
+        request,
+        _ADMIN_INVITATION_CONTROLLER.revoke,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@auth_router.post("/admin-invitations/accept")
+async def accept_admin_invitation(
+    request: Request,
+    code: str = Query(..., min_length=1),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+):
+    """Accept a one-time invitation while authenticated as its recipient."""
+    return await adapter_fastapi_request(
+        request,
+        _ADMIN_INVITATION_CONTROLLER.accept,
         authenticated_user_id=current_user.user_id.value,
     )

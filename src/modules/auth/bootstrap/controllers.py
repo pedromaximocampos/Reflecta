@@ -16,6 +16,7 @@ from src.modules.auth.bootstrap.use_cases import (
     get_user_profile_use_case,
     get_replace_user_avatar_use_case,
     get_remove_user_avatar_use_case,
+    get_admin_invitation_use_cases,
 )
 from src.shared.infrastructure.system.providers import get_clock
 from src.modules.auth.presentation.controllers.refresh_controller import RefreshController
@@ -36,6 +37,9 @@ from src.modules.auth.presentation.controllers.user_avatar_controller import (
     ReplaceUserAvatarController,
 )
 from src.shared.config.settings import get_settings
+from src.modules.auth.presentation.controllers.admin_invitation_controller import (
+    AdminInvitationController,
+)
 
 
 def _secure_auth_cookie() -> bool:
@@ -137,3 +141,7 @@ def get_replace_user_avatar_controller() -> ReplaceUserAvatarController:
 
 def get_remove_user_avatar_controller() -> RemoveUserAvatarController:
     return RemoveUserAvatarController(get_remove_user_avatar_use_case())
+
+
+def get_admin_invitation_controller() -> AdminInvitationController:
+    return AdminInvitationController(get_admin_invitation_use_cases())

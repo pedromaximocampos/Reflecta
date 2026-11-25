@@ -15,6 +15,7 @@ from src.modules.auth.domain.exceptions.user_custom_exceptions import (
 from src.modules.auth.domain.ports.repositories.iuser_repository import IUserRepository
 from src.modules.auth.public.email import Email
 from src.modules.auth.public.user_id import UserId
+from src.modules.auth.domain.value_objects.user_role import UserRole
 from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from src.modules.auth.infrastructure.persistence.postgresql.models import UserModel, AuthCredentialsModel
 
@@ -259,6 +260,22 @@ class UserRepository(IUserRepository):
                 UserModel.deleted_at.is_not(None),
             )
             .values(deleted_at=None)
+            .returning(UserModel.id)
+        )
+        result = await self.__session.execute(query)
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError()
+
+    async def promote_to_admin(self, user_id: UserId) -> None:
+        query = (
+            update(UserModel)
+            .where(
+                UserModel.id == user_id.value,
+                UserModel.deleted_at.is_(None),
+                UserModel.is_email_verified.is_(True),
+                UserModel.role == UserRole.USER,
+            )
+            .values(role=UserRole.ADMIN)
             .returning(UserModel.id)
         )
         result = await self.__session.execute(query)

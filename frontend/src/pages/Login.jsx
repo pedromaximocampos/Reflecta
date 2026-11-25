@@ -12,6 +12,8 @@ export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, isAdmin } = useAuth()
+  const requestedNext = new URLSearchParams(location.search).get('next')
+  const nextPath = requestedNext?.startsWith('/auth/admin-invitation') ? requestedNext : null
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -21,7 +23,7 @@ export function Login() {
     try {
       const response = await login(email, senha)
       saveSession(response)
-      navigate(response.user?.role === 'ADMIN' ? '/deshboard' : '/inicio', { replace: true })
+      navigate(nextPath || (response.user?.role === 'ADMIN' ? '/deshboard' : '/inicio'), { replace: true })
     } catch (error) {
       setErro(error instanceof Error ? error.message : 'Não foi possível realizar o login.')
     } finally {
@@ -30,7 +32,7 @@ export function Login() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={isAdmin ? '/deshboard' : '/inicio'} replace />
+    return <Navigate to={nextPath || (isAdmin ? '/deshboard' : '/inicio')} replace />
   }
 
   return (

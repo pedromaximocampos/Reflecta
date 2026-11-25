@@ -200,3 +200,41 @@ export function confirmAccountDeletion(code) {
     credentials: 'omit',
   })
 }
+
+export function createAdminInvitation(email) {
+  const token = getAccessToken('Sua sessão expirou. Entre novamente para convidar um administrador.')
+  return request('/auth/admin-invitations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ email: email.trim() }),
+  })
+}
+
+export function listAdminInvitations() {
+  const token = getAccessToken('Sua sessão expirou. Entre novamente para consultar os convites.')
+  return request('/auth/admin-invitations', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function revokeAdminInvitation(invitationId) {
+  const token = getAccessToken('Sua sessão expirou. Entre novamente para revogar o convite.')
+  return request(`/auth/admin-invitations/${encodeURIComponent(invitationId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function acceptAdminInvitation(code) {
+  if (typeof code !== 'string' || !code.trim()) {
+    const error = new Error('Abra o link de convite recebido por e-mail.')
+    error.status = 400
+    throw error
+  }
+  const token = getAccessToken('Entre na conta que recebeu o convite para confirmar o acesso administrativo.')
+  return request(`/auth/admin-invitations/accept?${new URLSearchParams({ code: code.trim() })}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}

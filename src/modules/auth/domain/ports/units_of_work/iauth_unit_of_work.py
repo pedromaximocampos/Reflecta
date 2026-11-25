@@ -14,6 +14,9 @@ from src.modules.auth.domain.ports.repositories.iuser_deletion_request_repositor
 from src.modules.auth.domain.ports.repositories.iuser_recovery_request_repository import (
     IUserRecoveryRequestRepository,
 )
+from src.modules.auth.domain.ports.repositories.iadmin_invitation_repository import (
+    IAdminInvitationRepository,
+)
 
 TAuthUow = TypeVar("TAuthUow", bound="IAuthUnitOfWork")
 
@@ -50,6 +53,8 @@ class IAuthUnitOfWork(Protocol):
     def user_deletion_request_repository(self) -> IUserDeletionRequestRepository: ...
     @property
     def user_recovery_request_repository(self) -> IUserRecoveryRequestRepository: ...
+    @property
+    def admin_invitation_repository(self) -> IAdminInvitationRepository: ...
     @property
     def outbox_repository(self) -> IOutboxRepository: ...
 

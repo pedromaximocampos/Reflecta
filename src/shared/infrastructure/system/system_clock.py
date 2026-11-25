@@ -26,3 +26,6 @@ class SystemClock(IClock):
 
     def user_recovery_expiration_in_seconds(self) -> int:
         return _settings.USER_RECOVERY_MINUTES * 60
+
+    def admin_invitation_expiration_in_seconds(self) -> int:
+        return _settings.ADMIN_INVITATION_HOURS * 60 * 60

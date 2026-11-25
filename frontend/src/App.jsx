@@ -18,6 +18,7 @@ const AdminObraPDF = lazyPage(() => import('./pages/AdminObraPDF'), 'AdminObraPD
 const AdminObras = lazyPage(() => import('./pages/AdminObras'), 'AdminObras')
 const AdminPassagens = lazyPage(() => import('./pages/AdminPassagens'), 'AdminPassagens')
 const AdminTemas = lazyPage(() => import('./pages/AdminTemas'), 'AdminTemas')
+const AdminAdministradores = lazyPage(() => import('./pages/AdminAdministradores'), 'AdminAdministradores')
 const Cadastro = lazyPage(() => import('./pages/Cadastro'), 'Cadastro')
 const Compartilhamentos = lazyPage(() => import('./pages/Compartilhamentos'), 'Compartilhamentos')
 const ConfirmarExclusao = lazyPage(() => import('./pages/ConfirmarExclusao'), 'ConfirmarExclusao')
@@ -36,6 +37,7 @@ const Reflexao = lazyPage(() => import('./pages/Reflexao'), 'Reflexao')
 const Reflexoes = lazyPage(() => import('./pages/Reflexoes'), 'Reflexoes')
 const ResetarSenha = lazyPage(() => import('./pages/ResetarSenha'), 'ResetarSenha')
 const VerificarEmail = lazyPage(() => import('./pages/VerificarEmail'), 'VerificarEmail')
+const AceitarConviteAdmin = lazyPage(() => import('./pages/AceitarConviteAdmin'), 'AceitarConviteAdmin')
 
 function RouteLoading() {
   return <div className="route-loading-shell"><PageLoading variant="detail" label="Preparando a página…" /></div>
@@ -71,6 +73,7 @@ function App() {
             <Route path="request-recovery" element={<RecuperarConta />} />
             <Route path="recovery" element={<ConfirmarRecuperacao />} />
             <Route path="delete" element={<ConfirmarExclusao />} />
+            <Route path="admin-invitation" element={<AceitarConviteAdmin />} />
           </Route>
           <Route element={<AdminGuard />}><Route path="/deshboard" element={<MainLayout admin />}>
             <Route index element={<AdminDashboard />} />
@@ -81,6 +84,7 @@ function App() {
             <Route path="obras/:workId" element={<AdminObraDetalhe />} />
             <Route path="obras/:workId/pdf" element={<AdminObraPDF />} />
             <Route path="passagens" element={<AdminPassagens />} />
+            <Route path="administradores" element={<AdminAdministradores />} />
           </Route>
           </Route>
         </Routes>

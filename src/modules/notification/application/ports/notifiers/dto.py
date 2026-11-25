@@ -10,6 +10,7 @@ class EmailKind(StrEnum):
     USER_DELETION = "user_deletion"
     USER_RECOVERY = "user_recovery"
     PROFESSIONAL_ACTIVITY = "professional_activity"
+    ADMIN_INVITATION = "admin_invitation"
 
 
 @dataclass(frozen=True, slots=True)

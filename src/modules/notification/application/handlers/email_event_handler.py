@@ -36,6 +36,10 @@ class EmailEventHandler(IEmailEventHandler):
             EmailKind.PROFESSIONAL_ACTIVITY,
             "/inicio/orientacoes",
         ),
+        EmailsEventType.EMAIL_ADMIN_INVITATION_REQUESTED: (
+            EmailKind.ADMIN_INVITATION,
+            "/auth/admin-invitation",
+        ),
     }
 
     def __init__(

@@ -23,3 +23,6 @@ class IClock(Protocol):
 
     def user_recovery_expiration_in_seconds(self) -> int:
         pass
+
+    def admin_invitation_expiration_in_seconds(self) -> int:
+        pass

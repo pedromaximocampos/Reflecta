@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
-import { BookMarked, BookOpen, Compass, Home, User, List, ListChecks, LogOut, AlertTriangle, History, Share2 } from 'lucide-react'
+import { BookMarked, BookOpen, Compass, Home, User, List, ListChecks, LogOut, AlertTriangle, History, Share2, ShieldCheck } from 'lucide-react'
 import { logout } from '../services/authApi'
 import { listProfessionalActivities, PROFESSIONAL_ACTIVITIES_CHANGED } from '../services/professionalActivitiesApi'
 
@@ -17,6 +17,7 @@ export function MainLayout({ admin = false }) {
       { path: '/deshboard/temas', icon: List, label: 'Temas' },
       { path: '/deshboard/obras', icon: BookOpen, label: 'Obras e PDFs' },
       { path: '/deshboard/passagens', icon: BookMarked, label: 'Passagens' },
+      { path: '/deshboard/administradores', icon: ShieldCheck, label: 'Administradores' },
     ] : []),
     ...(!admin ? [
       { path: '/inicio/diario', icon: BookMarked, label: 'Nova reflexão' },

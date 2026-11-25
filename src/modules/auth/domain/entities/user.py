@@ -139,3 +139,6 @@ class User:
 
     def mark_as_recovered(self) -> None:
         self.deleted_at = None
+
+    def promote_to_admin(self) -> None:
+        self.role = UserRole.ADMIN

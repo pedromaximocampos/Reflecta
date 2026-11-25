@@ -89,6 +89,7 @@ class Settings(BaseSettings):
     RESET_PASSWORD_MINUTES: Final[int] = 15
     USER_DELETION_MINUTES: int = 15
     USER_RECOVERY_MINUTES: int = 15
+    ADMIN_INVITATION_HOURS: int = 24
 
     MINIMUM_PASSWORD_LENGTH: Final[int] = 12
 

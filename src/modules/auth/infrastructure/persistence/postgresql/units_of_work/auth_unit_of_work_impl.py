@@ -10,6 +10,7 @@ from src.modules.auth.domain.entities.reset_password import ResetPassword
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.entities.user_deletion_request import UserDeletionRequest
 from src.modules.auth.domain.entities.user_recovery_request import UserRecoveryRequest
+from src.modules.auth.domain.entities.admin_invitation import AdminInvitation
 from src.modules.internal_events.public import IOutboxRepository
 from src.shared.infrastructure.persistence.postgresql.units_of_work.base_unit_of_work import SQLAlchemyUnitOfWork
 from src.modules.auth.domain.ports.repositories.iauth_session_repository import IAuthSessionRepository
@@ -21,6 +22,9 @@ from src.modules.auth.domain.ports.repositories.iuser_deletion_request_repositor
 )
 from src.modules.auth.domain.ports.repositories.iuser_recovery_request_repository import (
     IUserRecoveryRequestRepository,
+)
+from src.modules.auth.domain.ports.repositories.iadmin_invitation_repository import (
+    IAdminInvitationRepository,
 )
 from src.shared.domain.ports.system.iclock import IClock
 
@@ -37,18 +41,23 @@ from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_de
 from src.modules.auth.infrastructure.persistence.postgresql.repositories.user_recovery_request_repository import (
     UserRecoveryRequestRepository,
 )
+from src.modules.auth.infrastructure.persistence.postgresql.repositories.admin_invitation_repository import (
+    AdminInvitationRepository,
+)
 
 from src.shared.infrastructure.persistence.mappers.interface import IMapper
 from ..models import (
     AuthSessionsModel,
     UserDeletionRequestModel,
     UserRecoveryRequestModel,
+    AdminInvitationModel,
     UserEmailVerificationModel,
     UserModel,
 )
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel
 from ..models.reset_password_model import ResetPasswordModel
 from src.modules.internal_events.infrastructure.persistence.postgresql.repositories.outbox_repository import OutboxRepository
+from src.modules.auth.infrastructure.persistence.postgresql.mappers.admin_invitation_mapper import AdminInvitationMapper
 
 
 class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
@@ -88,6 +97,11 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         assert self.__user_recovery_request_repository is not None
         return self.__user_recovery_request_repository
 
+    @property
+    def admin_invitation_repository(self) -> IAdminInvitationRepository:
+        assert self.__admin_invitation_repository is not None
+        return self.__admin_invitation_repository
+
 
 
     def __init__(self, db: DBConnectionHandler, system_clock: IClock, user_mapper: IMapper[UserModel, User],
@@ -95,6 +109,7 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
                  reset_password_mapper: IMapper[ResetPasswordModel, ResetPassword],
                  user_deletion_request_mapper: IMapper[UserDeletionRequestModel, UserDeletionRequest],
                  user_recovery_request_mapper: IMapper[UserRecoveryRequestModel, UserRecoveryRequest],
+                 admin_invitation_mapper: IMapper[AdminInvitationModel, AdminInvitation],
                  outbox_mapper: IMapper[OutboxModel, OutboxEvent]) -> None:
 
         super().__init__(db)
@@ -104,6 +119,7 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         self.__reset_password_mapper = reset_password_mapper
         self.__user_deletion_request_mapper = user_deletion_request_mapper
         self.__user_recovery_request_mapper = user_recovery_request_mapper
+        self.__admin_invitation_mapper = admin_invitation_mapper
         self.__outbox_mapper = outbox_mapper
 
         self._system_clock = system_clock
@@ -115,6 +131,7 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         self.__outbox_repository: Optional[IOutboxRepository] = None
         self.__user_deletion_request_repository: Optional[IUserDeletionRequestRepository] = None
         self.__user_recovery_request_repository: Optional[IUserRecoveryRequestRepository] = None
+        self.__admin_invitation_repository: Optional[IAdminInvitationRepository] = None
 
 
     async def _init_repositories(self, session: AsyncSession) -> None:
@@ -141,6 +158,11 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
             self.__user_recovery_request_mapper,
         )
 
+        self.__admin_invitation_repository = AdminInvitationRepository(
+            session,
+            self.__admin_invitation_mapper,
+        )
+
         self.__outbox_repository = OutboxRepository(session, self.__outbox_mapper, self._system_clock)
 
 
@@ -155,4 +177,5 @@ class AuthUnitOfWorkImpl(SQLAlchemyUnitOfWork, IAuthUnitOfWork):
         self.__reset_password_repository = None
         self.__user_deletion_request_repository = None
         self.__user_recovery_request_repository = None
+        self.__admin_invitation_repository = None
         self.__outbox_repository = None

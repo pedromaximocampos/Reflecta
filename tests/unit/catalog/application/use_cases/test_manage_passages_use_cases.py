@@ -7,6 +7,7 @@ from src.modules.catalog.application.use_cases.manage_passages import (
     CreatePassageInputDTO,
     CreatePassageUseCase,
     DeletePassageUseCase,
+    GetPassageSummaryUseCase,
     ListPassagesInputDTO,
     ListPassagesUseCase,
     PassageThemeInputDTO,
@@ -17,6 +18,7 @@ from src.modules.catalog.application.use_cases.manage_passages import (
 )
 from src.modules.catalog.domain.entities import Theme, Work, WorkIngestion
 from src.modules.catalog.domain.entities.passage import Passage, PassageThemeRelevance
+from src.modules.catalog.domain.ports.repositories.ipassage_repository import PassagePage
 from src.modules.catalog.domain.exceptions import (
     InactivePassageThemeError,
     InvalidPassageThemesError,
@@ -63,7 +65,11 @@ class _Passages:
         return passage
 
     async def list_passages(self, **filters):
-        return [self.passage] if self.passage is not None else []
+        passages = (self.passage,) if self.passage is not None else ()
+        return PassagePage(passages=passages, total=len(passages))
+
+    async def count_by_status(self):
+        return ({self.passage.status.value: 1} if self.passage is not None else {})
 
     async def count_pending_by_ingestion(self, ingestion_id):
         return self.pending
@@ -259,8 +265,20 @@ async def test_list_passages_includes_current_theme_label() -> None:
     result = await use_case.execute(ListPassagesInputDTO())
 
     assert len(result.passages) == 1
+    assert result.total == 1
+    assert result.limit == 30
     assert result.passages[0].themes[0].theme_id == _theme().id
     assert result.passages[0].themes[0].label == "Virtude"
+
+
+@pytest.mark.asyncio
+async def test_passage_summary_returns_counts_without_loading_passages() -> None:
+    graph = _GraphUow(_passage())
+
+    result = await GetPassageSummaryUseCase(graph).execute()
+
+    assert result.total == 1
+    assert result.by_status == {CatalogStatus.PENDING_REVIEW.value: 1}
 
 
 @pytest.mark.asyncio

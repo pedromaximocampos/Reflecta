@@ -115,22 +115,54 @@ class PassageOutputDTO:
 @dataclass(frozen=True, slots=True)
 class PassagesOutputDTO:
     passages: tuple[PassageOutputDTO, ...]
+    total: int
+    limit: int
+    offset: int
 
     @classmethod
     def from_entities(
         cls,
-        passages: list[Passage],
+        passages: list[Passage] | tuple[Passage, ...],
         theme_labels: Mapping[str, str],
+        *,
+        total: int | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> "PassagesOutputDTO":
+        effective_total = len(passages) if total is None else total
+        effective_limit = len(passages) if limit is None else limit
         return cls(
-            tuple(
+            passages=tuple(
                 PassageOutputDTO.from_entity(item, theme_labels)
                 for item in passages
-            )
+            ),
+            total=effective_total,
+            limit=effective_limit,
+            offset=offset,
         )
 
     def to_dict(self) -> dict:
         return {
             "passages": [passage.to_dict() for passage in self.passages],
-            "total": len(self.passages),
+            "total": self.total,
+            "limit": self.limit,
+            "offset": self.offset,
+            "has_more": self.offset + len(self.passages) < self.total,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class PassageStatusCountsOutputDTO:
+    total: int
+    by_status: Mapping[str, int]
+
+    @classmethod
+    def from_counts(
+        cls,
+        counts: Mapping[str, int],
+    ) -> "PassageStatusCountsOutputDTO":
+        normalized = {str(status): int(total) for status, total in counts.items()}
+        return cls(total=sum(normalized.values()), by_status=normalized)
+
+    def to_dict(self) -> dict:
+        return {"total": self.total, "by_status": dict(self.by_status)}

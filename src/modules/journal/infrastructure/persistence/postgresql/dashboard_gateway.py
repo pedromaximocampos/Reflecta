@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import date, datetime, timezone
 from typing import Any
@@ -134,6 +135,71 @@ class JournalDashboardGateway:
         async with self.db.session() as session:
             rows = (await session.execute(self._theme_rows_query(user_id))).all()
         return tuple(self._aggregate_themes(rows)[:limit])
+
+    async def home_snapshot(
+        self,
+        user_id: str,
+        *,
+        entry_limit: int = 5,
+        entry_offset: int = 0,
+    ) -> dict[str, Any]:
+        if not 1 <= entry_limit <= 20 or entry_offset < 0:
+            raise ValueError("Invalid dashboard entry pagination.")
+        summary, entries = await asyncio.gather(
+            self.summary(user_id),
+            self._recent_entries(
+                user_id,
+                limit=entry_limit + 1,
+                offset=entry_offset,
+            ),
+        )
+        return {
+            "summary": summary,
+            "entries": entries[:entry_limit],
+            "entries_has_next": len(entries) > entry_limit,
+            "entry_limit": entry_limit,
+            "entry_offset": entry_offset,
+        }
+
+    async def _recent_entries(
+        self,
+        user_id: str,
+        *,
+        limit: int,
+        offset: int,
+    ) -> list[dict[str, Any]]:
+        async with self.db.session() as session:
+            rows = (
+                await session.execute(
+                    select(
+                        JournalEntryModel.id,
+                        JournalEntryModel.title,
+                        JournalEntryModel.status,
+                        JournalEntryModel.entry_date,
+                    )
+                    .where(
+                        JournalEntryModel.user_id == user_id,
+                        JournalEntryModel.deleted_at.is_(None),
+                        JournalEntryModel.status != "deleted",
+                    )
+                    .order_by(
+                        JournalEntryModel.entry_date.desc(),
+                        JournalEntryModel.created_at.desc(),
+                        JournalEntryModel.id.desc(),
+                    )
+                    .limit(limit)
+                    .offset(offset)
+                )
+            ).all()
+        return [
+            {
+                "id": row.id,
+                "title": row.title,
+                "status": row.status,
+                "entry_date": row.entry_date.isoformat(),
+            }
+            for row in rows
+        ]
 
     async def summary(self, user_id: str) -> dict[str, Any]:
         local_now, month_start, month_stop = self._month_bounds()

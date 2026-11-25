@@ -36,7 +36,7 @@ Neo4j is deliberately kept on EC2 with a dedicated EBS volume. Fargate supports 
 - least-privilege hooks for existing S3, SNS, and SQS resources;
 - an optional monthly AWS Budget with forecast and actual-cost alerts.
 
-It does **not** deploy application containers yet. That is intentional: first review the infrastructure plan, then build/push the images and deploy the Compose production file through Session Manager.
+Terraform does not deploy application releases. After a reviewed infrastructure apply, immutable application images are pushed to ECR and the Compose production file is updated through Session Manager; frontend assets are synchronized to the private S3 origin and invalidated in CloudFront.
 
 ## Covers, PDFs, and avatars
 

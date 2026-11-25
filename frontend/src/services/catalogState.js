@@ -7,6 +7,7 @@ function emptyCatalog() {
     works: [],
     ingestions: [],
     loaded: { themes: false, works: false, ingestions: false },
+    updated_at_by_kind: { themes: null, works: null, ingestions: null },
     updated_at: null,
   }
 }
@@ -25,6 +26,11 @@ function normalizeCatalog(value) {
     themes: value.loaded?.themes === true,
     works: value.loaded?.works === true,
     ingestions: value.loaded?.ingestions === true,
+  }
+  catalog.updated_at_by_kind = {
+    themes: typeof value.updated_at_by_kind?.themes === 'string' ? value.updated_at_by_kind.themes : value.updated_at,
+    works: typeof value.updated_at_by_kind?.works === 'string' ? value.updated_at_by_kind.works : value.updated_at,
+    ingestions: typeof value.updated_at_by_kind?.ingestions === 'string' ? value.updated_at_by_kind.ingestions : value.updated_at,
   }
   catalog.updated_at = typeof value.updated_at === 'string' ? value.updated_at : null
   return catalog
@@ -58,6 +64,7 @@ export function replaceCatalog(kind, items) {
   catalog[kind] = Array.isArray(items) ? items : []
   catalog.loaded[kind] = true
   catalog.updated_at = new Date().toISOString()
+  catalog.updated_at_by_kind[kind] = catalog.updated_at
   return saveCatalog(catalog)
 }
 
@@ -70,6 +77,16 @@ export function rememberCatalog(kind, item) {
     item,
     ...catalog[kind].filter((old) => (old.id ?? old.ingestion_id) !== identity),
   ]
+  catalog.loaded[kind] = true
   catalog.updated_at = new Date().toISOString()
+  catalog.updated_at_by_kind[kind] = catalog.updated_at
   return saveCatalog(catalog)
+}
+
+export function isCatalogFresh(catalog, kind, maxAgeMs = 5 * 60_000) {
+  requireCatalogKind(kind)
+  if (!catalog?.loaded?.[kind]) return false
+  const updatedAt = catalog.updated_at_by_kind?.[kind] || catalog.updated_at
+  const timestamp = updatedAt ? Date.parse(updatedAt) : Number.NaN
+  return Number.isFinite(timestamp) && Date.now() - timestamp < maxAgeMs
 }

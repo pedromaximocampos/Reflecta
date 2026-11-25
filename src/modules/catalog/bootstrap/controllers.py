@@ -14,6 +14,7 @@ from src.modules.catalog.bootstrap.use_cases import (
     get_create_passage_use_case,
     get_delete_passage_use_case,
     get_list_passages_use_case,
+    get_passage_summary_use_case,
     get_passage_use_case,
     get_review_passage_use_case,
     get_set_passage_availability_use_case,
@@ -23,6 +24,7 @@ from src.modules.catalog.presentation.controllers.passage_controller import (
     CreatePassageController,
     DeletePassageController,
     GetPassageController,
+    GetPassageSummaryController,
     ListPassagesController,
     ReviewPassageController,
     SetPassageAvailabilityController,
@@ -132,6 +134,10 @@ def get_passage_controller() -> GetPassageController:
 
 def get_list_passages_controller() -> ListPassagesController:
     return ListPassagesController(get_list_passages_use_case())
+
+
+def get_passage_summary_controller() -> GetPassageSummaryController:
+    return GetPassageSummaryController(get_passage_summary_use_case())
 
 
 def get_update_passage_controller() -> UpdatePassageController:

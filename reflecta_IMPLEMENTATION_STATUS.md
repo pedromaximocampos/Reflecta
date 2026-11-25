@@ -1,6 +1,6 @@
 # Reflecta — verified implementation status
 
-> Updated on 2026-11-24 after synchronizing the academic `main` branch with this public portfolio repository.
+> Updated on 2026-11-25 after performance verification and preparation of the AWS demonstration release.
 >
 > This document records capabilities supported by code, migrations, tests, or documented executions. Product plans alone are not treated as implementation evidence.
 
@@ -8,10 +8,10 @@
 
 - Backend source synchronized from `Codigo/BACK` into the repository root.
 - Frontend source synchronized from `Codigo/FRONT` into `frontend/`.
-- 53 OpenAPI paths and 72 HTTP operations generated.
+- 55 OpenAPI paths and 74 HTTP operations generated.
 - 21 Alembic migration files; current head: `f13a4c600006`.
-- 617 backend unit tests passing.
-- 87 frontend tests passing.
+- 626 backend unit tests passing.
+- 88 frontend tests passing.
 - Frontend lint and production build passing.
 - Academic documentation and evidence synchronized into `docs/tcc/`.
 - One portfolio portability adjustment keeps an environment-path test independent of the physical repository directory name.
@@ -39,7 +39,7 @@
 | Internal Events | PARTIAL | Transactional Outbox, SNS/SQS publishing, RabbitMQ development path, retry, and DLQ behavior exist. |
 | Operations | IMPLEMENTED | Failure listing/details plus bounded administrative and ingestion reprocessing flows. |
 | Frontend | IMPLEMENTED | React user and administrator areas cover the verified product flows. |
-| Terraform | PARTIAL | SNS, SQS, DLQs, subscriptions, filters, and policies are versioned; the full platform is not yet modeled. |
+| Terraform | PARTIAL | Messaging plus the AWS demo network, RDS, EC2/EBS, ECR, S3, CloudFront, IAM, secrets, logs, and budget are versioned; some pre-existing resources remain outside this state. |
 | CI/CD | PLANNED | No complete production delivery pipeline is currently verified. |
 
 ## Current modules
@@ -126,11 +126,10 @@ S3 adapters support work PDFs, normalized ingestion artifacts, work covers, and 
 
 ## Known production gaps
 
-- Full infrastructure is not yet managed by Terraform.
-- Managed PostgreSQL/Neo4j topology and migration strategy are not finalized.
-- CI/CD, rollback, remote Terraform state, DNS, TLS, and frontend hosting are not implemented here.
-- Centralized logs, metrics, traces, alarms, and cost budgets need production configuration.
-- Secrets must move to a managed secret store.
+- Delivery remains manual; CI/CD and automatic rollback are not implemented.
+- PostgreSQL is managed by RDS, while the demonstration Neo4j Community node remains single-instance on encrypted EBS.
+- CloudFront provides TLS and hosting, but custom DNS and a formal high-availability strategy remain future work.
+- CloudWatch logs and per-request duration diagnostics exist; distributed tracing and actionable alarms remain incomplete.
 - Backup/restore, retention, incident response, and security testing need formal verification.
 - Pydantic deprecation warnings remain technical debt.
 - Cloud/provider integration tests are intentionally environment-dependent.

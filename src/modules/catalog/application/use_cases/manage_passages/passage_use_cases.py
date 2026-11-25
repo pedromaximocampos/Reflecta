@@ -1,6 +1,10 @@
 import hashlib
 
-from src.modules.catalog.application.dto import PassageOutputDTO, PassagesOutputDTO
+from src.modules.catalog.application.dto import (
+    PassageOutputDTO,
+    PassagesOutputDTO,
+    PassageStatusCountsOutputDTO,
+)
 from src.modules.catalog.domain.entities.passage import Passage, PassageThemeRelevance
 from src.modules.catalog.domain.exceptions import (
     EmptyPassageUpdateError,
@@ -87,12 +91,34 @@ class ListPassagesUseCase:
 
     async def execute(self, filters: ListPassagesInputDTO) -> PassagesOutputDTO:
         async with self._graph_uow as uow:
-            passages = await uow.passage_repository.list_passages(
+            page = await uow.passage_repository.list_passages(
                 status=filters.status,
                 work_id=filters.work_id,
                 ingestion_id=filters.ingestion_id,
+                work_title=filters.work_title,
+                author_name=filters.author_name,
+                confidence_min=filters.confidence_min,
+                confidence_max=filters.confidence_max,
+                limit=filters.limit,
+                offset=filters.offset,
             )
-            return await _passages_output(uow, passages)
+            return await _passages_output(
+                uow,
+                page.passages,
+                total=page.total,
+                limit=filters.limit,
+                offset=filters.offset,
+            )
+
+
+class GetPassageSummaryUseCase:
+    def __init__(self, graph_uow: ICatalogGraphUnitOfWork) -> None:
+        self._graph_uow = graph_uow
+
+    async def execute(self) -> PassageStatusCountsOutputDTO:
+        async with self._graph_uow as uow:
+            counts = await uow.passage_repository.count_by_status()
+            return PassageStatusCountsOutputDTO.from_counts(counts)
 
 
 class UpdatePassageUseCase:
@@ -271,10 +297,20 @@ async def _passage_output(
 
 async def _passages_output(
     uow: ICatalogGraphUnitOfWork,
-    passages: list[Passage],
+    passages: list[Passage] | tuple[Passage, ...],
+    *,
+    total: int,
+    limit: int,
+    offset: int,
 ) -> PassagesOutputDTO:
     labels = await _theme_labels(uow)
-    return PassagesOutputDTO.from_entities(passages, labels)
+    return PassagesOutputDTO.from_entities(
+        passages,
+        labels,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 async def _theme_labels(uow: ICatalogGraphUnitOfWork) -> dict[str, str]:

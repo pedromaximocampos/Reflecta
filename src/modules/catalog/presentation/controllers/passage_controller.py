@@ -3,6 +3,7 @@ from src.modules.catalog.application.use_cases.manage_passages import (
     ICreatePassageUseCase,
     IDeletePassageUseCase,
     IGetPassageUseCase,
+    IGetPassageSummaryUseCase,
     IListPassagesUseCase,
     IReviewPassageUseCase,
     ISetPassageAvailabilityUseCase,
@@ -59,6 +60,10 @@ class ListPassagesController(IControllerInterface):
         status = request.query_params.get("status")
         work_id = request.query_params.get("work_id")
         ingestion_id = request.query_params.get("ingestion_id")
+        work_title = request.query_params.get("work_title")
+        author_name = request.query_params.get("author_name")
+        confidence_min = request.query_params.get("confidence_min")
+        confidence_max = request.query_params.get("confidence_max")
         result = await self._use_case.execute(
             ListPassagesInputDTO(
                 status=CatalogStatus(status) if status else None,
@@ -66,8 +71,27 @@ class ListPassagesController(IControllerInterface):
                 ingestion_id=(
                     WorkIngestionId(ingestion_id) if ingestion_id else None
                 ),
+                work_title=work_title.strip() if work_title else None,
+                author_name=author_name.strip() if author_name else None,
+                confidence_min=(
+                    float(confidence_min) if confidence_min else None
+                ),
+                confidence_max=(
+                    float(confidence_max) if confidence_max else None
+                ),
+                limit=int(request.query_params.get("limit", 30)),
+                offset=int(request.query_params.get("offset", 0)),
             )
         )
+        return HttpResponse(status_code=200, body=result.to_dict())
+
+
+class GetPassageSummaryController(IControllerInterface):
+    def __init__(self, use_case: IGetPassageSummaryUseCase) -> None:
+        self._use_case = use_case
+
+    async def handle_request(self, request: HttpRequest) -> HttpResponse:
+        result = await self._use_case.execute()
         return HttpResponse(status_code=200, body=result.to_dict())
 
 

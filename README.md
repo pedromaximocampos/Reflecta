@@ -4,8 +4,8 @@
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
 ![Architecture](https://img.shields.io/badge/architecture-modular%20monolith-4B5563)
-![Backend unit tests](https://img.shields.io/badge/backend%20unit%20tests-617%20passing-brightgreen)
-![Frontend tests](https://img.shields.io/badge/frontend%20tests-87%20passing-brightgreen)
+![Backend unit tests](https://img.shields.io/badge/backend%20unit%20tests-626%20passing-brightgreen)
+![Frontend tests](https://img.shields.io/badge/frontend%20tests-88%20passing-brightgreen)
 
 Reflecta is a private, text-based journaling platform that uses structured AI analysis and a curated knowledge catalog to help people revisit their reflections, identify recurring themes, and connect them with philosophical and literary passages.
 
@@ -77,7 +77,8 @@ Private journal content remains in PostgreSQL. Neo4j stores the curated knowledg
 - dashboards for themes, works, ingestions, passages, and operational failures;
 - ingestion progress based on persisted chunk states;
 - administrative failure details and bounded reprocessing;
-- local filtering, pagination, caching, and consistent responsive navigation.
+- server-side passage filtering and pagination, short-lived invalidatable client caches, and consistent responsive navigation;
+- aggregated user-dashboard reads, bounded database pools, request-duration diagnostics, and content-shaped loading feedback.
 
 ## Architecture
 
@@ -164,17 +165,17 @@ Business state + Outbox event
 
 ## Verified snapshot
 
-Verified on **2026-11-24** from the synchronized academic `main` branch:
+Verified on **2026-11-25** from `main`:
 
-- 53 OpenAPI paths and 72 HTTP operations;
+- 55 OpenAPI paths and 74 HTTP operations;
 - 21 Alembic migrations with head `f13a4c600006`;
-- 617 backend unit tests passing;
-- 87 frontend tests passing;
+- 626 backend unit tests passing;
+- 88 frontend tests passing;
 - frontend lint and production build passing;
 - local PostgreSQL, Neo4j, RabbitMQ, API, and worker definitions in Docker Compose;
-- Terraform configuration for the SNS/SQS/DLQ messaging slice.
+- Terraform configuration for the SNS/SQS/DLQ messaging slice and the AWS demo stack.
 
-Cloud-backed flows were also exercised during the academic project with S3, SNS, SQS, OpenAI, Neo4j, and SES. Production deployment and full infrastructure coverage remain separate work.
+Cloud-backed flows were exercised with S3, SNS, SQS, OpenAI, Neo4j, and SES. The public demonstration environment uses CloudFront, private S3 buckets, EC2/EBS, ECR, RDS PostgreSQL, Secrets Manager, and CloudWatch; delivery is still a reviewed manual operation rather than a CI/CD pipeline.
 
 ## Running locally
 
@@ -250,16 +251,14 @@ Integration tests require the corresponding PostgreSQL/Neo4j infrastructure and 
 
 ## Infrastructure as Code and deployment
 
-[`infra/terraform`](infra/terraform/) contains the first Terraform slice for SNS, SQS, DLQs, subscriptions, filters, and queue policies. Existing AWS resources must be imported and compared with a reviewed plan before Terraform becomes their source of truth.
+[`infra/terraform`](infra/terraform/) contains the messaging slice for SNS/SQS/DLQs and an independent AWS demonstration stack. Existing messaging resources must be imported and compared with a reviewed plan before Terraform becomes their source of truth.
 
-The current Terraform scope does not yet provision the complete production platform. A production deployment still needs, at minimum:
+The demonstration stack provisions networking, RDS, EC2/EBS, ECR, S3, CloudFront, Secrets Manager, CloudWatch, IAM, and a budget. The application image and frontend assets are deployed through reviewed manual commands. A hardened production platform still needs, at minimum:
 
-- remote Terraform state and environment separation;
-- managed PostgreSQL and a production Neo4j strategy;
-- application and worker compute;
-- networking, TLS, DNS, and frontend hosting;
-- S3, Lambda, SES, secrets, IAM, monitoring, and budgets;
-- CI/CD with migrations and rollback controls.
+- CI/CD with automatic tests, migrations, health checks, and rollback controls;
+- a managed or highly available Neo4j strategy and Multi-AZ database policy;
+- custom DNS, formal backup/restore drills, tracing, alarms, and security testing;
+- complete adoption of the pre-existing messaging and notification resources into reviewed state.
 
 ## Documentation
 

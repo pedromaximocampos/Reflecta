@@ -32,6 +32,7 @@ from src.modules.catalog.application.use_cases.manage_passages import (
     CreatePassageUseCase,
     DeletePassageUseCase,
     GetPassageUseCase,
+    GetPassageSummaryUseCase,
     ListPassagesUseCase,
     ReviewPassageUseCase,
     SetPassageAvailabilityUseCase,
@@ -158,6 +159,10 @@ def get_passage_use_case() -> GetPassageUseCase:
 
 def get_list_passages_use_case() -> ListPassagesUseCase:
     return ListPassagesUseCase(get_graph_unit_of_work())
+
+
+def get_passage_summary_use_case() -> GetPassageSummaryUseCase:
+    return GetPassageSummaryUseCase(get_graph_unit_of_work())
 
 
 def get_update_passage_use_case() -> UpdatePassageUseCase:

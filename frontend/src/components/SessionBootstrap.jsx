@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react'
 import { BookOpen, LoaderCircle } from 'lucide-react'
+import { useLocation } from 'react-router'
 
 import { restoreSessionFromCookie } from '../services/apiClient'
+import { hasRefreshSessionHint, hasStoredSession } from '../services/authSession'
+
+const PUBLIC_PATHS = new Set(['/', '/cadastro', '/esqueci-senha', '/auth/reset-password', '/compartilhamento'])
 
 export function SessionBootstrap({ children }) {
-  const [checkingSession, setCheckingSession] = useState(true)
+  const location = useLocation()
+  const shouldRestore = hasStoredSession()
+    || hasRefreshSessionHint()
+    || !PUBLIC_PATHS.has(location.pathname)
+  const [checkingSession, setCheckingSession] = useState(shouldRestore)
 
   useEffect(() => {
+    if (!shouldRestore) return undefined
     let active = true
 
     restoreSessionFromCookie().finally(() => {
@@ -16,7 +25,7 @@ export function SessionBootstrap({ children }) {
     return () => {
       active = false
     }
-  }, [])
+  }, [shouldRestore])
 
   if (checkingSession) {
     return (

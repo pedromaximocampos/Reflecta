@@ -12,6 +12,11 @@ class PostgresqlSettings:
     driver: str = "asyncpg"
     echo: bool = False
     app_name: str = "individuum-app"
+    pool_size: int = 3
+    max_overflow: int = 2
+    pool_timeout_seconds: int = 15
+    pool_recycle_seconds: int = 600
+    command_timeout_seconds: int = 30
 
     @property
     def connection_string(self) -> str:

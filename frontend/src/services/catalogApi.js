@@ -42,10 +42,15 @@ export function uploadWork(id, file) {
 export function reprocessWorkIngestion(id) {
   return adminRequest(`/work-ingestions/${encodeURIComponent(id)}/reprocess`, { method: 'POST' })
 }
-export function listPassages(filters = {}) {
-  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
-  return adminRequest(`/passages?${query}`)
+export function listPassages(filters = {}, { signal } = {}) {
+  const query = new URLSearchParams(
+    Object.entries(filters)
+      .filter(([, value]) => value !== '' && value !== null && value !== undefined)
+      .map(([key, value]) => [key, String(value)]),
+  )
+  return adminRequest(`/passages?${query}`, { signal })
 }
+export function getPassageSummary({ signal } = {}) { return adminRequest('/passages/summary', { signal }) }
 export function getPassage(id) { return adminRequest(`/passages/${encodeURIComponent(id)}`) }
 export function createPassage(fields) { return adminRequest('/passages', json('POST', fields)) }
 export function updatePassage(id, fields) { return adminRequest(`/passages/${encodeURIComponent(id)}`, json('PATCH', fields)) }

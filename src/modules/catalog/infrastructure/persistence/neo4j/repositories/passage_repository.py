@@ -7,6 +7,7 @@ from src.modules.catalog.domain.entities.passage import Passage
 from src.modules.catalog.domain.ports.repositories.ipassage_repository import (
     ContextualPassageRecord,
     IPassageRepository,
+    PassagePage,
 )
 from src.modules.catalog.domain.value_objects import CatalogStatus
 from src.modules.catalog.public.passage_id import PassageId
@@ -49,13 +50,75 @@ class PassageRepository(IPassageRepository):
         status: CatalogStatus | None = None,
         work_id: WorkId | None = None,
         ingestion_id: WorkIngestionId | None = None,
-    ) -> list[Passage]:
-        result = await self._transaction.run(
-            """
+        work_title: str | None = None,
+        author_name: str | None = None,
+        confidence_min: float | None = None,
+        confidence_max: float | None = None,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> PassagePage:
+        parameters = {
+            "status": status.value if status is not None else None,
+            "work_id": work_id.value if work_id is not None else None,
+            "ingestion_id": (
+                ingestion_id.value if ingestion_id is not None else None
+            ),
+            "work_title": work_title,
+            "author_name": author_name,
+            "confidence_min": confidence_min,
+            "confidence_max": confidence_max,
+            "limit": limit,
+            "offset": offset,
+        }
+        conditions: list[str] = []
+        if status is not None:
+            conditions.append("passage.status = $status")
+        if work_id is not None:
+            conditions.append("passage.work_id = $work_id")
+        if ingestion_id is not None:
+            conditions.append("passage.ingestion_id = $ingestion_id")
+        if work_title:
+            conditions.append(
+                "toLower(coalesce(work.title, '')) CONTAINS toLower($work_title)"
+            )
+        if author_name:
+            conditions.append(
+                "toLower(coalesce(author.name, '')) CONTAINS toLower($author_name)"
+            )
+        confidence_conditions: list[str] = []
+        if confidence_min is not None:
+            confidence_conditions.append(
+                "matched_relevance.confidence >= $confidence_min"
+            )
+        if confidence_max is not None:
+            confidence_conditions.append(
+                "matched_relevance.confidence < $confidence_max"
+            )
+        if confidence_conditions:
+            conditions.append(
+                "EXISTS { MATCH (passage)-[matched_relevance:RELATES_TO]->(:Theme) "
+                f"WHERE {' AND '.join(confidence_conditions)} }}"
+            )
+        where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+        match_and_filters = """
             MATCH (passage:Passage)
-            WHERE ($status IS NULL OR passage.status = $status)
-              AND ($work_id IS NULL OR passage.work_id = $work_id)
-              AND ($ingestion_id IS NULL OR passage.ingestion_id = $ingestion_id)
+            OPTIONAL MATCH (passage)-[:BELONGS_TO]->(work:Work)
+            OPTIONAL MATCH (work)-[:WRITTEN_BY]->(author:Author)
+        """ + where_clause
+        count_result = await self._transaction.run(
+            match_and_filters + " RETURN count(DISTINCT passage) AS total",
+            **parameters,
+        )
+        count_record = await count_result.single()
+        total = int(count_record["total"]) if count_record is not None else 0
+
+        result = await self._transaction.run(
+            match_and_filters
+            + """
+            WITH DISTINCT passage
+            ORDER BY passage.priority DESC, passage.created_at, passage.passage_id
+            SKIP $offset
+            LIMIT $limit
             OPTIONAL MATCH (passage)-[relevance:RELATES_TO]->(theme:Theme)
             WITH passage, collect(
                 CASE WHEN theme IS NULL THEN NULL ELSE {
@@ -67,13 +130,25 @@ class PassageRepository(IPassageRepository):
                    [item IN raw_themes WHERE item IS NOT NULL] AS themes
             ORDER BY passage.priority DESC, passage.created_at, passage.passage_id
             """,
-            status=status.value if status is not None else None,
-            work_id=work_id.value if work_id is not None else None,
-            ingestion_id=(
-                ingestion_id.value if ingestion_id is not None else None
-            ),
+            **parameters,
         )
-        return [self._record_to_entity(record) async for record in result]
+        passages = tuple([
+            self._record_to_entity(record) async for record in result
+        ])
+        return PassagePage(passages=passages, total=total)
+
+    async def count_by_status(self) -> dict[str, int]:
+        result = await self._transaction.run(
+            """
+            MATCH (passage:Passage)
+            RETURN passage.status AS status, count(passage) AS total
+            """
+        )
+        return {
+            str(record["status"]): int(record["total"])
+            async for record in result
+            if record["status"] is not None
+        }
 
     async def find_active_contextual_candidates(
         self,

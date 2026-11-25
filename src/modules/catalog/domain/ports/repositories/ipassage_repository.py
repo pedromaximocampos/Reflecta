@@ -28,6 +28,12 @@ class ContextualPassageRecord:
     end_page: int | None
 
 
+@dataclass(frozen=True, slots=True)
+class PassagePage:
+    passages: tuple[Passage, ...]
+    total: int
+
+
 class IPassageRepository(Protocol):
     async def get_by_id(self, passage_id: PassageId) -> Passage | None: ...
 
@@ -37,7 +43,15 @@ class IPassageRepository(Protocol):
         status: CatalogStatus | None = None,
         work_id: WorkId | None = None,
         ingestion_id: WorkIngestionId | None = None,
-    ) -> list[Passage]: ...
+        work_title: str | None = None,
+        author_name: str | None = None,
+        confidence_min: float | None = None,
+        confidence_max: float | None = None,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> PassagePage: ...
+
+    async def count_by_status(self) -> dict[str, int]: ...
 
     async def find_active_contextual_candidates(
         self,

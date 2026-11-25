@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -78,4 +78,49 @@ async def test_find_active_contextual_candidates_skips_empty_query() -> None:
         == []
     )
     transaction.run.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_list_passages_applies_pagination_and_returns_filtered_total() -> None:
+    count_result = AsyncMock()
+    count_result.single.return_value = {"total": 42}
+    page_result = _result({"passage": {"passage_id": "p-1"}, "themes": []})
+    transaction = AsyncMock()
+    transaction.run.side_effect = [count_result, page_result]
+    mapper = Mock()
+    mapped = object()
+    mapper.to_entity.return_value = mapped
+    repository = PassageRepository(transaction, mapper)
+
+    page = await repository.list_passages(
+        work_title="meditações",
+        author_name="marco",
+        confidence_min=0.8,
+        limit=20,
+        offset=20,
+    )
+
+    assert page.passages == (mapped,)
+    assert page.total == 42
+    assert transaction.run.await_count == 2
+    assert transaction.run.await_args.kwargs["limit"] == 20
+    assert transaction.run.await_args.kwargs["offset"] == 20
+    query = transaction.run.await_args.args[0]
+    assert "SKIP $offset" in query
+    assert "LIMIT $limit" in query
+    assert "matched_relevance.confidence" in query
+
+
+@pytest.mark.asyncio
+async def test_count_by_status_returns_small_admin_projection() -> None:
+    transaction = AsyncMock()
+    transaction.run.return_value = _result(
+        {"status": "ACTIVE", "total": 12},
+        {"status": "PENDING_REVIEW", "total": 3},
+    )
+    repository = PassageRepository(transaction, Mock())
+
+    result = await repository.count_by_status()
+
+    assert result == {"ACTIVE": 12, "PENDING_REVIEW": 3}
 

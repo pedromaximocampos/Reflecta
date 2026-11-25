@@ -21,6 +21,11 @@ def test_plain_uri_passes_explicit_encryption_option_to_driver() -> None:
         Neo4jConnectionHandler(make_config("bolt://localhost:7687", encrypted=False))
 
     assert driver.call_args.kwargs["encrypted"] is False
+    assert driver.call_args.kwargs["max_connection_pool_size"] == 10
+    assert driver.call_args.kwargs["connection_acquisition_timeout"] == 15
+    assert driver.call_args.kwargs["connection_timeout"] == 10
+    assert driver.call_args.kwargs["max_connection_lifetime"] == 600
+    assert driver.call_args.kwargs["keep_alive"] is True
 
 
 def test_secure_uri_does_not_duplicate_encryption_configuration() -> None:

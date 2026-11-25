@@ -1,4 +1,5 @@
 import { request } from './apiClient.js'
+import { invalidateDashboardCache } from './dashboardApi.js'
 
 function authenticatedRequest(path, options = {}) {
   const token = sessionStorage.getItem('access_token')
@@ -17,7 +18,7 @@ export function createJournalEntry(fields) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
-  })
+  }).then((result) => { invalidateDashboardCache(); return result })
 }
 
 export function listJournalEntries({ limit = 10, offset = 0, signal } = {}) {
@@ -56,11 +57,12 @@ export function updateJournalEntry(id, fields) {
     ['title', 'content_text', 'context_tags'].includes(key)))
   return authenticatedRequest(`/${encodeURIComponent(id)}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  })
+  }).then((result) => { invalidateDashboardCache(); return result })
 }
 
 export function deleteJournalEntry(id) {
   return authenticatedRequest(`/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    .then((result) => { invalidateDashboardCache(); return result })
 }
 
 export function submitJournalAnalysis(id, { expectedRevision, reanalyze = false } = {}) {
@@ -71,6 +73,7 @@ export function submitJournalAnalysis(id, { expectedRevision, reanalyze = false 
     ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
     : {}
   return authenticatedRequest(`/${encodeURIComponent(id)}/analysis`, { method: 'POST', ...options })
+    .then((result) => { invalidateDashboardCache(); return result })
 }
 
 export function getJournalAnalysis(id, { signal } = {}) {
@@ -82,5 +85,5 @@ export function updateJournalAnalysisThemes(id, themeIds) {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ theme_ids: themeIds }),
-  })
+  }).then((result) => { invalidateDashboardCache(); return result })
 }

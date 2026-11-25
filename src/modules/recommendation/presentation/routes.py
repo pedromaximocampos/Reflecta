@@ -9,16 +9,12 @@ from src.modules.catalog.bootstrap.unit_of_work import get_graph_unit_of_work
 from src.modules.catalog.public.analysis_contextual_passage_catalog import (
     AnalysisContextualPassageCatalog,
 )
-from src.modules.journal.infrastructure.persistence.postgresql.dashboard_gateway import (
-    JournalDashboardGateway,
-)
+from src.modules.journal.public.dashboard_provider import get_journal_home_reader
 from src.modules.recommendation.application import (
     ExploreWorks,
+    GetHomeDashboard,
     GetRecommendationWork,
     RecommendWorks,
-)
-from src.shared.infrastructure.persistence.postgresql.provider import (
-    individuum_mvp_provider,
 )
 
 
@@ -31,9 +27,16 @@ recommendation_router = APIRouter(
 def get_recommend_works() -> RecommendWorks:
     work_catalog = get_recommendation_work_catalog()
     return RecommendWorks(
-        journal=JournalDashboardGateway(individuum_mvp_provider),
+        journal=get_journal_home_reader(),
         catalog=AnalysisContextualPassageCatalog(get_graph_unit_of_work()),
         works=work_catalog,
+    )
+
+
+def get_home_dashboard() -> GetHomeDashboard:
+    return GetHomeDashboard(
+        journal=get_journal_home_reader(),
+        recommendations=get_recommend_works(),
     )
 
 
@@ -43,6 +46,30 @@ def get_explore_works() -> ExploreWorks:
 
 def get_recommendation_work() -> GetRecommendationWork:
     return GetRecommendationWork(works=get_recommendation_work_catalog())
+
+
+@recommendation_router.get("/dashboard")
+async def get_dashboard(
+    entry_limit: int = Query(default=4, ge=1, le=20),
+    entry_offset: int = Query(default=0, ge=0),
+    recommendation_limit: int = Query(default=2, ge=1, le=12),
+    recommendation_offset: int = Query(default=0, ge=0),
+    current_user: AuthenticatedPrincipal = Depends(get_current_user),
+    use_case: GetHomeDashboard = Depends(get_home_dashboard),
+):
+    try:
+        return await use_case.execute(
+            current_user.user_id.value,
+            entry_limit=entry_limit,
+            entry_offset=entry_offset,
+            recommendation_limit=recommendation_limit,
+            recommendation_offset=recommendation_offset,
+        )
+    except (SQLAlchemyError, Neo4jError, DriverError, ValueError):
+        raise HTTPException(
+            status_code=503,
+            detail="Dashboard indisponível. Tente novamente mais tarde.",
+        ) from None
 
 
 @recommendation_router.get("/works")

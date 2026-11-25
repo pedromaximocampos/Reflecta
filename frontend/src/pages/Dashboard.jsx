@@ -4,8 +4,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { useEffect, useState } from 'react'
-import { listJournalEntries } from '../services/journalApi'
-import { getDashboardSummary, listWorkRecommendations } from '../services/dashboardApi'
+import { getHomeDashboard } from '../services/dashboardApi'
 import { clearSession } from '../services/authSession'
 import { RecommendationWorkCard } from '../components/RecommendationWorkCard'
 import { PageLoading } from '../components/PageLoading'
@@ -54,46 +53,34 @@ export function Dashboard() {
 
   useEffect(() => {
     const controller = new AbortController()
-    listJournalEntries({ limit: ENTRY_PAGE_SIZE + 1, offset: (entryPage - 1) * ENTRY_PAGE_SIZE, signal: controller.signal })
+    getHomeDashboard({
+      entryLimit: ENTRY_PAGE_SIZE,
+      entryOffset: (entryPage - 1) * ENTRY_PAGE_SIZE,
+      recommendationLimit: RECOMMENDATION_PAGE_SIZE,
+      recommendationOffset: (recommendationPage - 1) * RECOMMENDATION_PAGE_SIZE,
+      signal: controller.signal,
+    })
       .then((data) => {
-        const loaded = data.entries || []
-        setEntries(loaded.slice(0, ENTRY_PAGE_SIZE))
-        setEntriesHasNext(loaded.length > ENTRY_PAGE_SIZE)
+        setSummary(data.summary || null)
+        setEntries(data.entries || [])
+        setEntriesHasNext(Boolean(data.entries_has_next))
+        setRecommendations(data.recommendations?.recommendations || [])
+        setRecommendationTotal(data.recommendations?.total || 0)
       })
       .catch((error) => {
         if (error.name === 'AbortError') return
         if (error.status === 401) clearSession()
         setEntriesError(error)
-      })
-      .finally(() => { if (!controller.signal.aborted) setLoadingEntries(false) })
-    return () => controller.abort()
-  }, [entryPage])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    getDashboardSummary({ signal: controller.signal }).then(setSummary).catch((error) => {
-      if (error.name === 'AbortError') return
-      if (error.status === 401) clearSession()
-      setSummaryError(error)
-    })
-    return () => controller.abort()
-  }, [])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    listWorkRecommendations({ limit: RECOMMENDATION_PAGE_SIZE, offset: (recommendationPage - 1) * RECOMMENDATION_PAGE_SIZE, signal: controller.signal })
-      .then((data) => {
-        setRecommendations(data.recommendations || [])
-        setRecommendationTotal(data.total || 0)
-      })
-      .catch((error) => {
-        if (error.name === 'AbortError') return
-        if (error.status === 401) clearSession()
+        setSummaryError(error)
         setRecommendationError(error)
       })
-      .finally(() => { if (!controller.signal.aborted) setLoadingRecommendations(false) })
+      .finally(() => {
+        if (controller.signal.aborted) return
+        setLoadingEntries(false)
+        setLoadingRecommendations(false)
+      })
     return () => controller.abort()
-  }, [recommendationPage])
+  }, [entryPage, recommendationPage])
 
   const recommendationPages = Math.max(1, Math.ceil(recommendationTotal / RECOMMENDATION_PAGE_SIZE))
   const recurringThemes = (summary?.recurring_themes || []).slice(0, 4)
@@ -108,6 +95,7 @@ export function Dashboard() {
     setRecommendationError(null)
     setRecommendationPage(nextPage)
   }
+  const initialLoading = !summary && loadingEntries && loadingRecommendations
 
   return <div className="dashboard-page admin-fixed-shell bg-background p-5 md:p-8">
     <div className="dashboard-fixed-page max-w-7xl mx-auto">
@@ -117,6 +105,7 @@ export function Dashboard() {
       <div className="catalog-header-actions"><Link to="/inicio/diario" className="catalog-primary catalog-hover-primary"><Plus size={16} />Nova reflexão</Link><Link to="/inicio/reflexoes" className="catalog-button catalog-hover-secondary"><FileText size={15} />Minhas reflexões</Link></div>
     </header>
 
+    {initialLoading ? <PageLoading variant="dashboard" label="Carregando seu painel…" /> : <>
     <section className="dashboard-metrics grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Resumo das reflexões">
       {[
         ['Reflexões neste mês', summary?.metrics?.reflections_this_month, Calendar],
@@ -150,6 +139,7 @@ export function Dashboard() {
       <section className="dashboard-secondary-card dashboard-latest-reference bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border p-6"><div className="dashboard-card-heading"><BookOpen className="w-5 h-5 text-primary" /><h2 className="text-xl">Referência recente</h2></div>{summary?.latest_reference ? <div className="dashboard-reference-content"><blockquote className="text-sm italic text-muted-foreground">“{summary.latest_reference.short_text}”</blockquote><p className="text-sm"><span className="text-muted-foreground">— {summary.latest_reference.author_name || 'Autor não informado'},</span> {summary.latest_reference.work_title}</p></div> : <p className="text-muted-foreground">Uma referência aparecerá quando uma passagem for associada à sua reflexão.</p>}</section>
     </div>
     </div>
+    </>}
     </div>
   </div>
 }

@@ -5,7 +5,41 @@ from src.modules.catalog.public import (
     IRecommendationWorkCatalog,
     RecommendationWork,
 )
-from src.modules.journal.public.dashboard import IJournalInsightsReader
+from src.modules.journal.public.dashboard import IJournalHomeReader, IJournalInsightsReader
+
+
+class GetHomeDashboard:
+    """Builds the read-only home projection in one client round trip."""
+
+    def __init__(
+        self,
+        journal: IJournalHomeReader,
+        recommendations: "RecommendWorks",
+    ) -> None:
+        self.journal = journal
+        self.recommendations = recommendations
+
+    async def execute(
+        self,
+        user_id: str,
+        *,
+        entry_limit: int = 4,
+        entry_offset: int = 0,
+        recommendation_limit: int = 2,
+        recommendation_offset: int = 0,
+    ) -> dict[str, Any]:
+        journal = await self.journal.home_snapshot(
+            user_id,
+            entry_limit=entry_limit,
+            entry_offset=entry_offset,
+        )
+        affinities = tuple(journal.get("summary", {}).get("recurring_themes", ()))
+        recommendations = await self.recommendations.execute_from_affinities(
+            affinities,
+            limit=recommendation_limit,
+            offset=recommendation_offset,
+        )
+        return {**journal, "recommendations": recommendations}
 
 
 class RecommendWorks:
@@ -33,10 +67,22 @@ class RecommendWorks:
         limit: int = 4,
         offset: int = 0,
     ) -> dict[str, Any]:
+        affinities = await self.journal.theme_affinities(user_id, limit=5)
+        return await self.execute_from_affinities(
+            affinities,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def execute_from_affinities(
+        self,
+        affinities,
+        *,
+        limit: int = 4,
+        offset: int = 0,
+    ) -> dict[str, Any]:
         if not 1 <= limit <= 12 or offset < 0:
             raise ValueError("Invalid recommendation pagination.")
-
-        affinities = await self.journal.theme_affinities(user_id, limit=5)
         if not affinities:
             return {
                 "recommendations": [],

@@ -15,7 +15,7 @@ import { CatalogCarousel } from '../components/CatalogCarousel'
 import { PageLoading } from '../components/PageLoading'
 import { WorkCover } from '../components/WorkCover'
 import { listWorkIngestions, listWorks } from '../services/catalogApi'
-import { readCatalog, replaceCatalog } from '../services/catalogState'
+import { isCatalogFresh, readCatalog, replaceCatalog } from '../services/catalogState'
 import {
   describeIngestion,
   formatCatalogDate,
@@ -150,13 +150,13 @@ export function AdminObras() {
   useEffect(() => {
     let active = true
     const requests = []
-    if (!initialCatalog.loaded.works) {
+    if (!isCatalogFresh(initialCatalog, 'works')) {
       requests.push({
         kind: 'works',
         request: listWorks().then((data) => data.works || []),
       })
     }
-    if (!initialCatalog.loaded.ingestions) {
+    if (!isCatalogFresh(initialCatalog, 'ingestions')) {
       requests.push({
         kind: 'ingestions',
         request: listWorkIngestions(50).then((data) => data.ingestions || []),

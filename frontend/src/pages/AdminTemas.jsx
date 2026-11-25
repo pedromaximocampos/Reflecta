@@ -4,7 +4,7 @@ import { PageLoading } from '../components/PageLoading'
 import { createTheme, deleteTheme, getTheme, updateTheme } from '../services/catalogApi'
 import { clearSession } from '../services/authSession'
 import { refreshThemesCache } from '../services/catalogCache'
-import { readCatalog } from '../services/catalogState'
+import { isCatalogFresh, readCatalog } from '../services/catalogState'
 
 const PAGE_SIZE = 20
 const THEME_COLOR_FALLBACK = '#8B5CF6'
@@ -39,7 +39,7 @@ export function AdminTemas() {
   }, [])
 
   useEffect(() => {
-    if (initialCatalog.loaded.themes) return undefined
+    if (isCatalogFresh(initialCatalog, 'themes')) return undefined
     let active = true
     refreshThemesCache().then((nextThemes) => {
       if (active) setThemes(nextThemes)

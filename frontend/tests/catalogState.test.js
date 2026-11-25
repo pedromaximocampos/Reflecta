@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   readCatalog,
+  isCatalogFresh,
   rememberCatalog,
   replaceCatalog,
 } from '../src/services/catalogState.js'
@@ -26,6 +27,7 @@ test('catalog cache distinguishes missing data from a loaded empty catalog', () 
     assert.deepEqual(readCatalog().loaded, { themes: true, works: true, ingestions: false })
     replaceCatalog('ingestions', [])
     assert.deepEqual(readCatalog().loaded, { themes: true, works: true, ingestions: true })
+    assert.equal(isCatalogFresh(readCatalog(), 'themes'), true)
   } finally {
     globalThis.localStorage = previousStorage
   }
@@ -47,6 +49,8 @@ test('catalog cache replaces collections and remembers individual updates', () =
     assert.deepEqual(catalog.works, [{ id: 'work-1', title: 'Atualizada' }])
     assert.deepEqual(catalog.ingestions, [{ ingestion_id: 'ingestion-1', status: 'completed' }])
     assert.equal(typeof catalog.updated_at, 'string')
+    assert.equal(catalog.loaded.themes, true)
+    assert.equal(typeof catalog.updated_at_by_kind.themes, 'string')
   } finally {
     globalThis.localStorage = previousStorage
   }

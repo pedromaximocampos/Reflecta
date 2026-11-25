@@ -2,6 +2,7 @@
 from .passage import (
     CreatePassageValidator,
     PassageResponseValidator,
+    PassageStatusCountsResponseValidator,
     PassagesResponseValidator,
     UpdatePassageValidator,
 )
@@ -9,6 +10,7 @@ from .passage import (
 __all__ = (
     "CreatePassageValidator",
     "PassageResponseValidator",
+    "PassageStatusCountsResponseValidator",
     "PassagesResponseValidator",
     "UpdatePassageValidator",
 )

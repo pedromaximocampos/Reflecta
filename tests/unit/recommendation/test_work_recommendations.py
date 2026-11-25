@@ -9,9 +9,56 @@ from src.modules.catalog.public import (
 )
 from src.modules.recommendation.application import (
     ExploreWorks,
+    GetHomeDashboard,
     GetRecommendationWork,
     RecommendWorks,
 )
+
+
+@pytest.mark.asyncio
+async def test_home_dashboard_composes_entries_metrics_and_recommendations():
+    journal = SimpleNamespace(
+        home_snapshot=AsyncMock(return_value={
+            "summary": {
+                "metrics": {"total_reflections": 4},
+                "recurring_themes": [{
+                    "theme_id": "theme-1",
+                    "label": "Controle",
+                    "reflection_count": 2,
+                }],
+            },
+            "entries": [{"id": "entry-1"}],
+            "entries_has_next": False,
+            "entry_limit": 4,
+            "entry_offset": 0,
+        })
+    )
+    recommendations = SimpleNamespace(
+        execute_from_affinities=AsyncMock(return_value={
+            "recommendations": [{"work_id": "work-1"}],
+            "total": 1,
+            "limit": 2,
+            "offset": 0,
+        })
+    )
+
+    result = await GetHomeDashboard(journal, recommendations).execute("owner")
+
+    assert result["entries"] == [{"id": "entry-1"}]
+    assert result["summary"]["metrics"]["total_reflections"] == 4
+    assert result["recommendations"]["recommendations"] == [{"work_id": "work-1"}]
+    journal.home_snapshot.assert_awaited_once_with(
+        "owner", entry_limit=4, entry_offset=0,
+    )
+    recommendations.execute_from_affinities.assert_awaited_once_with(
+        ({
+            "theme_id": "theme-1",
+            "label": "Controle",
+            "reflection_count": 2,
+        },),
+        limit=2,
+        offset=0,
+    )
 
 
 @pytest.mark.asyncio

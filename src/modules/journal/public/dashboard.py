@@ -1,4 +1,4 @@
-from typing import Protocol, TypedDict
+from typing import Any, Protocol, TypedDict
 
 
 class ThemeAffinity(TypedDict):
@@ -16,4 +16,14 @@ class IJournalInsightsReader(Protocol):
         *,
         limit: int = 5,
     ) -> tuple[ThemeAffinity, ...]: ...
+
+
+class IJournalHomeReader(IJournalInsightsReader, Protocol):
+    async def home_snapshot(
+        self,
+        user_id: str,
+        *,
+        entry_limit: int = 5,
+        entry_offset: int = 0,
+    ) -> dict[str, Any]: ...
 

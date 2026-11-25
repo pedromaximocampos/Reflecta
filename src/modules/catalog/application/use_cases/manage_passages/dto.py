@@ -56,3 +56,22 @@ class ListPassagesInputDTO:
     status: CatalogStatus | None = None
     work_id: WorkId | None = None
     ingestion_id: WorkIngestionId | None = None
+    work_title: str | None = None
+    author_name: str | None = None
+    confidence_min: float | None = None
+    confidence_max: float | None = None
+    limit: int = 30
+    offset: int = 0
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.limit <= 100 or self.offset < 0:
+            raise ValueError("Invalid passage pagination.")
+        for confidence in (self.confidence_min, self.confidence_max):
+            if confidence is not None and not 0 <= confidence <= 1:
+                raise ValueError("Invalid passage confidence range.")
+        if (
+            self.confidence_min is not None
+            and self.confidence_max is not None
+            and self.confidence_min >= self.confidence_max
+        ):
+            raise ValueError("Invalid passage confidence range.")

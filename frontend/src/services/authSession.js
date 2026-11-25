@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react'
 const EVENT = 'auth-session-changed'
 export const SESSION_EXPIRED_EVENT = 'auth-session-expired'
 const AUTH_STORAGE_KEYS = ['access_token', 'auth_user']
+const REFRESH_SESSION_HINT = 'reflecta_refresh_session'
 let expirationNotified = false
 
 function removeAuthData() {
@@ -28,11 +29,13 @@ export function saveSession(response) {
   expirationNotified = false
   sessionStorage.setItem('access_token', response.access_token)
   sessionStorage.setItem('auth_user', JSON.stringify(response.user))
+  if (typeof localStorage !== 'undefined') localStorage.setItem(REFRESH_SESSION_HINT, '1')
   window.dispatchEvent(new Event(EVENT))
 }
 
 export function clearSession() {
   removeAuthData()
+  if (typeof localStorage !== 'undefined') localStorage.removeItem?.(REFRESH_SESSION_HINT)
   window.dispatchEvent(new Event(EVENT))
 }
 
@@ -42,8 +45,13 @@ export function hasStoredSession() {
   return Boolean(token && user)
 }
 
+export function hasRefreshSessionHint() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem(REFRESH_SESSION_HINT) === '1'
+}
+
 export function expireSession(message = 'Suas credenciais expiraram. Entre novamente para continuar.') {
   removeAuthData()
+  if (typeof localStorage !== 'undefined') localStorage.removeItem?.(REFRESH_SESSION_HINT)
   window.dispatchEvent(new Event(EVENT))
   if (expirationNotified) return
   expirationNotified = true

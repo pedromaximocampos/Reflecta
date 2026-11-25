@@ -17,6 +17,11 @@ class Neo4jConnectionHandler:
         self._driver = AsyncGraphDatabase.driver(
             self._db_settings.uri,
             auth=(self._db_settings.user, self._db_settings.password),
+            max_connection_pool_size=self._db_settings.max_connection_pool_size,
+            connection_acquisition_timeout=self._db_settings.connection_acquisition_timeout_seconds,
+            connection_timeout=self._db_settings.connection_timeout_seconds,
+            max_connection_lifetime=self._db_settings.max_connection_lifetime_seconds,
+            keep_alive=True,
             **driver_options,
         )
 

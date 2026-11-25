@@ -1,6 +1,10 @@
 from typing import Protocol
 
-from src.modules.catalog.application.dto import PassageOutputDTO, PassagesOutputDTO
+from src.modules.catalog.application.dto import (
+    PassageOutputDTO,
+    PassagesOutputDTO,
+    PassageStatusCountsOutputDTO,
+)
 from src.modules.catalog.public.passage_id import PassageId
 
 from .dto import (
@@ -20,6 +24,10 @@ class IGetPassageUseCase(Protocol):
 
 class IListPassagesUseCase(Protocol):
     async def execute(self, filters: ListPassagesInputDTO) -> PassagesOutputDTO: ...
+
+
+class IGetPassageSummaryUseCase(Protocol):
+    async def execute(self) -> PassageStatusCountsOutputDTO: ...
 
 
 class IUpdatePassageUseCase(Protocol):

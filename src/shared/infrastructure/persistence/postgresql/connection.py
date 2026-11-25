@@ -21,6 +21,15 @@ class DBConnectionHandler:
         self._engine: AsyncEngine = create_async_engine(
             self._db_settings.connection_string,
             echo=self._db_settings.echo,
+            pool_size=self._db_settings.pool_size,
+            max_overflow=self._db_settings.max_overflow,
+            pool_timeout=self._db_settings.pool_timeout_seconds,
+            pool_recycle=self._db_settings.pool_recycle_seconds,
+            pool_pre_ping=True,
+            connect_args={
+                "command_timeout": self._db_settings.command_timeout_seconds,
+                "server_settings": {"application_name": self._db_settings.app_name},
+            },
         )
 
         self._session_factory = async_sessionmaker(

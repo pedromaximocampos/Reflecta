@@ -7,7 +7,12 @@ from src.modules.catalog.application.dto.theme import (
 from .stored_work_document import StoredWorkDocumentDTO
 from .processed_work_cover import ProcessedWorkCoverDTO
 from .stored_work_cover import StoredWorkCoverDTO
-from .passage import PassageOutputDTO, PassagesOutputDTO, PassageThemeOutputDTO
+from .passage import (
+    PassageOutputDTO,
+    PassagesOutputDTO,
+    PassageStatusCountsOutputDTO,
+    PassageThemeOutputDTO,
+)
 from .work import (
     AuthorOutputDTO,
     WorkOutputDTO,
@@ -18,6 +23,7 @@ from .work import (
 __all__ = (
     "PassageOutputDTO",
     "PassagesOutputDTO",
+    "PassageStatusCountsOutputDTO",
     "PassageThemeOutputDTO",
     "StoredWorkDocumentDTO",
     "ProcessedWorkCoverDTO",

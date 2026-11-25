@@ -23,6 +23,7 @@ from src.modules.catalog.bootstrap.controllers import (
     get_delete_passage_controller,
     get_list_passages_controller,
     get_passage_controller,
+    get_passage_summary_controller,
     get_reject_passage_controller,
     get_update_passage_controller,
 )
@@ -31,6 +32,7 @@ from src.modules.catalog.presentation.controllers.passage_controller import (
     CreatePassageController,
     DeletePassageController,
     GetPassageController,
+    GetPassageSummaryController,
     ListPassagesController,
     ReviewPassageController,
     SetPassageAvailabilityController,
@@ -89,6 +91,7 @@ from src.modules.catalog.presentation.validators.request_work_ingestion import (
 from src.modules.catalog.presentation.validators.passage import (
     CreatePassageValidator,
     PassageResponseValidator,
+    PassageStatusCountsResponseValidator,
     PassagesResponseValidator,
     UpdatePassageValidator,
 )
@@ -127,8 +130,33 @@ async def list_passages(
     status: CatalogStatus | None = Query(default=None),
     work_id: str | None = Query(default=None, min_length=26, max_length=26),
     ingestion_id: str | None = Query(default=None, min_length=26, max_length=26),
+    work_title: str | None = Query(default=None, min_length=1, max_length=200),
+    author_name: str | None = Query(default=None, min_length=1, max_length=200),
+    confidence_min: float | None = Query(default=None, ge=0, le=1),
+    confidence_max: float | None = Query(default=None, ge=0, le=1),
+    limit: int = Query(default=30, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
     controller: ListPassagesController = Depends(get_list_passages_controller),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.get(
+    "/passages/summary",
+    summary="Summarize catalog passages by status",
+    response_model=PassageStatusCountsResponseValidator,
+)
+async def get_passage_summary(
+    request: Request,
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: GetPassageSummaryController = Depends(
+        get_passage_summary_controller
+    ),
 ) -> Response:
     return await adapter_fastapi_request(
         request,

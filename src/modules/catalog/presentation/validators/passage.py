@@ -118,3 +118,13 @@ class PassagesResponseValidator(BaseModel):
 
     passages: list[PassageResponseValidator]
     total: int = Field(..., ge=0)
+    limit: int = Field(..., ge=1, le=100)
+    offset: int = Field(..., ge=0)
+    has_more: bool
+
+
+class PassageStatusCountsResponseValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total: int = Field(..., ge=0)
+    by_status: dict[str, int]

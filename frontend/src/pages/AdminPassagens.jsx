@@ -3,11 +3,40 @@ import { Check, ChevronLeft, ChevronRight, ListFilter, Plus, RefreshCw, Search, 
 import { useSearchParams } from 'react-router'
 import { PageLoading } from '../components/PageLoading'
 import { createPassage, deletePassage, getPassage, listPassages, listThemes, listWorks, passageAction, updatePassage } from '../services/catalogApi'
-import { readCatalog, replaceCatalog } from '../services/catalogState'
-import { filterPassages } from '../services/passageFilters'
+import { isCatalogFresh, readCatalog, replaceCatalog } from '../services/catalogState'
 
 const statuses = { PENDING_REVIEW: 'Pendente de revisão', APPROVED: 'Aprovada', REJECTED: 'Rejeitada', ACTIVE: 'Ativa', INACTIVE: 'Inativa' }
 const THEME_PAGE_SIZE = 5
+const PASSAGE_PAGE_SIZE = 20
+
+function passageFilters(params) {
+  return {
+    status: params.has('status') ? params.get('status') : 'PENDING_REVIEW',
+    work_id: params.get('work_id') || '',
+    ingestion_id: params.get('ingestion_id') || '',
+    work_title: params.get('work_title') || '',
+    author_name: params.get('author_name') || '',
+    confidence_range: params.get('confidence_range') || '',
+  }
+}
+
+function passageQuery(filters, page) {
+  const query = {
+    status: filters.status,
+    work_id: filters.work_id,
+    ingestion_id: filters.ingestion_id,
+    work_title: filters.work_title,
+    author_name: filters.author_name,
+    limit: PASSAGE_PAGE_SIZE,
+    offset: (page - 1) * PASSAGE_PAGE_SIZE,
+  }
+  if (filters.confidence_range === 'high') query.confidence_min = 0.8
+  if (filters.confidence_range === 'medium') {
+    query.confidence_min = 0.7
+    query.confidence_max = 0.8
+  }
+  return query
+}
 
 function passageActions(status) {
   if (status === 'PENDING_REVIEW') return [['approve', 'Aprovar'], ['reject', 'Rejeitar']]
@@ -51,15 +80,11 @@ function PassageCard({ passage, work, busy, editing, onEdit, onAction }) {
 export function AdminPassagens() {
   const [initialCatalog] = useState(readCatalog)
   const [params, setParams] = useSearchParams()
-  const filters = {
-    status: params.has('status') ? params.get('status') : 'PENDING_REVIEW',
-    work_id: params.get('work_id') || '',
-    ingestion_id: params.get('ingestion_id') || '',
-    work_title: params.get('work_title') || '',
-    author_name: params.get('author_name') || '',
-    confidence_range: params.get('confidence_range') || '',
-  }
+  const filters = useMemo(() => passageFilters(params), [params])
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [passages, setPassages] = useState([])
+  const [passageTotal, setPassageTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [themes, setThemes] = useState(initialCatalog.themes)
   const [works, setWorks] = useState(initialCatalog.works)
   const [loading, setLoading] = useState(true)
@@ -75,32 +100,35 @@ export function AdminPassagens() {
     setLoading(true)
     setError('')
     try {
-      const data = await listPassages()
+      const data = await listPassages(passageQuery(filters, page))
+      const total = data.total || 0
+      const lastPage = Math.max(1, Math.ceil(total / PASSAGE_PAGE_SIZE))
+      setPassageTotal(total)
+      if (page > lastPage) {
+        setPage(lastPage)
+        return
+      }
       setPassages(data.passages || [])
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [setError, setLoading, setPassages])
+  }, [filters, page])
 
   useEffect(() => {
-    let active = true
-    listPassages().then((data) => {
-      if (active) setPassages(data.passages || [])
-    }).catch((err) => {
-      if (active) setError(err.message)
-    }).finally(() => {
-      if (active) setLoading(false)
-    })
-    return () => { active = false }
-  }, [])
+    load()
+  }, [load])
+
+  useEffect(() => {
+    setDraftFilters(filters)
+  }, [filters])
 
   useEffect(() => {
     let active = true
     const requests = []
-    if (!initialCatalog.loaded.themes) requests.push({ kind: 'themes', request: listThemes().then((data) => data.themes || []) })
-    if (!initialCatalog.loaded.works) requests.push({ kind: 'works', request: listWorks().then((data) => data.works || []) })
+    if (!isCatalogFresh(initialCatalog, 'themes')) requests.push({ kind: 'themes', request: listThemes().then((data) => data.themes || []) })
+    if (!isCatalogFresh(initialCatalog, 'works')) requests.push({ kind: 'works', request: listWorks().then((data) => data.works || []) })
     if (!requests.length) return () => { active = false }
     Promise.allSettled(requests.map(({ request }) => request)).then((results) => {
       if (!active) return
@@ -125,7 +153,6 @@ export function AdminPassagens() {
   }, [poll, busy, editing, load])
 
   const worksById = useMemo(() => new Map(works.map((work) => [work.id, work])), [works])
-  const visiblePassages = filterPassages(passages, filters, works)
   const activeFilterCount = [filters.status, filters.work_id, filters.ingestion_id, filters.work_title, filters.author_name, filters.confidence_range].filter(Boolean).length
   const activeThemes = themes.filter((theme) => theme.is_active)
   const normalizedThemeSearch = themeSearch.trim().toLowerCase()
@@ -133,12 +160,32 @@ export function AdminPassagens() {
   const themeTotalPages = Math.max(1, Math.ceil(filteredThemes.length / THEME_PAGE_SIZE))
   const currentThemePage = Math.min(themePage, themeTotalPages)
   const visibleThemes = filteredThemes.slice((currentThemePage - 1) * THEME_PAGE_SIZE, currentThemePage * THEME_PAGE_SIZE)
+  const passageTotalPages = Math.max(1, Math.ceil(passageTotal / PASSAGE_PAGE_SIZE))
+  const currentPassagePage = Math.min(page, passageTotalPages)
 
-  function updateFilter(name, value) {
-    const next = new URLSearchParams(params)
-    if (value || name === 'status') next.set(name, value)
-    else next.delete(name)
+  function applyFilters() {
+    if (draftFilters.work_id && draftFilters.work_id.length !== 26) {
+      setError('O ID da obra deve conter 26 caracteres. Use o nome da obra para pesquisas parciais.')
+      return
+    }
+    if (draftFilters.ingestion_id && draftFilters.ingestion_id.length !== 26) {
+      setError('O ID da ingestão deve conter 26 caracteres.')
+      return
+    }
+    const next = new URLSearchParams()
+    Object.entries(draftFilters).forEach(([name, value]) => {
+      if (value || name === 'status') next.set(name, value)
+    })
+    setError('')
+    setPage(1)
     setParams(next, { replace: true })
+  }
+
+  function clearFilters() {
+    const cleared = { status: '', work_id: '', ingestion_id: '', work_title: '', author_name: '', confidence_range: '' }
+    setDraftFilters(cleared)
+    setPage(1)
+    setParams({ status: '' }, { replace: true })
   }
 
   async function action(passage, type) {
@@ -228,21 +275,21 @@ export function AdminPassagens() {
         <label className="passage-auto-refresh flex"><input type="checkbox" checked={poll} onChange={(event) => setPoll(event.target.checked)} /><span>Atualização automática</span></label>
         <div className="passage-filter-control">
           <button type="button" className="catalog-button passage-filter-trigger"><ListFilter size={15} aria-hidden="true" />Filtros{activeFilterCount > 0 && <span>{activeFilterCount}</span>}</button>
-          <div className="passage-filter-popover" role="group" aria-label="Filtros locais de passagens">
-            <label>Status<select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}><option value="">Todos</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-            <label>Nome da obra<input value={filters.work_title} onChange={(event) => updateFilter('work_title', event.target.value)} placeholder="Digite todo ou parte do título" /></label>
-            <label>Nome do autor<input value={filters.author_name} onChange={(event) => updateFilter('author_name', event.target.value)} placeholder="Digite todo ou parte do nome" /></label>
-            <label>ID da obra<input value={filters.work_id} onChange={(event) => updateFilter('work_id', event.target.value)} placeholder="Digite todo ou parte do ID" /></label>
-            <label>ID da ingestão<input value={filters.ingestion_id} onChange={(event) => updateFilter('ingestion_id', event.target.value)} placeholder="Digite todo ou parte do ID" /></label>
-            <label>Maior confiança entre os temas<select value={filters.confidence_range} onChange={(event) => updateFilter('confidence_range', event.target.value)}><option value="">Todas as faixas</option><option value="high">80% a 100%</option><option value="medium">70% a 79%</option></select></label>
-            <div className="passage-filter-actions"><button type="button" className="catalog-button catalog-hover-neutral passage-filter-clear" onClick={() => setParams({ status: '' }, { replace: true })}>Limpar</button></div>
-            <p>Os filtros são aplicados nesta página, sem novas consultas ao banco.</p>
+          <div className="passage-filter-popover" role="group" aria-label="Filtros de passagens">
+            <label>Status<select value={draftFilters.status} onChange={(event) => setDraftFilters({ ...draftFilters, status: event.target.value })}><option value="">Todos</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+            <label>Nome da obra<input value={draftFilters.work_title} onChange={(event) => setDraftFilters({ ...draftFilters, work_title: event.target.value })} placeholder="Digite todo ou parte do título" /></label>
+            <label>Nome do autor<input value={draftFilters.author_name} onChange={(event) => setDraftFilters({ ...draftFilters, author_name: event.target.value })} placeholder="Digite todo ou parte do nome" /></label>
+            <label>ID da obra<input value={draftFilters.work_id} onChange={(event) => setDraftFilters({ ...draftFilters, work_id: event.target.value.trim() })} placeholder="ID completo da obra" /></label>
+            <label>ID da ingestão<input value={draftFilters.ingestion_id} onChange={(event) => setDraftFilters({ ...draftFilters, ingestion_id: event.target.value.trim() })} placeholder="ID completo da ingestão" /></label>
+            <label>Maior confiança entre os temas<select value={draftFilters.confidence_range} onChange={(event) => setDraftFilters({ ...draftFilters, confidence_range: event.target.value })}><option value="">Todas as faixas</option><option value="high">80% a 100%</option><option value="medium">70% a 79%</option></select></label>
+            <div className="passage-filter-actions"><button type="button" className="catalog-button catalog-hover-neutral passage-filter-clear" onClick={clearFilters}>Limpar</button><button type="button" className="catalog-primary catalog-hover-primary" onClick={applyFilters}>Aplicar filtros</button></div>
+            <p>A consulta acontece somente ao aplicar os filtros.</p>
           </div>
         </div>
       </div>
       </header>
       {error && <p role="alert" className="text-destructive">{error}</p>}{message && <p role="status">{message}</p>}
-      <p className="passage-results-summary" role="status">{visiblePassages.length} de {passages.length} passagens exibidas. Aprovar não ativa a passagem.</p>
+      <div className="passage-results-toolbar"><p className="passage-results-summary" role="status">{passages.length} de {passageTotal} passagens exibidas. Aprovar não ativa a passagem.</p><nav className="theme-pagination" aria-label="Paginação das passagens"><button type="button" aria-label="Página anterior" disabled={loading || currentPassagePage === 1} onClick={() => setPage(currentPassagePage - 1)}><ChevronLeft size={16} /></button><span>Página {currentPassagePage} de {passageTotalPages}</span><button type="button" aria-label="Próxima página" disabled={loading || currentPassagePage === passageTotalPages} onClick={() => setPage(currentPassagePage + 1)}><ChevronRight size={16} /></button></nav></div>
     </div>
     <div className="passage-scroll-region">
       {loading && !passages.length && <PageLoading variant="passages" label="Carregando passagens para revisão…" />}
@@ -261,8 +308,8 @@ export function AdminPassagens() {
         {editing.themes.filter((item) => !themes.some((theme) => theme.id === item.theme_id && theme.is_active)).map((item) => <label key={item.theme_id} className="passage-theme-unavailable"><input type="checkbox" checked onChange={() => setEditing({ ...editing, originalThemes: editing.originalThemes || editing.themes, themes: editing.themes.filter((theme) => theme.theme_id !== item.theme_id) })} />{item.label || item.theme_id} (indisponível; remova para alterar)</label>)}
       </section>
         <div className="passage-edit-actions passage-edit-actions-bottom"><button className="catalog-primary">Salvar passagem</button><button type="button" className="catalog-button" onClick={() => setEditing(null)}>Cancelar</button></div></fieldset></form>}
-      {!loading && !visiblePassages.length && <div className="catalog-card"><h2>Nenhuma passagem para estes filtros</h2><p>Altere os filtros locais ou atualize a lista para buscar mudanças recentes.</p></div>}
-      {(!loading || passages.length > 0) && visiblePassages.map((passage) => <PassageCard key={passage.id} passage={passage} work={worksById.get(passage.work_id)} busy={busy} editing={editing} onEdit={edit} onAction={action} />)}
+      {!loading && !passages.length && <div className="catalog-card"><h2>Nenhuma passagem para estes filtros</h2><p>Altere os filtros ou atualize a lista para buscar mudanças recentes.</p></div>}
+      {(!loading || passages.length > 0) && passages.map((passage) => <PassageCard key={passage.id} passage={passage} work={worksById.get(passage.work_id)} busy={busy} editing={editing} onEdit={edit} onAction={action} />)}
     </div>
   </div>
 }

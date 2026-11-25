@@ -1,43 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, ListFilter, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { PageLoading } from '../components/PageLoading'
 import { createPassage, deletePassage, getPassage, listPassages, listThemes, listWorks, passageAction, updatePassage } from '../services/catalogApi'
 import { isCatalogFresh, readCatalog, replaceCatalog } from '../services/catalogState'
+import { buildPassageQuery, PASSAGE_PAGE_SIZE, readPassageFilters, serializePassageFilters } from '../services/passageQuery'
 
 const statuses = { PENDING_REVIEW: 'Pendente de revisão', APPROVED: 'Aprovada', REJECTED: 'Rejeitada', ACTIVE: 'Ativa', INACTIVE: 'Inativa' }
 const THEME_PAGE_SIZE = 5
-const PASSAGE_PAGE_SIZE = 20
-
-function passageFilters(params) {
-  return {
-    status: params.has('status') ? params.get('status') : 'PENDING_REVIEW',
-    work_id: params.get('work_id') || '',
-    ingestion_id: params.get('ingestion_id') || '',
-    work_title: params.get('work_title') || '',
-    author_name: params.get('author_name') || '',
-    confidence_range: params.get('confidence_range') || '',
-  }
-}
-
-function passageQuery(filters, page) {
-  const query = {
-    status: filters.status,
-    work_id: filters.work_id,
-    ingestion_id: filters.ingestion_id,
-    work_title: filters.work_title,
-    author_name: filters.author_name,
-    limit: PASSAGE_PAGE_SIZE,
-    offset: (page - 1) * PASSAGE_PAGE_SIZE,
-  }
-  if (filters.confidence_range === 'high') query.confidence_min = 0.8
-  if (filters.confidence_range === 'medium') {
-    query.confidence_min = 0.7
-    query.confidence_max = 0.8
-  }
-  return query
-}
-
 function passageActions(status) {
   if (status === 'PENDING_REVIEW') return [['approve', 'Aprovar'], ['reject', 'Rejeitar']]
   if (status === 'APPROVED') return [['activate', 'Ativar'], ['deactivate', 'Desativar']]
@@ -80,7 +50,8 @@ function PassageCard({ passage, work, busy, editing, onEdit, onAction }) {
 export function AdminPassagens() {
   const [initialCatalog] = useState(readCatalog)
   const [params, setParams] = useSearchParams()
-  const filters = useMemo(() => passageFilters(params), [params])
+  const filterKey = params.toString()
+  const filters = useMemo(() => readPassageFilters(new URLSearchParams(filterKey)), [filterKey])
   const [draftFilters, setDraftFilters] = useState(filters)
   const [passages, setPassages] = useState([])
   const [passageTotal, setPassageTotal] = useState(0)
@@ -95,12 +66,16 @@ export function AdminPassagens() {
   const [poll, setPoll] = useState(false)
   const [themeSearch, setThemeSearch] = useState('')
   const [themePage, setThemePage] = useState(1)
+  const latestPassageRequest = useRef(0)
 
   const load = useCallback(async () => {
+    const requestId = latestPassageRequest.current + 1
+    latestPassageRequest.current = requestId
     setLoading(true)
     setError('')
     try {
-      const data = await listPassages(passageQuery(filters, page))
+      const data = await listPassages(buildPassageQuery(filters, page))
+      if (requestId !== latestPassageRequest.current) return
       const total = data.total || 0
       const lastPage = Math.max(1, Math.ceil(total / PASSAGE_PAGE_SIZE))
       setPassageTotal(total)
@@ -110,9 +85,10 @@ export function AdminPassagens() {
       }
       setPassages(data.passages || [])
     } catch (err) {
+      if (requestId !== latestPassageRequest.current) return
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (requestId === latestPassageRequest.current) setLoading(false)
     }
   }, [filters, page])
 
@@ -172,13 +148,9 @@ export function AdminPassagens() {
       setError('O ID da ingestão deve conter 26 caracteres.')
       return
     }
-    const next = new URLSearchParams()
-    Object.entries(draftFilters).forEach(([name, value]) => {
-      if (value || name === 'status') next.set(name, value)
-    })
     setError('')
     setPage(1)
-    setParams(next, { replace: true })
+    setParams(serializePassageFilters(draftFilters), { replace: true })
   }
 
   function clearFilters() {

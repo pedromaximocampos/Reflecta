@@ -2,9 +2,12 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from src.modules.catalog.domain.value_objects import CatalogStatus
 from src.modules.catalog.infrastructure.persistence.neo4j.repositories.passage_repository import (
     PassageRepository,
 )
+from src.modules.catalog.public.work_id import WorkId
+from src.modules.catalog.public.work_ingestion_id import WorkIngestionId
 
 
 def _result(*records: dict) -> AsyncMock:
@@ -91,8 +94,13 @@ async def test_list_passages_applies_pagination_and_returns_filtered_total() -> 
     mapped = object()
     mapper.to_entity.return_value = mapped
     repository = PassageRepository(transaction, mapper)
+    work_id = WorkId("01ABCDEFGHIJKLMNOPQRSTUVWX")
+    ingestion_id = WorkIngestionId("01ZYXWVUTSRQPONMLKJIHGFEDC")
 
     page = await repository.list_passages(
+        status=CatalogStatus.APPROVED,
+        work_id=work_id,
+        ingestion_id=ingestion_id,
         work_title="meditações",
         author_name="marco",
         confidence_min=0.8,
@@ -105,7 +113,15 @@ async def test_list_passages_applies_pagination_and_returns_filtered_total() -> 
     assert transaction.run.await_count == 2
     assert transaction.run.await_args.kwargs["limit"] == 20
     assert transaction.run.await_args.kwargs["offset"] == 20
+    assert transaction.run.await_args.kwargs["status"] == "APPROVED"
+    assert transaction.run.await_args.kwargs["work_id"] == work_id.value
+    assert transaction.run.await_args.kwargs["ingestion_id"] == ingestion_id.value
     query = transaction.run.await_args.args[0]
+    assert "passage.status = $status" in query
+    assert "passage.work_id = $work_id" in query
+    assert "passage.ingestion_id = $ingestion_id" in query
+    assert "toLower(coalesce(work.title, '')) CONTAINS" in query
+    assert "toLower(coalesce(author.name, '')) CONTAINS" in query
     assert "SKIP $offset" in query
     assert "LIMIT $limit" in query
     assert "matched_relevance.confidence" in query

@@ -1,4 +1,5 @@
 const VARIANT_LAYOUTS = {
+  'admin-dashboard': { blocks: 4, lines: 0, metric: true },
   cards: { blocks: 4, lines: 3 },
   dashboard: { blocks: 4, lines: 4 },
   detail: { blocks: 1, lines: 7 },
@@ -10,7 +11,11 @@ const VARIANT_LAYOUTS = {
   works: { blocks: 4, lines: 4 },
 }
 
-function SkeletonBlock({ lines, index }) {
+function SkeletonBlock({ lines, index, metric = false }) {
+  if (metric) return <div className="page-skeleton-block page-skeleton-metric" aria-hidden="true">
+    <span className="page-skeleton-line page-skeleton-metric-label" />
+    <span className="page-skeleton-line page-skeleton-metric-value" />
+  </div>
   return <div className="page-skeleton-block" aria-hidden="true">
     <div className="page-skeleton-heading">
       <span className="page-skeleton-icon" />
@@ -28,10 +33,9 @@ function SkeletonBlock({ lines, index }) {
 export function PageLoading({ variant = 'cards', label = 'Carregando informações…', compact = false }) {
   const layout = VARIANT_LAYOUTS[variant] || VARIANT_LAYOUTS.cards
   return <div className={`page-loading page-loading-${variant}${compact ? ' page-loading-compact' : ''}`} role="status" aria-live="polite" aria-label={label}>
-    <div className="page-loading-progress" aria-hidden="true"><span /></div>
     <span className="sr-only">{label}</span>
     <div className="page-skeleton-grid">
-      {Array.from({ length: layout.blocks }, (_, index) => <SkeletonBlock key={index} lines={layout.lines} index={index} />)}
+      {Array.from({ length: layout.blocks }, (_, index) => <SkeletonBlock key={index} lines={layout.lines} index={index} metric={layout.metric} />)}
     </div>
   </div>
 }

@@ -115,6 +115,10 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = var.cloudfront_price_class
   comment             = "${local.name_prefix} frontend"
+  aliases = var.enable_custom_domain_routing ? [
+    local.custom_domain_name,
+    "www.${local.custom_domain_name}",
+  ] : []
 
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
@@ -180,8 +184,13 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = var.enable_custom_domain_routing ? aws_acm_certificate_validation.custom[0].certificate_arn : null
+    cloudfront_default_certificate = !var.enable_custom_domain_routing
+    minimum_protocol_version       = var.enable_custom_domain_routing ? "TLSv1.2_2021" : "TLSv1"
+    ssl_support_method             = var.enable_custom_domain_routing ? "sni-only" : null
   }
+
+  depends_on = [aws_acm_certificate_validation.custom]
 
   tags = {
     Name = "${local.name_prefix}-frontend"
@@ -193,6 +202,7 @@ resource "aws_cloudfront_distribution" "catalog_assets" {
   is_ipv6_enabled = true
   price_class     = var.cloudfront_price_class
   comment         = "${local.name_prefix} public catalog covers"
+  aliases         = var.enable_custom_domain_routing ? ["assets.${local.custom_domain_name}"] : []
 
   origin {
     domain_name              = aws_s3_bucket.catalog_assets.bucket_regional_domain_name
@@ -216,8 +226,13 @@ resource "aws_cloudfront_distribution" "catalog_assets" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = var.enable_custom_domain_routing ? aws_acm_certificate_validation.custom[0].certificate_arn : null
+    cloudfront_default_certificate = !var.enable_custom_domain_routing
+    minimum_protocol_version       = var.enable_custom_domain_routing ? "TLSv1.2_2021" : "TLSv1"
+    ssl_support_method             = var.enable_custom_domain_routing ? "sni-only" : null
   }
+
+  depends_on = [aws_acm_certificate_validation.custom]
 
   tags = {
     Name = "${local.name_prefix}-catalog-assets"

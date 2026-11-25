@@ -3,6 +3,11 @@ environment  = "demo"
 aws_region   = "us-east-1"
 aws_profile  = "reflecta-dev"
 
+# Phase 1 creates Route 53, ACM and SES validation records. Keep routing false
+# until the registrar delegates the domain to the output name servers.
+custom_domain_name          = null
+enable_custom_domain_routing = false
+
 # The Free Plan account used by Reflecta permits m7i-flex.large, which provides
 # the 8 GiB required by Neo4j plus the API and workers. t3.large is rejected by
 # this account plan even when promotional credits are available.

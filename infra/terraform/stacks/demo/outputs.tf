@@ -79,3 +79,23 @@ output "session_manager_command" {
   description = "Command used to open a shell without exposing SSH."
   value       = "aws ssm start-session --target ${aws_instance.app.id} --region ${var.aws_region}${var.aws_profile == null ? "" : " --profile ${var.aws_profile}"}"
 }
+
+output "custom_domain_name" {
+  description = "Configured public domain, or null when custom-domain support is disabled."
+  value       = local.custom_domain_name
+}
+
+output "domain_delegation_name_servers" {
+  description = "Authoritative Route 53 name servers that must be configured at the registrar."
+  value       = local.custom_domain_enabled ? aws_route53_zone.public[0].name_servers : []
+}
+
+output "custom_frontend_url" {
+  description = "Public custom URL after certificate validation and routing activation."
+  value       = var.enable_custom_domain_routing ? "https://${local.custom_domain_name}" : null
+}
+
+output "ses_sender_email" {
+  description = "Domain sender configured for the email Lambda after SES verification succeeds."
+  value       = local.custom_domain_enabled ? "nao-responda@${local.custom_domain_name}" : null
+}

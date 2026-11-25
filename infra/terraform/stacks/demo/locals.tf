@@ -31,6 +31,9 @@ locals {
     length(var.consumer_queue_arns) > 0
   )
 
+  custom_domain_enabled = var.custom_domain_name != null
+  custom_domain_name    = local.custom_domain_enabled ? trimsuffix(lower(var.custom_domain_name), ".") : null
+
   common_tags = merge(
     {
       Project     = var.project_name

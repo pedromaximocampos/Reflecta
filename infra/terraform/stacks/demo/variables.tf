@@ -171,6 +171,32 @@ variable "cloudfront_price_class" {
   }
 }
 
+variable "custom_domain_name" {
+  description = "Optional apex domain delegated to Route 53 for the public Reflecta environment."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = (
+      var.custom_domain_name == null ||
+      can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$", var.custom_domain_name))
+    )
+    error_message = "custom_domain_name must be a lowercase DNS domain without a trailing dot."
+  }
+}
+
+variable "enable_custom_domain_routing" {
+  description = "Attach the validated certificate and public DNS aliases after registrar delegation is complete."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_custom_domain_routing || var.custom_domain_name != null
+    error_message = "custom_domain_name is required when enable_custom_domain_routing is true."
+  }
+}
+
 variable "application_s3_bucket_arns" {
   description = "Existing private S3 bucket ARNs that the application may access."
   type        = list(string)

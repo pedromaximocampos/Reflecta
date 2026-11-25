@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
 import { ChevronLeft, ChevronRight, ListFilter } from 'lucide-react'
+import { PageLoading } from '../components/PageLoading'
 import { listOperationalFailures, getOperationalFailure, reprocessOperationalFailure, getAnalysisProcessingSettings } from '../services/operationalFailuresApi'
 import { clearSession } from '../services/authSession'
 
@@ -201,7 +202,7 @@ export function AdminFalhas() {
     </header>
     <div className="admin-scroll-region">
     {message && <p role="status" className="text-primary">{message}</p>}
-    {loading ? <p role="status">Carregando falhas...</p> : error ? <div role="alert"><p className="text-destructive">{error}</p><button type="button" onClick={() => reload()} className="underline">Tentar consultar novamente</button></div> : <>
+    {loading ? <PageLoading variant="table" label="Carregando falhas operacionais…" compact /> : error ? <div role="alert"><p className="text-destructive">{error}</p><button type="button" onClick={() => reload()} className="underline">Tentar consultar novamente</button></div> : <>
       <div className="theme-list-toolbar">
         <p>{data?.total || 0} registros encontrados. O estado atual pode indicar recuperação após uma falha.</p>
         <nav aria-label="Paginação de falhas" className="theme-pagination">

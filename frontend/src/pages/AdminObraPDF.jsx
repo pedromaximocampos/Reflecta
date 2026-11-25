@@ -5,6 +5,7 @@ import { getWork, uploadWork } from '../services/catalogApi'
 import { refreshWorksAndIngestionsCache } from '../services/catalogCache'
 import { readCatalog, rememberCatalog } from '../services/catalogState'
 import { CatalogWorkSteps } from '../components/CatalogWorkSteps'
+import { PageLoading } from '../components/PageLoading'
 
 export function AdminObraPDF() {
   const { workId } = useParams()
@@ -51,7 +52,7 @@ function WorkPDF({ workId }) {
     }
   }
 
-  if (workLoading && !work) return <div className="catalog-page"><p role="status">Carregando obra…</p></div>
+  if (workLoading && !work) return <div className="catalog-page"><PageLoading variant="detail" label="Preparando envio do PDF…" /></div>
   if (!work) return <div className="catalog-page catalog-work-flow">
     <header><h1>Não foi possível carregar a obra</h1><p>{workError || 'A obra informada não existe no catálogo.'}</p></header>
     <Link className="catalog-primary w-fit" to="/deshboard/obras">Voltar para obras</Link>

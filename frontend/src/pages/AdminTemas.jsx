@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Loader2, Plus, RefreshCw, Search, X } from 'lucide-react'
+import { PageLoading } from '../components/PageLoading'
 import { createTheme, deleteTheme, getTheme, updateTheme } from '../services/catalogApi'
 import { clearSession } from '../services/authSession'
 import { refreshThemesCache } from '../services/catalogCache'
@@ -124,7 +125,7 @@ export function AdminTemas() {
   const lastResult = Math.min(currentPage * PAGE_SIZE, filtered.length)
 
   return <div className="admin-fixed-shell relative min-h-screen bg-background p-5 md:p-8"><div className="admin-fixed-page max-w-6xl mx-auto" aria-busy={loading || busy}>
-    {(loading || busy) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm" role="status" aria-label="Carregando"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}
+    {busy && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm" role="status" aria-label="Salvando alterações"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}
     <header className="catalog-page-header catalog-page-intro">
       <div className="catalog-page-intro-copy"><h1 className="text-3xl">Gerenciar temas</h1><p>Organize os temas que orientam as análises e associações realizadas pela IA.</p></div>
       <div className="catalog-header-actions">
@@ -155,6 +156,7 @@ export function AdminTemas() {
       </nav>
     </div>
 
+    {loading && <PageLoading variant="themes" label="Carregando catálogo de temas…" />}
     {!loading && pageThemes.length > 0 && <section className="theme-card-grid" aria-label="Temas cadastrados">{pageThemes.map((theme) => <button type="button" className="theme-compact-card" key={theme.id} style={{ '--theme-color': theme.color || THEME_COLOR_FALLBACK }} onClick={() => view(theme)} aria-label={`Ver detalhes e editar ${theme.label}`}>
       <div className="theme-compact-copy"><div className="theme-compact-title"><span className="theme-color-dot" style={{ backgroundColor: theme.color || THEME_COLOR_FALLBACK }} aria-label={`Cor ${theme.color || THEME_COLOR_FALLBACK}`} /><h2>{theme.label}</h2></div><span className={`theme-status theme-status-${theme.is_active ? 'active' : 'inactive'}`}>{theme.is_active ? 'Ativo' : 'Inativo'}</span></div>
       <span className="theme-view-button" title="Ver detalhes"><Eye size={17} aria-hidden="true" /></span>

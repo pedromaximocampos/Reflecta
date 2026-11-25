@@ -3,6 +3,7 @@ import { BookOpen, Plus, Share2, Sparkles } from 'lucide-react'
 import { ContextAnalysisResult } from '../components/journal/ContextAnalysisResult'
 import { ProfessionalActivityModal } from '../components/journal/ProfessionalActivityModal'
 import { SharedJournalEntries } from '../components/journal/SharedJournalEntries'
+import { PageLoading } from '../components/PageLoading'
 import { resolveContextShare } from '../services/contextSharesApi'
 
 export function AnaliseCompartilhada() {
@@ -62,7 +63,7 @@ export function AnaliseCompartilhada() {
       {error ? <div role="alert" className="shared-analysis-feedback">
         <p>{error}</p>
         <button className="catalog-button catalog-hover-secondary" onClick={() => { setError(''); setAnalysis(null); setRevision(value => value + 1) }}>Consultar novamente</button>
-      </div> : !analysis ? <p className="shared-analysis-feedback" role="status">Carregando análise...</p> : <div className="shared-analysis-workspace">
+      </div> : !analysis ? <PageLoading variant="journal" label="Carregando análise compartilhada…" /> : <div className="shared-analysis-workspace">
         <section className="shared-analysis-panel" aria-labelledby="shared-context-title">
           <header className="shared-analysis-panel-heading">
             <Sparkles size={19} aria-hidden="true" />

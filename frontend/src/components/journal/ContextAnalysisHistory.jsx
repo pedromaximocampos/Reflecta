@@ -4,6 +4,7 @@ import { formatPeriodDate } from '../../services/contextPeriod'
 import { listContextAnalyses } from '../../services/contextAnalysisApi'
 import { clearSession } from '../../services/authSession'
 import { ContextAnalysisResult } from './ContextAnalysisResult'
+import { PageLoading } from '../PageLoading'
 
 const PAGE_SIZE = 5
 
@@ -56,7 +57,7 @@ export function ContextAnalysisHistory({ revision = 0 }) {
     </div>
 
     <div className="context-analysis-history-list" aria-busy={loading}>
-      {loading ? <p role="status">Carregando análises anteriores...</p> : error ? <div role="alert" className="context-analysis-history-error"><p>{error}</p><button type="button" className="catalog-button catalog-hover-secondary" onClick={retry}>Tentar novamente</button></div> : !data?.analyses.length ? <div className="context-analysis-history-empty">
+      {loading ? <PageLoading variant="list" label="Carregando análises anteriores…" compact /> : error ? <div role="alert" className="context-analysis-history-error"><p>{error}</p><button type="button" className="catalog-button catalog-hover-secondary" onClick={retry}>Tentar novamente</button></div> : !data?.analyses.length ? <div className="context-analysis-history-empty">
         <h3>{offset ? 'Não há análises nesta página' : 'Você ainda não criou uma análise do histórico'}</h3>
         <p>{offset ? 'Retorne à página anterior.' : 'Use “Nova análise” para observar um período de sete dias do seu diário.'}</p>
       </div> : <ul>{data.analyses.map((analysis) => <li key={analysis.id}>

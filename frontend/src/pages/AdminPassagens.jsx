@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, ListFilter, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { useSearchParams } from 'react-router'
+import { PageLoading } from '../components/PageLoading'
 import { createPassage, deletePassage, getPassage, listPassages, listThemes, listWorks, passageAction, updatePassage } from '../services/catalogApi'
 import { readCatalog, replaceCatalog } from '../services/catalogState'
 import { filterPassages } from '../services/passageFilters'
@@ -244,6 +245,7 @@ export function AdminPassagens() {
       <p className="passage-results-summary" role="status">{visiblePassages.length} de {passages.length} passagens exibidas. Aprovar não ativa a passagem.</p>
     </div>
     <div className="passage-scroll-region">
+      {loading && !passages.length && <PageLoading variant="passages" label="Carregando passagens para revisão…" />}
       {editing && <form onSubmit={save} className="catalog-card passage-edit-form"><fieldset disabled={busy}><div className="passage-edit-heading"><h2>{editing.id ? 'Editar passagem' : 'Nova passagem manual'}</h2><div className="passage-edit-actions"><button className="catalog-primary">Salvar passagem</button><button type="button" className="catalog-button" onClick={() => setEditing(null)}>Cancelar</button></div></div>{!editing.id && <label>Obra<select name="work_id" required><option value="">Selecione</option>{works.map((work) => <option key={work.id} value={work.id}>{work.title} — {work.author?.name}</option>)}</select></label>}
       {editing.id ? <div className="passage-protected-content"><section><h3>Passagem original</h3><blockquote>{editing.short_text}</blockquote><p>Trecho preservado exatamente como registrado a partir da obra.</p></section><label>Paráfrase<textarea name="paraphrase" defaultValue={editing.paraphrase || ''} required rows={3} /></label><section><h3>Por que foi associada</h3><p>{editing.interpretation_note}</p><small>Justificativa original produzida durante a análise da IA.</small></section>{editing.reflective_note && <section><h3>Valor reflexivo {Math.round(editing.reflective_value * 100)}%</h3><p>{editing.reflective_note}</p><small>Avaliação geral anterior à associação com um diário específico.</small></section>}</div> : ['short_text', 'paraphrase', 'interpretation_note'].map((name, index) => <label key={name}>{['Passagem original', 'Paráfrase', 'Por que foi associada'][index]}<textarea name={name} defaultValue={editing[name] || ''} required rows={3} /></label>)}
       <div className="catalog-filters">{[['locator', 'Localização', 'text'], ['priority', 'Prioridade', 'number'], ['start_page', 'Página inicial', 'number'], ['end_page', 'Página final', 'number']].map(([name, label, type]) => <label key={name}>{label}<input name={name} type={type} defaultValue={editing[name] ?? ''} required={name === 'locator' || name === 'priority'} min={name.includes('page') ? 1 : undefined} /></label>)}</div>
@@ -260,7 +262,7 @@ export function AdminPassagens() {
       </section>
         <div className="passage-edit-actions passage-edit-actions-bottom"><button className="catalog-primary">Salvar passagem</button><button type="button" className="catalog-button" onClick={() => setEditing(null)}>Cancelar</button></div></fieldset></form>}
       {!loading && !visiblePassages.length && <div className="catalog-card"><h2>Nenhuma passagem para estes filtros</h2><p>Altere os filtros locais ou atualize a lista para buscar mudanças recentes.</p></div>}
-      {visiblePassages.map((passage) => <PassageCard key={passage.id} passage={passage} work={worksById.get(passage.work_id)} busy={busy} editing={editing} onEdit={edit} onAction={action} />)}
+      {(!loading || passages.length > 0) && visiblePassages.map((passage) => <PassageCard key={passage.id} passage={passage} work={worksById.get(passage.work_id)} busy={busy} editing={editing} onEdit={edit} onAction={action} />)}
     </div>
   </div>
 }

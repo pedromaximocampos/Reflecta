@@ -2,6 +2,7 @@ import { ArrowLeft, BookOpen, Languages, Sparkles, UserRound } from 'lucide-reac
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { WorkCover } from '../components/WorkCover'
+import { PageLoading } from '../components/PageLoading'
 import { clearSession } from '../services/authSession'
 import { getRecommendedWork } from '../services/dashboardApi'
 
@@ -40,7 +41,7 @@ export function ObraRecomendada() {
     return () => controller.abort()
   }, [workId])
 
-  if (loading) return <div className="catalog-page recommended-work-detail-page"><p role="status">Carregando obra…</p></div>
+  if (loading) return <div className="catalog-page recommended-work-detail-page"><PageLoading variant="detail" label="Carregando detalhes da obra…" /></div>
 
   if (error || !work) return <div className="catalog-page recommended-work-detail-page">
     <section className="catalog-card catalog-empty-state">

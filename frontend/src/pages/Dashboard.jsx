@@ -8,6 +8,7 @@ import { listJournalEntries } from '../services/journalApi'
 import { getDashboardSummary, listWorkRecommendations } from '../services/dashboardApi'
 import { clearSession } from '../services/authSession'
 import { RecommendationWorkCard } from '../components/RecommendationWorkCard'
+import { PageLoading } from '../components/PageLoading'
 
 const ENTRY_PAGE_SIZE = 4
 const RECOMMENDATION_PAGE_SIZE = 3
@@ -128,7 +129,7 @@ export function Dashboard() {
     <div className="dashboard-primary-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
       <section className="dashboard-primary-card bg-card rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5"><div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-primary" /><h2 className="text-xl">Histórico de reflexões</h2></div><Pager label="Paginação das reflexões" page={entryPage} hasPrevious={entryPage > 1} hasNext={entriesHasNext} onPrevious={() => changeEntryPage(entryPage - 1)} onNext={() => changeEntryPage(entryPage + 1)} /></div>
-        {loadingEntries ? <p role="status">Carregando histórico...</p> : entriesError ? <p role="alert" className="text-destructive">Não foi possível carregar o histórico.</p> : !entries.length ? <p className="text-muted-foreground">Suas reflexões salvas aparecerão aqui.</p> : <div className="space-y-3">{entries.map((entry) => {
+        {loadingEntries ? <PageLoading variant="list" label="Carregando histórico de reflexões…" compact /> : entriesError ? <p role="alert" className="text-destructive">Não foi possível carregar o histórico.</p> : !entries.length ? <p className="text-muted-foreground">Suas reflexões salvas aparecerão aqui.</p> : <div className="space-y-3">{entries.map((entry) => {
           const status = getStatus(entry.status)
           const date = entry.entry_date ? entry.entry_date.split('-').reverse().join('/') : ''
           return <Link to={`/inicio/reflexoes/${entry.id}`} key={entry.id} className="block p-4 bg-muted rounded-xl hover:bg-accent transition-colors"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="mb-1 truncate">{entry.title || 'Reflexão sem título'}</h3><p className="text-sm text-muted-foreground">{date}</p></div><div className="flex items-center gap-2 text-sm shrink-0">{status.icon}<span className="hidden sm:inline">{status.label}</span></div></div></Link>
@@ -137,7 +138,7 @@ export function Dashboard() {
 
       <section className="dashboard-primary-card bg-card rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5"><div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-primary" /><div><h2 className="text-xl">Obras que têm a ver com você</h2><p className="text-xs text-muted-foreground">Baseadas nos temas presentes em suas análises.</p></div></div><Pager label="Paginação das recomendações" page={recommendationPage} hasPrevious={recommendationPage > 1} hasNext={recommendationPage < recommendationPages} onPrevious={() => changeRecommendationPage(recommendationPage - 1)} onNext={() => changeRecommendationPage(recommendationPage + 1)} /></div>
-        {loadingRecommendations ? <p role="status">Buscando obras...</p> : recommendationError ? <p role="alert" className="text-destructive">Não foi possível carregar as recomendações.</p> : !recommendations.length ? <p className="text-muted-foreground">Analise algumas reflexões para receber sugestões fundamentadas nos seus temas recorrentes.</p> : <div className="dashboard-recommendations-list space-y-3">{recommendations.map((work) => <RecommendationWorkCard key={work.work_id} work={work} compact />)}</div>}
+        {loadingRecommendations ? <PageLoading variant="cards" label="Buscando obras relacionadas aos seus temas…" compact /> : recommendationError ? <p role="alert" className="text-destructive">Não foi possível carregar as recomendações.</p> : !recommendations.length ? <p className="text-muted-foreground">Analise algumas reflexões para receber sugestões fundamentadas nos seus temas recorrentes.</p> : <div className="dashboard-recommendations-list space-y-3">{recommendations.map((work) => <RecommendationWorkCard key={work.work_id} work={work} compact />)}</div>}
       </section>
     </div>
 

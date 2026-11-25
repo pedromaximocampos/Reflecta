@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { buildContextShareLink, listOwnerContextShares, revokeContextShare, rotateContextShareToken } from '../services/contextSharesApi'
 import { clearSession } from '../services/authSession'
 import { formatPeriodDate } from '../services/contextPeriod'
+import { PageLoading } from '../components/PageLoading'
 
 const PAGE_SIZE = 6
 const STATUS_LABELS = { active: 'Ativo', expired: 'Expirado', revoked: 'Revogado' }
@@ -118,7 +119,7 @@ export function Compartilhamentos() {
 
         {error && <p role="alert" className="text-destructive">{error}</p>}
         {message && <p role="status" className="text-sm text-primary">{message}</p>}
-        {loading ? <p role="status">Carregando compartilhamentos...</p> : !data.shares.length ? <div className="bg-card border border-border rounded-2xl p-8 text-center"><Share2 className="w-8 h-8 text-primary mx-auto mb-3" /><h2 className="text-lg mb-2">Nenhum compartilhamento encontrado</h2><p className="text-muted-foreground">Gere uma análise histórica, confira o conteúdo e crie um link para a pessoa escolhida.</p></div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{data.shares.map((share) => <article className="bg-card border border-border rounded-2xl p-5 space-y-3" key={share.id}>
+        {loading ? <PageLoading variant="cards" label="Carregando compartilhamentos…" /> : !data.shares.length ? <div className="bg-card border border-border rounded-2xl p-8 text-center"><Share2 className="w-8 h-8 text-primary mx-auto mb-3" /><h2 className="text-lg mb-2">Nenhum compartilhamento encontrado</h2><p className="text-muted-foreground">Gere uma análise histórica, confira o conteúdo e crie um link para a pessoa escolhida.</p></div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{data.shares.map((share) => <article className="bg-card border border-border rounded-2xl p-5 space-y-3" key={share.id}>
           <div className="flex justify-between items-start gap-4"><div><h2 className="text-lg">Análise de {share.entry_count} reflexões</h2>{share.period && <p className="text-sm text-muted-foreground">{formatPeriodDate(share.period.start_date)} a {formatPeriodDate(share.period.end_date)}</p>}</div><span className={`sharing-status sharing-status-${share.state}`}>{STATUS_LABELS[share.state]}</span></div>
           {share.summary && <p className="text-sm text-muted-foreground line-clamp-3">{share.summary}</p>}
           <div className="text-xs text-muted-foreground"><p>Criado em {new Date(share.created_at).toLocaleString('pt-BR')}</p><p>Expira em {new Date(share.expires_at).toLocaleString('pt-BR')}</p></div>

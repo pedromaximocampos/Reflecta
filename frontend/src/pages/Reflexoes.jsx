@@ -10,6 +10,7 @@ import { EntryMeta, JournalError } from '../components/journal/JournalFeedback'
 import { HighlightedJournalText } from '../components/journal/HighlightedJournalText'
 import { JournalAnalysis } from '../components/journal/JournalAnalysis'
 import { JournalReadingPanels, JournalViewControls } from '../components/journal/JournalReadingPanels'
+import { PageLoading } from '../components/PageLoading'
 
 const WINDOW_DAYS = 15
 
@@ -143,7 +144,7 @@ export function Reflexoes() {
     </header>
 
     {message && <p role="status" className="text-primary">{message}</p>}
-    {loading ? <p role="status" className="diary-loading">Abrindo seu diário...</p> : error ? <JournalError error={error} onRetry={retry} /> : !entry ? <div className="diary-empty-state">
+    {loading ? <PageLoading variant="journal" label="Abrindo seu diário…" /> : error ? <JournalError error={error} onRetry={retry} /> : !entry ? <div className="diary-empty-state">
       <div className="diary-empty-mark" aria-hidden="true">R</div>
       <h2 className="text-xl">Seu diário ainda está vazio</h2>
       <p className="text-muted-foreground">Quando você registrar uma reflexão, ela aparecerá aqui como a primeira página.</p>

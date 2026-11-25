@@ -1,6 +1,7 @@
 import { BookOpen, ChevronLeft, ChevronRight, Compass, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { RecommendationWorkCard } from '../components/RecommendationWorkCard'
+import { PageLoading } from '../components/PageLoading'
 import { clearSession } from '../services/authSession'
 import { listExploreWorks, listWorkRecommendations } from '../services/dashboardApi'
 
@@ -21,7 +22,7 @@ function RecommendationSection({ icon: Icon, title, description, page, total, on
       <div><div className="recommendation-section-title"><Icon size={19} aria-hidden="true" /><h2>{title}</h2></div><p>{description}</p></div>
       <Pager label={`Paginação de ${title}`} page={page} total={total} onChange={onPageChange} />
     </div>
-    {loading ? <p role="status" className="recommendation-state">Carregando obras...</p> : error ? <p role="alert" className="recommendation-state text-destructive">Não foi possível carregar estas obras.</p> : children.length ? <div className="recommendation-work-grid">{children}</div> : <div className="recommendation-state"><BookOpen size={28} aria-hidden="true" /><p>{empty}</p></div>}
+    {loading ? <PageLoading variant="cards" label={`Carregando ${title.toLowerCase()}…`} /> : error ? <p role="alert" className="recommendation-state text-destructive">Não foi possível carregar estas obras.</p> : children.length ? <div className="recommendation-work-grid">{children}</div> : <div className="recommendation-state"><BookOpen size={28} aria-hidden="true" /><p>{empty}</p></div>}
   </section>
 }
 

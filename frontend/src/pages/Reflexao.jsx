@@ -11,6 +11,7 @@ import { JournalReadingPanels, JournalViewControls } from '../components/journal
 import { HighlightedJournalText } from '../components/journal/HighlightedJournalText'
 import { contextualPassages } from '../services/journalAnalysis'
 import { formatPeriodDate } from '../services/contextPeriod'
+import { PageLoading } from '../components/PageLoading'
 
 export function Reflexao({ editing = false }) {
   const { id } = useParams()
@@ -137,7 +138,7 @@ function EntryPage({ id, editing }) {
         {!editing && entry && <JournalViewControls view={readingView} onViewChange={setReadingView} />}
       </div>
     </header>
-    {loading ? <p role="status">Carregando reflexão...</p> : error ? <JournalError error={error} onRetry={retry} /> : entry && <>
+    {loading ? <PageLoading variant="journal" label="Carregando reflexão e análise…" /> : error ? <JournalError error={error} onRetry={retry} /> : entry && <>
       {editing ? <form onSubmit={save} aria-busy={saving} className="rounded-2xl bg-card border border-border p-5 md:p-8 space-y-5">
         <fieldset disabled={saving} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_220px] gap-4">

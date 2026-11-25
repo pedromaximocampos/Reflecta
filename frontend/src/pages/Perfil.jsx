@@ -10,6 +10,7 @@ import { clearSession, updateSessionProfile, useAuth } from '../services/authSes
 import { User as UserIcon, Download, Shield, History, AlertCircle, LockKeyhole, Archive, FileJson } from 'lucide-react';
 import { AccountDeletionRequest } from '../components/AccountDeletionRequest';
 import { getDashboardSummary } from '../services/dashboardApi';
+import { PageLoading } from '../components/PageLoading';
 
 export function Perfil() {
   const { user, isAuthenticated } = useAuth();
@@ -29,6 +30,7 @@ export function Perfil() {
   const [avatarError, setAvatarError] = useState('');
   const [failedAvatarUrl, setFailedAvatarUrl] = useState('');
   const [profileSummary, setProfileSummary] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(isAuthenticated);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('zip');
   const [exporting, setExporting] = useState(false);
@@ -38,6 +40,11 @@ export function Perfil() {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
     let active = true;
+    let pendingRequests = 2;
+    const finishRequest = () => {
+      pendingRequests -= 1;
+      if (active && pendingRequests === 0) setProfileLoading(false);
+    };
     getUserProfile()
       .then((profile) => {
         if (!active) return;
@@ -54,10 +61,12 @@ export function Perfil() {
           clearSession();
           navigate('/', { state: { mensagem: 'Sua sessão expirou. Entre novamente.' } });
         }
-      });
+      })
+      .finally(finishRequest);
     getDashboardSummary()
       .then((summary) => { if (active) setProfileSummary(summary); })
-      .catch((err) => { if (active && err.status === 401) clearSession(); });
+      .catch((err) => { if (active && err.status === 401) clearSession(); })
+      .finally(finishRequest);
     return () => { active = false; };
   }, [isAuthenticated, navigate]);
 
@@ -221,7 +230,8 @@ export function Perfil() {
         </header>
 
         <div className="admin-scroll-region">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {profileLoading && <PageLoading variant="detail" label="Carregando perfil e estatísticas…" />}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" hidden={profileLoading} aria-busy={profileLoading}>
           <div className="profile-personal-column lg:col-span-2 space-y-6">
             <div className="profile-personal-card bg-card rounded-2xl border border-border p-6">
               <div className="profile-card-heading">

@@ -1,42 +1,52 @@
-import { AnaliseCompartilhada } from './pages/AnaliseCompartilhada'
-import { AdminFalhas } from './pages/AdminFalhas'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { MainLayout } from './components/MainLayout'
 import { AuthenticatedLayout } from './components/AuthenticatedLayout'
-import { Cadastro } from './pages/Cadastro'
-import { Dashboard } from './pages/Dashboard'
-import { AdminDashboard } from './pages/AdminDashboard'
-import { Journaling } from './pages/Journaling'
-import { Reflexoes } from './pages/Reflexoes'
-import { Reflexao } from './pages/Reflexao'
-import { HistoricoAnalises } from './pages/HistoricoAnalises'
-import { Compartilhamentos } from './pages/Compartilhamentos'
-import { Recomendacoes } from './pages/Recomendacoes'
-import { ObraRecomendada } from './pages/ObraRecomendada'
-import { Orientacoes } from './pages/Orientacoes'
-import { EsqueciSenha } from './pages/EsqueciSenha'
-import { ResetarSenha } from './pages/ResetarSenha'
-import { Login } from './pages/Login'
-import { Perfil } from './pages/Perfil'
-import { RecuperarConta } from './pages/RecuperarConta'
-import { ConfirmarRecuperacao } from './pages/ConfirmarRecuperacao'
-import { ConfirmarExclusao } from './pages/ConfirmarExclusao'
-import { AdminTemas } from './pages/AdminTemas'
 import { AdminGuard } from './components/AdminGuard'
-import { AdminObras } from './pages/AdminObras'
-import { AdminObraCadastro } from './pages/AdminObraCadastro'
-import { AdminObraDetalhe } from './pages/AdminObraDetalhe'
-import { AdminObraPDF } from './pages/AdminObraPDF'
-import { AdminPassagens } from './pages/AdminPassagens'
-import { VerificarEmail } from './pages/VerificarEmail'
 import { SessionExpiredModal } from './components/SessionExpiredModal'
 import { SessionBootstrap } from './components/SessionBootstrap'
+import { PageLoading } from './components/PageLoading'
+
+const lazyPage = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })))
+
+const AnaliseCompartilhada = lazyPage(() => import('./pages/AnaliseCompartilhada'), 'AnaliseCompartilhada')
+const AdminDashboard = lazyPage(() => import('./pages/AdminDashboard'), 'AdminDashboard')
+const AdminFalhas = lazyPage(() => import('./pages/AdminFalhas'), 'AdminFalhas')
+const AdminObraCadastro = lazyPage(() => import('./pages/AdminObraCadastro'), 'AdminObraCadastro')
+const AdminObraDetalhe = lazyPage(() => import('./pages/AdminObraDetalhe'), 'AdminObraDetalhe')
+const AdminObraPDF = lazyPage(() => import('./pages/AdminObraPDF'), 'AdminObraPDF')
+const AdminObras = lazyPage(() => import('./pages/AdminObras'), 'AdminObras')
+const AdminPassagens = lazyPage(() => import('./pages/AdminPassagens'), 'AdminPassagens')
+const AdminTemas = lazyPage(() => import('./pages/AdminTemas'), 'AdminTemas')
+const Cadastro = lazyPage(() => import('./pages/Cadastro'), 'Cadastro')
+const Compartilhamentos = lazyPage(() => import('./pages/Compartilhamentos'), 'Compartilhamentos')
+const ConfirmarExclusao = lazyPage(() => import('./pages/ConfirmarExclusao'), 'ConfirmarExclusao')
+const ConfirmarRecuperacao = lazyPage(() => import('./pages/ConfirmarRecuperacao'), 'ConfirmarRecuperacao')
+const Dashboard = lazyPage(() => import('./pages/Dashboard'), 'Dashboard')
+const EsqueciSenha = lazyPage(() => import('./pages/EsqueciSenha'), 'EsqueciSenha')
+const HistoricoAnalises = lazyPage(() => import('./pages/HistoricoAnalises'), 'HistoricoAnalises')
+const Journaling = lazyPage(() => import('./pages/Journaling'), 'Journaling')
+const Login = lazyPage(() => import('./pages/Login'), 'Login')
+const ObraRecomendada = lazyPage(() => import('./pages/ObraRecomendada'), 'ObraRecomendada')
+const Orientacoes = lazyPage(() => import('./pages/Orientacoes'), 'Orientacoes')
+const Perfil = lazyPage(() => import('./pages/Perfil'), 'Perfil')
+const Recomendacoes = lazyPage(() => import('./pages/Recomendacoes'), 'Recomendacoes')
+const RecuperarConta = lazyPage(() => import('./pages/RecuperarConta'), 'RecuperarConta')
+const Reflexao = lazyPage(() => import('./pages/Reflexao'), 'Reflexao')
+const Reflexoes = lazyPage(() => import('./pages/Reflexoes'), 'Reflexoes')
+const ResetarSenha = lazyPage(() => import('./pages/ResetarSenha'), 'ResetarSenha')
+const VerificarEmail = lazyPage(() => import('./pages/VerificarEmail'), 'VerificarEmail')
+
+function RouteLoading() {
+  return <div className="route-loading-shell"><PageLoading variant="detail" label="Preparando a página…" /></div>
+}
 
 function App() {
   return (
     <BrowserRouter>
       <SessionExpiredModal />
       <SessionBootstrap>
+        <Suspense fallback={<RouteLoading />}>
         <Routes>
           <Route path="/compartilhamento" element={<AnaliseCompartilhada />} />
           <Route path="/" element={<Login />} />
@@ -74,6 +84,7 @@ function App() {
           </Route>
           </Route>
         </Routes>
+        </Suspense>
       </SessionBootstrap>
     </BrowserRouter>
   )

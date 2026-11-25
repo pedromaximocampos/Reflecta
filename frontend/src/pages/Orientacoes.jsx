@@ -1,6 +1,7 @@
 import { CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, ListFilter, MessageCircleQuestion } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { clearSession } from '../services/authSession'
+import { PageLoading } from '../components/PageLoading'
 import {
   completeProfessionalActivity,
   listProfessionalActivities,
@@ -138,7 +139,7 @@ export function Orientacoes() {
         </div>
 
         {error && <p role="alert" className="text-destructive">{error}</p>}
-        {loading ? <p role="status" className="professional-activities-state">Carregando orientações...</p> : !data.activities.length ? <div className="professional-activities-empty"><ClipboardList size={32} aria-hidden="true" /><h2>Nenhuma orientação encontrada</h2><p>{status === 'pending' ? 'Você não possui atividades ou reflexões guiadas pendentes.' : status === 'completed' ? 'Você ainda não concluiu nenhuma orientação.' : 'Quando uma orientação for enviada, ela aparecerá nesta página.'}</p></div> : <div className="professional-activities-grid">{data.activities.map((activity) => {
+        {loading ? <PageLoading variant="cards" label="Carregando orientações…" /> : !data.activities.length ? <div className="professional-activities-empty"><ClipboardList size={32} aria-hidden="true" /><h2>Nenhuma orientação encontrada</h2><p>{status === 'pending' ? 'Você não possui atividades ou reflexões guiadas pendentes.' : status === 'completed' ? 'Você ainda não concluiu nenhuma orientação.' : 'Quando uma orientação for enviada, ela aparecerá nesta página.'}</p></div> : <div className="professional-activities-grid">{data.activities.map((activity) => {
           const KindIcon = activity.kind === 'guided_reflection' ? MessageCircleQuestion : ClipboardList
           return <article className={`professional-activity-card is-${activity.status}`} key={activity.id}>
             <div className="professional-activity-card-heading"><span className="professional-activity-kind"><KindIcon size={16} aria-hidden="true" />{KIND_LABELS[activity.kind] || 'Orientação'}</span><span className={`professional-activity-status is-${activity.status}`}><i />{STATUS_LABELS[activity.status]}</span></div>

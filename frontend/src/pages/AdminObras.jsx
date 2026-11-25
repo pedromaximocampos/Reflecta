@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { CatalogCarousel } from '../components/CatalogCarousel'
+import { PageLoading } from '../components/PageLoading'
 import { WorkCover } from '../components/WorkCover'
 import { listWorkIngestions, listWorks } from '../services/catalogApi'
 import { readCatalog, replaceCatalog } from '../services/catalogState'
@@ -253,7 +254,7 @@ export function AdminObras() {
         </Link>)}
       </CatalogCarousel>
       {worksError && <div className="catalog-card catalog-state-card works-state-card"><p role="alert" className="text-destructive">{worksError}</p><button className="catalog-button mt-4" onClick={loadWorks}>Tentar novamente</button></div>}
-      {worksLoading && !worksError && <p role="status">Carregando obras…</p>}
+      {worksLoading && !worksError && !works.length && <PageLoading variant="works" label="Carregando obras…" />}
       {!worksLoading && !worksError && works.length === 0 && <div className="catalog-card catalog-empty-state"><BookOpen size={38} aria-hidden="true" /><h2>Nenhuma obra cadastrada</h2><p>Cadastre a primeira fonte para depois enviar o PDF e iniciar o processamento.</p><Link className="catalog-primary" to="/deshboard/obras/nova">Cadastrar primeira obra</Link></div>}
       {!worksLoading && !worksError && works.length > 0 && filteredWorks.length === 0 && <div className="catalog-card catalog-empty-state"><BookOpen size={34} aria-hidden="true" /><h2>Nenhuma obra neste status</h2><p>Altere o filtro para visualizar outras obras cadastradas.</p></div>}
     </section>
@@ -270,7 +271,7 @@ export function AdminObras() {
         {!ingestionsLoading && !ingestionsError && filteredIngestions.map((ingestion) => <IngestionCard key={ingestion.ingestion_id} ingestion={ingestion} work={worksById.get(ingestion.work_id)} />)}
       </CatalogCarousel>
       {ingestionsError && <div className="catalog-card catalog-state-card"><p role="alert" className="text-destructive">{ingestionsError}</p><button className="catalog-button mt-4" onClick={() => loadIngestions()}>Tentar novamente</button></div>}
-      {ingestionsLoading && !ingestionsError && <p role="status">Carregando ingestões…</p>}
+      {ingestionsLoading && !ingestionsError && !ingestions.length && <PageLoading variant="list" label="Carregando ingestões…" compact />}
       {!ingestionsLoading && !ingestionsError && ingestions.length === 0 && <div className="catalog-card catalog-empty-state"><FileText size={38} aria-hidden="true" /><h2>Nenhuma ingestão solicitada</h2><p>Envie o PDF de uma obra para acompanhar o processamento aqui.</p></div>}
       {!ingestionsLoading && !ingestionsError && ingestions.length > 0 && filteredIngestions.length === 0 && <div className="catalog-card catalog-empty-state"><FileText size={34} aria-hidden="true" /><h2>Nenhuma ingestão neste status</h2><p>Altere o filtro para visualizar outros processamentos.</p></div>}
     </section>

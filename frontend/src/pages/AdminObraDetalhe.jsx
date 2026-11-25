@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { ArrowLeft, CircleAlert, FileText, ImagePlus, RefreshCw, Upload } from 'lucide-react'
 import { WorkCover } from '../components/WorkCover'
+import { PageLoading } from '../components/PageLoading'
 import { getWork, listWorkIngestions, removeWorkCover, reprocessWorkIngestion, uploadWorkCover } from '../services/catalogApi'
 import { rememberCatalog } from '../services/catalogState'
 import { formatCatalogDate, formatCatalogDateTime } from '../services/workCatalog'
@@ -149,7 +150,7 @@ export function AdminObraDetalhe() {
     }
   }
 
-  if (loading) return <div className="catalog-page"><p role="status">Carregando obra…</p></div>
+  if (loading) return <div className="catalog-page"><PageLoading variant="detail" label="Carregando obra e ingestões…" /></div>
   if (error || !work) return <div className="catalog-page"><div className="catalog-card"><h1>Não foi possível carregar a obra</h1><p role="alert" className="text-destructive">{error || 'Obra não encontrada.'}</p><Link className="catalog-button inline-flex items-center gap-2 mt-4" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link></div></div>
 
   const counts = work.passage_counts || { total: 0, active: 0, inactive: 0 }

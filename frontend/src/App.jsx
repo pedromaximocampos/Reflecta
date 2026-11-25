@@ -30,6 +30,7 @@ const Home = lazyPage(() => import('./pages/Home'), 'Home')
 const UsoResponsavel = lazyPage(() => import('./pages/UsoResponsavel'), 'UsoResponsavel')
 const Journaling = lazyPage(() => import('./pages/Journaling'), 'Journaling')
 const Login = lazyPage(() => import('./pages/Login'), 'Login')
+const NotFound = lazyPage(() => import('./pages/NotFound'), 'NotFound')
 const ObraRecomendada = lazyPage(() => import('./pages/ObraRecomendada'), 'ObraRecomendada')
 const Orientacoes = lazyPage(() => import('./pages/Orientacoes'), 'Orientacoes')
 const Perfil = lazyPage(() => import('./pages/Perfil'), 'Perfil')
@@ -146,6 +147,7 @@ function App() {
             <Route path="administradores" element={<AdminAdministradores />} />
           </Route>
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
       </SessionBootstrap>

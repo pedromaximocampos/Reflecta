@@ -54,7 +54,7 @@ export function MainLayout({ admin = false }) {
     try {
       await logout()
     } finally {
-      navigate('/login', { replace: true })
+      navigate('/', { replace: true })
     }
   }
 

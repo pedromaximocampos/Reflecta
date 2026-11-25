@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import Any, BinaryIO
+from urllib.parse import quote
 
 from botocore.exceptions import BotoCoreError, ClientError
 from mypy_boto3_s3 import S3Client
@@ -22,12 +23,16 @@ class S3WorkCoverStorage(IWorkCoverStorage):
         client: S3Client,
         settings: S3Settings,
         read_url_ttl_seconds: int,
+        public_base_url: str | None = None,
     ) -> None:
         if read_url_ttl_seconds <= 0:
             raise ValueError("Work cover read URL TTL must be greater than zero.")
         self.__client = client
         self.__settings = settings
         self.__read_url_ttl_seconds = read_url_ttl_seconds
+        self.__public_base_url = (
+            public_base_url.rstrip("/") if public_base_url else None
+        )
 
     async def upload(
         self,
@@ -74,6 +79,8 @@ class S3WorkCoverStorage(IWorkCoverStorage):
 
     async def create_read_url(self, *, object_key: str) -> str:
         self.__validate_object_key(object_key)
+        if self.__public_base_url is not None:
+            return f"{self.__public_base_url}/{quote(object_key, safe='/')}"
         try:
             return await asyncio.to_thread(
                 self.__client.generate_presigned_url,
@@ -103,7 +110,11 @@ class S3WorkCoverStorage(IWorkCoverStorage):
             Body=content,
             ContentType=content_type,
             ContentLength=size_bytes,
-            CacheControl="private, max-age=900",
+            CacheControl=(
+                "public, max-age=31536000, immutable"
+                if self.__public_base_url is not None
+                else "private, max-age=900"
+            ),
             ServerSideEncryption="AES256",
         )
 

@@ -1,0 +1,137 @@
+name: reflecta
+
+x-app: &app
+  image: ${APP_IMAGE:?APP_IMAGE must contain the immutable ECR image reference}
+  env_file:
+    - .env.prod
+  restart: unless-stopped
+  networks:
+    - reflecta
+  logging:
+    driver: awslogs
+    options:
+      awslogs-region: ${AWS_REGION:-us-east-1}
+      awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+      awslogs-create-group: "false"
+
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
+    volumes:
+      - /srv/reflecta/neo4j/data:/data
+      - /srv/reflecta/neo4j/logs:/logs
+      - /srv/reflecta/neo4j/import:/import
+      - /srv/reflecta/neo4j/plugins:/plugins
+    restart: unless-stopped
+    networks:
+      - reflecta
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '$$NEO4J_PASSWORD' 'RETURN 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: neo4j
+        awslogs-create-group: "false"
+
+  migrate_postgres:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    profiles: ["migrations"]
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: migrate-postgres
+        awslogs-create-group: "false"
+
+  migrate_neo4j:
+    <<: *app
+    command: ["python", "-m", "src.shared.infrastructure.persistence.neo4j.migrations.run"]
+    restart: "no"
+    profiles: ["migrations"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: migrate-neo4j
+        awslogs-create-group: "false"
+
+  api:
+    <<: *app
+    command: ["uvicorn", "src.main.server.fast_api.run:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: api
+        awslogs-create-group: "false"
+
+  worker_work_ingestion:
+    <<: *app
+    command: ["python", "-m", "src.modules.ai_processing.bootstrap.workers.sqs.work_ingestion"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: worker-work-ingestion
+        awslogs-create-group: "false"
+
+  worker_journal_analysis:
+    <<: *app
+    command: ["python", "-m", "src.modules.ai_processing.worker"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: worker-journal-analysis
+        awslogs-create-group: "false"
+
+  worker_outbox_dispatcher:
+    <<: *app
+    command: ["python", "-m", "src.modules.internal_events.bootstrap.workers.publishers.sns.sns_outbox_dispatcher"]
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${AWS_LOG_GROUP:-/reflecta/demo/application}
+        awslogs-stream: worker-outbox-dispatcher
+        awslogs-create-group: "false"
+
+networks:
+  reflecta:
+    name: reflecta

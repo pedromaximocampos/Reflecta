@@ -1,0 +1,31 @@
+project_name = "reflecta"
+environment  = "demo"
+aws_region   = "us-east-1"
+aws_profile  = "reflecta-dev"
+
+# The Free Plan account used by Reflecta permits m7i-flex.large, which provides
+# the 8 GiB required by Neo4j plus the API and workers. t3.large is rejected by
+# this account plan even when promotional credits are available.
+app_instance_type              = "m7i-flex.large"
+neo4j_volume_size_gib          = 40
+postgres_instance_class        = "db.t4g.micro"
+postgres_backup_retention_days = 1
+
+# Existing application resources are referenced, not recreated by this stack.
+# Populate these values after checking the current messaging/storage Terraform outputs.
+application_s3_bucket_arns = [
+  # "arn:aws:s3:::reflecta-dev-works-ACCOUNT_ID",
+  # "arn:aws:s3:::reflecta-dev-media-ACCOUNT_ID",
+]
+
+integration_topic_arn = null
+consumer_queue_arns   = []
+
+# Strongly recommended while using promotional credits.
+enable_monthly_budget    = false
+monthly_budget_limit_usd = 100
+budget_alert_email       = null
+
+extra_tags = {
+  Purpose = "TCC demonstration"
+}

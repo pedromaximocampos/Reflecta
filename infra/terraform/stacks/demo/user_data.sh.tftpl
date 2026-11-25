@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker xfsprogs amazon-cloudwatch-agent
+systemctl enable --now docker
+systemctl enable --now amazon-ssm-agent
+
+usermod -aG docker ec2-user
+
+VOLUME_DEVICE="/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${neo4j_volume_id}"
+MOUNT_POINT="/srv/reflecta/neo4j"
+
+for attempt in $(seq 1 60); do
+  if [ -b "$VOLUME_DEVICE" ]; then
+    break
+  fi
+  sleep 5
+done
+
+if [ ! -b "$VOLUME_DEVICE" ]; then
+  echo "Neo4j EBS volume was not attached within five minutes" >&2
+  exit 1
+fi
+
+if ! blkid "$VOLUME_DEVICE" >/dev/null 2>&1; then
+  mkfs.xfs "$VOLUME_DEVICE"
+fi
+
+mkdir -p "$MOUNT_POINT"
+VOLUME_UUID=$(blkid -s UUID -o value "$VOLUME_DEVICE")
+
+if ! grep -q "UUID=$VOLUME_UUID" /etc/fstab; then
+  echo "UUID=$VOLUME_UUID $MOUNT_POINT xfs defaults,nofail 0 2" >> /etc/fstab
+fi
+
+mount -a
+mkdir -p "$MOUNT_POINT/data" "$MOUNT_POINT/logs" "$MOUNT_POINT/import" "$MOUNT_POINT/plugins"
+chown -R 7474:7474 "$MOUNT_POINT"
+
+mkdir -p /srv/reflecta/app
+chown -R ec2-user:ec2-user /srv/reflecta/app

@@ -1,0 +1,3 @@
+project_name = "reflecta"
+aws_region   = "us-east-1"
+aws_profile  = "reflecta-dev"

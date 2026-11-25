@@ -40,6 +40,10 @@ def create_fast_api_app() -> FastAPI:
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
 
+    @app.get("/health", include_in_schema=False)
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
     add_exception_handlers(app)
 
     app.include_router(auth_router)

@@ -1,19 +1,26 @@
 FROM python:3.14-slim
 
-# Criando o diretorio de trabalho no caso app (convensao)
 WORKDIR /app
 
-# 1) instala uv buscando diretamente do astral (como recomendar
 COPY --from=ghcr.io/astral-sh/uv:0.9.13 /uv /uvx /bin/
 
-# 2) copia arquivos de dependência primeiro (cache de build fica ótimo)
 COPY pyproject.toml uv.lock ./
-
-# 3) Equivalente ao pip install -r requirements.txt
 RUN uv sync --locked
 
-
-# 4) agora copia o código de interesse no caso o src/ src/
+COPY alembic.ini ./
+COPY alembic/ alembic/
 COPY src/ src/
+
+RUN groupadd --system reflecta \
+    && useradd --system --gid reflecta --home-dir /app reflecta \
+    && chown -R reflecta:reflecta /app
+
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+USER reflecta
+
+CMD ["uvicorn", "src.main.server.fast_api.run:app", "--host", "0.0.0.0", "--port", "8000"]
 
 

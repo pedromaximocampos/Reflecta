@@ -223,6 +223,7 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 *.local.tf
+backend.hcl
 .terraformrc
 terraform.rc
 

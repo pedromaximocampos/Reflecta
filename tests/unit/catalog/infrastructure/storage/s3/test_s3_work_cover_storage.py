@@ -69,3 +69,31 @@ async def test_cover_storage_deletes_only_expected_cover_keys() -> None:
     assert client.deleted == {"Bucket": "reflecta-works", "Key": key}
     with pytest.raises(ValueError):
         await storage.delete(object_key="works/work-id/source/document.pdf")
+
+
+@pytest.mark.asyncio
+async def test_cover_storage_uses_cloudfront_url_and_immutable_cache() -> None:
+    client = FakeS3Client()
+    storage = S3WorkCoverStorage(
+        client,  # type: ignore[arg-type]
+        S3Settings(
+            aws_region="us-east-1",
+            bucket_name="reflecta-catalog-assets",
+        ),
+        read_url_ttl_seconds=900,
+        public_base_url="https://assets.example.test/",
+    )
+    key = "works/work-id/cover/cover-id.webp"
+
+    await storage.upload(
+        object_key=key,
+        content=BytesIO(b"webp"),
+        content_type="image/webp",
+        size_bytes=4,
+    )
+    url = await storage.create_read_url(object_key=key)
+
+    assert client.put is not None
+    assert client.put["Bucket"] == "reflecta-catalog-assets"
+    assert client.put["CacheControl"] == "public, max-age=31536000, immutable"
+    assert url == "https://assets.example.test/works/work-id/cover/cover-id.webp"

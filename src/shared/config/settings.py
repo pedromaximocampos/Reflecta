@@ -1,11 +1,12 @@
 # src/core/settings.py
 import logging
+import os
 from functools import lru_cache
 from logging.config import dictConfig
+from typing import Final, Optional
 
 from pydantic_settings import BaseSettings
-from typing import Final, Optional
-import os
+from sqlalchemy import URL
 
 class Settings(BaseSettings):
     # Ambiente
@@ -47,6 +48,8 @@ class Settings(BaseSettings):
     AWS_S3_REGION: str = "us-east-1"
     AWS_S3_WORKS_BUCKET: str = ""
     AWS_S3_MEDIA_BUCKET: str = ""
+    AWS_S3_CATALOG_ASSETS_BUCKET: str = ""
+    AWS_CLOUDFRONT_CATALOG_ASSETS_BASE_URL: str = ""
     AWS_S3_WORK_COVER_READ_URL_TTL_SECONDS: int = 900
     AWS_S3_USER_AVATAR_READ_URL_TTL_SECONDS: int = 900
 
@@ -132,10 +135,15 @@ class Settings(BaseSettings):
     # Helper para URL do banco
     @property
     def database_url(self) -> str:
-        return (
-            f"postgresql+asyncpg://"
-            f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
-            f"@{self.POSTGRES_PORT}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return URL.create(
+            "postgresql+asyncpg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DB,
+        ).render_as_string(
+            hide_password=False,
         )
 
     @property

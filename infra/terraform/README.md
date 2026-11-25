@@ -26,7 +26,7 @@ Each SNS subscription filters the `event_type` message attribute. The producer p
 - subscription filtering through `MessageAttributes`;
 - server-side encryption managed by SQS.
 
-Lambda, SES, S3, databases, networking, and application deployment are intentionally outside this first slice.
+Lambda, SES, S3, databases, networking, and application deployment are intentionally outside this first slice. The independent deployment root at [`stacks/demo`](stacks/demo/README.md) prepares the public TCC environment without mixing its state with the already-existing messaging resources.
 
 ## Safety before the first command
 

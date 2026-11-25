@@ -30,9 +30,13 @@ def get_work_document_storage() -> IWorkDocumentStorage:
 
 def get_work_cover_storage() -> IWorkCoverStorage:
     application_settings = get_settings()
+    bucket_name = (
+        application_settings.AWS_S3_CATALOG_ASSETS_BUCKET
+        or application_settings.AWS_S3_WORKS_BUCKET
+    )
     s3_settings = S3Settings(
         aws_region=application_settings.AWS_S3_REGION,
-        bucket_name=application_settings.AWS_S3_WORKS_BUCKET,
+        bucket_name=bucket_name,
         aws_profile=application_settings.AWS_PROFILE,
     )
     return S3WorkCoverStorage(
@@ -40,5 +44,9 @@ def get_work_cover_storage() -> IWorkCoverStorage:
         settings=s3_settings,
         read_url_ttl_seconds=(
             application_settings.AWS_S3_WORK_COVER_READ_URL_TTL_SECONDS
+        ),
+        public_base_url=(
+            application_settings.AWS_CLOUDFRONT_CATALOG_ASSETS_BASE_URL
+            or None
         ),
     )

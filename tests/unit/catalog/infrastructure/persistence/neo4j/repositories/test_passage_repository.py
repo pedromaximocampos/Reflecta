@@ -116,12 +116,16 @@ async def test_list_passages_applies_pagination_and_returns_filtered_total() -> 
     assert transaction.run.await_args.kwargs["status"] == "APPROVED"
     assert transaction.run.await_args.kwargs["work_id"] == work_id.value
     assert transaction.run.await_args.kwargs["ingestion_id"] == ingestion_id.value
+    assert transaction.run.await_args.kwargs["work_title"] == "meditacoes"
+    assert transaction.run.await_args.kwargs["author_name"] == "marco"
     query = transaction.run.await_args.args[0]
+    assert query.index("WITH passage, work, author") < query.index(
+        "WHERE passage.status = $status"
+    )
     assert "passage.status = $status" in query
     assert "passage.work_id = $work_id" in query
     assert "passage.ingestion_id = $ingestion_id" in query
-    assert "toLower(coalesce(work.title, '')) CONTAINS" in query
-    assert "toLower(coalesce(author.name, '')) CONTAINS" in query
+    assert "pair IN $accent_fold_pairs" in query
     assert "SKIP $offset" in query
     assert "LIMIT $limit" in query
     assert "matched_relevance.confidence" in query

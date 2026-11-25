@@ -1,3 +1,4 @@
+import unicodedata
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -14,6 +15,26 @@ from src.modules.catalog.public.passage_id import PassageId
 from src.modules.catalog.public.work_id import WorkId
 from src.modules.catalog.public.work_ingestion_id import WorkIngestionId
 from src.shared.infrastructure.persistence.mappers.interface import IMapper
+
+
+_ACCENT_FOLD_PAIRS = (
+    ("á", "a"), ("à", "a"), ("â", "a"), ("ã", "a"), ("ä", "a"),
+    ("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"),
+    ("í", "i"), ("ì", "i"), ("î", "i"), ("ï", "i"),
+    ("ó", "o"), ("ò", "o"), ("ô", "o"), ("õ", "o"), ("ö", "o"),
+    ("ú", "u"), ("ù", "u"), ("û", "u"), ("ü", "u"),
+    ("ç", "c"),
+)
+
+
+def _fold_search(value: str | None) -> str | None:
+    if not value:
+        return None
+    decomposed = unicodedata.normalize("NFKD", value)
+    return "".join(
+        character for character in decomposed
+        if not unicodedata.combining(character)
+    ).casefold()
 
 
 class PassageRepository(IPassageRepository):
@@ -63,8 +84,9 @@ class PassageRepository(IPassageRepository):
             "ingestion_id": (
                 ingestion_id.value if ingestion_id is not None else None
             ),
-            "work_title": work_title,
-            "author_name": author_name,
+            "work_title": _fold_search(work_title),
+            "author_name": _fold_search(author_name),
+            "accent_fold_pairs": [list(pair) for pair in _ACCENT_FOLD_PAIRS],
             "confidence_min": confidence_min,
             "confidence_max": confidence_max,
             "limit": limit,
@@ -79,11 +101,15 @@ class PassageRepository(IPassageRepository):
             conditions.append("passage.ingestion_id = $ingestion_id")
         if work_title:
             conditions.append(
-                "toLower(coalesce(work.title, '')) CONTAINS toLower($work_title)"
+                "reduce(value = toLower(coalesce(work.title, '')), "
+                "pair IN $accent_fold_pairs | replace(value, pair[0], pair[1])) "
+                "CONTAINS $work_title"
             )
         if author_name:
             conditions.append(
-                "toLower(coalesce(author.name, '')) CONTAINS toLower($author_name)"
+                "reduce(value = toLower(coalesce(author.name, '')), "
+                "pair IN $accent_fold_pairs | replace(value, pair[0], pair[1])) "
+                "CONTAINS $author_name"
             )
         confidence_conditions: list[str] = []
         if confidence_min is not None:
@@ -104,6 +130,7 @@ class PassageRepository(IPassageRepository):
             MATCH (passage:Passage)
             OPTIONAL MATCH (passage)-[:BELONGS_TO]->(work:Work)
             OPTIONAL MATCH (work)-[:WRITTEN_BY]->(author:Author)
+            WITH passage, work, author
         """ + where_clause
         count_result = await self._transaction.run(
             match_and_filters + " RETURN count(DISTINCT passage) AS total",

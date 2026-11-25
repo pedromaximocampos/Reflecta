@@ -25,7 +25,7 @@ export function SessionExpiredModal() {
   const returnToLogin = () => {
     const notification = message
     setMessage('')
-    navigate('/', {
+    navigate('/login', {
       replace: true,
       state: { mensagem: notification },
     })

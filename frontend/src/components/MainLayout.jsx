@@ -9,15 +9,15 @@ export function MainLayout({ admin = false }) {
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
   const [pendingActivities, setPendingActivities] = useState(0)
-  const homePath = admin ? '/deshboard' : '/inicio'
+  const homePath = admin ? '/dashboard' : '/inicio'
   const menuItems = [
     { path: homePath, icon: Home, label: admin ? 'Painel administrativo' : 'Dashboard' },
     ...(admin ? [
-      { path: '/deshboard/falhas', icon: AlertTriangle, label: 'Falhas operacionais' },
-      { path: '/deshboard/temas', icon: List, label: 'Temas' },
-      { path: '/deshboard/obras', icon: BookOpen, label: 'Obras e PDFs' },
-      { path: '/deshboard/passagens', icon: BookMarked, label: 'Passagens' },
-      { path: '/deshboard/administradores', icon: ShieldCheck, label: 'Administradores' },
+      { path: '/dashboard/falhas', icon: AlertTriangle, label: 'Falhas operacionais' },
+      { path: '/dashboard/temas', icon: List, label: 'Temas' },
+      { path: '/dashboard/obras', icon: BookOpen, label: 'Obras e PDFs' },
+      { path: '/dashboard/passagens', icon: BookMarked, label: 'Passagens' },
+      { path: '/dashboard/administradores', icon: ShieldCheck, label: 'Administradores' },
     ] : []),
     ...(!admin ? [
       { path: '/inicio/diario', icon: BookMarked, label: 'Nova reflexão' },
@@ -54,7 +54,7 @@ export function MainLayout({ admin = false }) {
     try {
       await logout()
     } finally {
-      navigate('/', { replace: true })
+      navigate('/login', { replace: true })
     }
   }
 

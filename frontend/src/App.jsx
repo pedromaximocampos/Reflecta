@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { lazy, Suspense, useEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router'
 import { MainLayout } from './components/MainLayout'
 import { AuthenticatedLayout } from './components/AuthenticatedLayout'
 import { AdminGuard } from './components/AdminGuard'
@@ -26,6 +26,8 @@ const ConfirmarRecuperacao = lazyPage(() => import('./pages/ConfirmarRecuperacao
 const Dashboard = lazyPage(() => import('./pages/Dashboard'), 'Dashboard')
 const EsqueciSenha = lazyPage(() => import('./pages/EsqueciSenha'), 'EsqueciSenha')
 const HistoricoAnalises = lazyPage(() => import('./pages/HistoricoAnalises'), 'HistoricoAnalises')
+const Home = lazyPage(() => import('./pages/Home'), 'Home')
+const UsoResponsavel = lazyPage(() => import('./pages/UsoResponsavel'), 'UsoResponsavel')
 const Journaling = lazyPage(() => import('./pages/Journaling'), 'Journaling')
 const Login = lazyPage(() => import('./pages/Login'), 'Login')
 const ObraRecomendada = lazyPage(() => import('./pages/ObraRecomendada'), 'ObraRecomendada')
@@ -43,15 +45,71 @@ function RouteLoading() {
   return <div className="route-loading-shell"><PageLoading variant="detail" label="Preparando a página…" /></div>
 }
 
+const pageTitles = [
+  ['/dashboard/administradores', 'Administradores'],
+  ['/dashboard/passagens', 'Passagens'],
+  ['/dashboard/obras', 'Obras e PDFs'],
+  ['/dashboard/temas', 'Temas'],
+  ['/dashboard/falhas', 'Falhas operacionais'],
+  ['/dashboard', 'Painel administrativo'],
+  ['/inicio/compartilhamentos', 'Compartilhamentos'],
+  ['/inicio/recomendacoes', 'Recomendações'],
+  ['/inicio/orientacoes', 'Orientações'],
+  ['/inicio/reflexoes', 'Minhas reflexões'],
+  ['/inicio/analises', 'Análise do histórico'],
+  ['/inicio/diario', 'Nova reflexão'],
+  ['/inicio', 'Início'],
+  ['/auth/perfil', 'Perfil'],
+  ['/auth/admin-invitation', 'Convite administrativo'],
+  ['/auth/request-recovery', 'Recuperar conta'],
+  ['/auth/reset-password', 'Redefinir senha'],
+  ['/compartilhamento', 'Análise compartilhada'],
+  ['/esqueci-senha', 'Recuperar senha'],
+  ['/cadastro', 'Criar conta'],
+  ['/login', 'Entrar'],
+  ['/uso-responsavel', 'Uso responsável'],
+]
+
+function PageTitleManager() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const match = pageTitles.find(([path]) => location.pathname === path || location.pathname.startsWith(`${path}/`))
+    document.title = match ? `${match[1]} | Reflecta` : 'Reflecta | Diário reflexivo'
+  }, [location.pathname])
+
+  return null
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
+}
+
+function LegacyAdminRedirect() {
+  const location = useLocation()
+  const pathname = location.pathname.replace(/^\/deshboard/, '/dashboard')
+  return <Navigate to={{ pathname, search: location.search, hash: location.hash }} replace />
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <PageTitleManager />
+      <ScrollToTop />
       <SessionExpiredModal />
       <SessionBootstrap>
         <Suspense fallback={<RouteLoading />}>
         <Routes>
           <Route path="/compartilhamento" element={<AnaliseCompartilhada />} />
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/uso-responsavel" element={<UsoResponsavel />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/auth/reset-password" element={<ResetarSenha />} />
@@ -75,7 +133,8 @@ function App() {
             <Route path="delete" element={<ConfirmarExclusao />} />
             <Route path="admin-invitation" element={<AceitarConviteAdmin />} />
           </Route>
-          <Route element={<AdminGuard />}><Route path="/deshboard" element={<MainLayout admin />}>
+          <Route path="/deshboard/*" element={<LegacyAdminRedirect />} />
+          <Route element={<AdminGuard />}><Route path="/dashboard" element={<MainLayout admin />}>
             <Route index element={<AdminDashboard />} />
             <Route path="falhas" element={<AdminFalhas />} />
             <Route path="temas" element={<AdminTemas />} />

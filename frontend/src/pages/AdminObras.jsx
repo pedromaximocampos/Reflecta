@@ -52,12 +52,12 @@ function IngestionCard({ ingestion, work }) {
   const presentation = describeIngestion(ingestion)
   const StatusIcon = ingestionIcons[presentation.status] || Clock3
   const progress = ingestion.progress || {}
-  const passagesPath = `/deshboard/passagens?ingestion_id=${encodeURIComponent(ingestion.ingestion_id)}&work_id=${encodeURIComponent(ingestion.work_id)}`
+  const passagesPath = `/dashboard/passagens?ingestion_id=${encodeURIComponent(ingestion.ingestion_id)}&work_id=${encodeURIComponent(ingestion.work_id)}`
   const detailsPath = presentation.status === 'failed'
-    ? `/deshboard/obras/${encodeURIComponent(ingestion.work_id)}`
+    ? `/dashboard/obras/${encodeURIComponent(ingestion.work_id)}`
     : progress.total > 0
     ? passagesPath
-    : `/deshboard/obras/${encodeURIComponent(ingestion.work_id)}`
+    : `/dashboard/obras/${encodeURIComponent(ingestion.work_id)}`
   const detailsLabel = presentation.status === 'failed'
     ? 'Ver falha'
     : progress.total > 0 ? 'Ver passagens' : 'Ver obra'
@@ -217,7 +217,7 @@ export function AdminObras() {
     <header className="catalog-page-header catalog-page-intro">
       <div className="catalog-page-intro-copy"><h1>Obras e fontes de reflexão</h1><p>Gerencie as fontes utilizadas para identificar e revisar passagens reflexivas.</p></div>
       <div className="catalog-header-actions">
-        <Link className="catalog-primary catalog-hover-primary" to="/deshboard/obras/nova"><Plus size={16} aria-hidden="true" />Nova obra</Link>
+        <Link className="catalog-primary catalog-hover-primary" to="/dashboard/obras/nova"><Plus size={16} aria-hidden="true" />Nova obra</Link>
         <button className="catalog-button catalog-hover-secondary" onClick={refreshAll} disabled={loading}><RefreshCw size={15} aria-hidden="true" />{loading ? 'Atualizando…' : 'Atualizar informações'}</button>
       </div>
     </header>
@@ -242,7 +242,7 @@ export function AdminObras() {
         className="works-carousel"
         action={<CarouselStatusFilter label="obras" value={workStatusFilter} onChange={setWorkStatusFilter} options={[["ACTIVE", "Ativas"], ["INACTIVE", "Inativas"]]} />}
       >
-        {!worksLoading && !worksError && filteredWorks.map((work) => <Link className="catalog-card work-card" key={work.id} to={`/deshboard/obras/${encodeURIComponent(work.id)}`}>
+        {!worksLoading && !worksError && filteredWorks.map((work) => <Link className="catalog-card work-card" key={work.id} to={`/dashboard/obras/${encodeURIComponent(work.id)}`}>
           <WorkCover work={work} className="work-card-cover" />
           <div className="work-card-content">
             <div className="work-card-heading"><span>{formatCatalogDate(work.created_at)}</span><span className="work-card-statuses"><span className={`catalog-badge work-status-${work.status?.toLowerCase()}`}>{workStatuses[work.status] || work.status}</span>{failedWorkIds.has(work.id) && <span className="catalog-badge work-ingestion-failure"><CircleAlert size={12} aria-hidden="true" />Falha na ingestão</span>}</span></div>
@@ -255,7 +255,7 @@ export function AdminObras() {
       </CatalogCarousel>
       {worksError && <div className="catalog-card catalog-state-card works-state-card"><p role="alert" className="text-destructive">{worksError}</p><button className="catalog-button mt-4" onClick={loadWorks}>Tentar novamente</button></div>}
       {worksLoading && !worksError && !works.length && <PageLoading variant="works" label="Carregando obras…" />}
-      {!worksLoading && !worksError && works.length === 0 && <div className="catalog-card catalog-empty-state"><BookOpen size={38} aria-hidden="true" /><h2>Nenhuma obra cadastrada</h2><p>Cadastre a primeira fonte para depois enviar o PDF e iniciar o processamento.</p><Link className="catalog-primary" to="/deshboard/obras/nova">Cadastrar primeira obra</Link></div>}
+      {!worksLoading && !worksError && works.length === 0 && <div className="catalog-card catalog-empty-state"><BookOpen size={38} aria-hidden="true" /><h2>Nenhuma obra cadastrada</h2><p>Cadastre a primeira fonte para depois enviar o PDF e iniciar o processamento.</p><Link className="catalog-primary" to="/dashboard/obras/nova">Cadastrar primeira obra</Link></div>}
       {!worksLoading && !worksError && works.length > 0 && filteredWorks.length === 0 && <div className="catalog-card catalog-empty-state"><BookOpen size={34} aria-hidden="true" /><h2>Nenhuma obra neste status</h2><p>Altere o filtro para visualizar outras obras cadastradas.</p></div>}
     </section>
 

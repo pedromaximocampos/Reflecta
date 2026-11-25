@@ -37,14 +37,14 @@ export function AdminObraCadastro() {
           rememberCatalog('works', workWithCover)
         } catch (coverUploadError) {
           await refreshWorksAndIngestionsCache()
-          navigate(`/deshboard/obras/${encodeURIComponent(work.id)}`, {
+          navigate(`/dashboard/obras/${encodeURIComponent(work.id)}`, {
             state: { coverUploadError: coverUploadError.message },
           })
           return
         }
       }
       await refreshWorksAndIngestionsCache()
-      navigate(`/deshboard/obras/${encodeURIComponent(work.id)}/pdf`)
+      navigate(`/dashboard/obras/${encodeURIComponent(work.id)}/pdf`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -83,7 +83,7 @@ export function AdminObraCadastro() {
         </div>}
         {error && <p role="alert" className="text-destructive my-4">{error}</p>}
         <div className="work-registration-actions">
-          <Link className="catalog-button inline-flex items-center gap-2" to="/deshboard/obras"><ArrowLeft size={17} aria-hidden="true" />Cancelar</Link>
+          <Link className="catalog-button inline-flex items-center gap-2" to="/dashboard/obras"><ArrowLeft size={17} aria-hidden="true" />Cancelar</Link>
           <button className="catalog-primary inline-flex items-center gap-2">{busy ? 'Cadastrando…' : 'Cadastrar e continuar'}<ArrowRight size={17} aria-hidden="true" /></button>
         </div>
       </fieldset>

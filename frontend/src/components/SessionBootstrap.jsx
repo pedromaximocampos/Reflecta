@@ -5,7 +5,7 @@ import { useLocation } from 'react-router'
 import { restoreSessionFromCookie } from '../services/apiClient'
 import { hasRefreshSessionHint, hasStoredSession } from '../services/authSession'
 
-const PUBLIC_PATHS = new Set(['/', '/cadastro', '/esqueci-senha', '/auth/reset-password', '/compartilhamento'])
+const PUBLIC_PATHS = new Set(['/', '/login', '/cadastro', '/esqueci-senha', '/auth/reset-password', '/compartilhamento'])
 
 export function SessionBootstrap({ children }) {
   const location = useLocation()

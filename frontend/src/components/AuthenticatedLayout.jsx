@@ -5,7 +5,7 @@ import { MainLayout } from './MainLayout'
 export function AuthenticatedLayout() {
   const { isAuthenticated, isAdmin } = useAuth()
 
-  if (!isAuthenticated) return <Navigate to="/" replace />
+  if (!isAuthenticated) return <Navigate to="/login" replace />
 
   return <MainLayout admin={isAdmin} />
 }

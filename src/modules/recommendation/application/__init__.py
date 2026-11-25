@@ -1,5 +1,6 @@
 from .work_recommendations import (
     ExploreWorks,
+    GetFeaturedWork,
     GetHomeDashboard,
     GetRecommendationWork,
     RecommendWorks,
@@ -7,6 +8,7 @@ from .work_recommendations import (
 
 __all__ = [
     "ExploreWorks",
+    "GetFeaturedWork",
     "GetHomeDashboard",
     "GetRecommendationWork",
     "RecommendWorks",

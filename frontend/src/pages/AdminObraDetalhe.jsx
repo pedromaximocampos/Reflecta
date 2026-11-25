@@ -151,7 +151,7 @@ export function AdminObraDetalhe() {
   }
 
   if (loading) return <div className="catalog-page"><PageLoading variant="detail" label="Carregando obra e ingestões…" /></div>
-  if (error || !work) return <div className="catalog-page"><div className="catalog-card"><h1>Não foi possível carregar a obra</h1><p role="alert" className="text-destructive">{error || 'Obra não encontrada.'}</p><Link className="catalog-button inline-flex items-center gap-2 mt-4" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link></div></div>
+  if (error || !work) return <div className="catalog-page"><div className="catalog-card"><h1>Não foi possível carregar a obra</h1><p role="alert" className="text-destructive">{error || 'Obra não encontrada.'}</p><Link className="catalog-button inline-flex items-center gap-2 mt-4" to="/dashboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link></div></div>
 
   const counts = work.passage_counts || { total: 0, active: 0, inactive: 0 }
   const displayedWork = coverPreviewUrl ? { ...work, cover_image_url: coverPreviewUrl } : work
@@ -160,8 +160,8 @@ export function AdminObraDetalhe() {
     .filter((ingestion) => ingestion.work_id === work.id && ingestion.status === 'failed' && ingestion.failure)
     .sort((left, right) => new Date(right.failure.occurred_at) - new Date(left.failure.occurred_at))[0]
   return <div className="catalog-page work-detail-page">
-    <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
-    <header className="catalog-page-header"><div><div className="flex items-center gap-3 flex-wrap"><h1>{work.title}</h1><span className={`catalog-badge work-status-${work.status?.toLowerCase()}`}>{workStatuses[work.status] || work.status}</span></div></div><div className="catalog-header-actions"><Link className="catalog-button" to={`/deshboard/passagens?work_id=${encodeURIComponent(work.id)}`}><FileText size={15} aria-hidden="true" />Ver passagens</Link><Link className="catalog-primary" to={`/deshboard/obras/${encodeURIComponent(work.id)}/pdf`}><Upload size={15} aria-hidden="true" />Enviar PDF</Link></div></header>
+    <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/dashboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
+    <header className="catalog-page-header"><div><div className="flex items-center gap-3 flex-wrap"><h1>{work.title}</h1><span className={`catalog-badge work-status-${work.status?.toLowerCase()}`}>{workStatuses[work.status] || work.status}</span></div></div><div className="catalog-header-actions"><Link className="catalog-button" to={`/dashboard/passagens?work_id=${encodeURIComponent(work.id)}`}><FileText size={15} aria-hidden="true" />Ver passagens</Link><Link className="catalog-primary" to={`/dashboard/obras/${encodeURIComponent(work.id)}/pdf`}><Upload size={15} aria-hidden="true" />Enviar PDF</Link></div></header>
 
     {latestFailure && <section className="catalog-card work-operational-failure" aria-labelledby="work-failure-title">
       <CircleAlert size={22} aria-hidden="true" />
@@ -171,7 +171,7 @@ export function AdminObraDetalhe() {
         <span>{formatCatalogDateTime(latestFailure.failure.occurred_at)} · Código: {latestFailure.failure.code}</span>
       </div>
       <div className="work-operational-failure-actions">
-        <Link className="catalog-button catalog-hover-destructive" to={`/deshboard/falhas?source=${encodeURIComponent(latestFailure.failure.source)}&failure_id=${encodeURIComponent(latestFailure.failure.failure_id)}`}>Ver falha operacional</Link>
+        <Link className="catalog-button catalog-hover-destructive" to={`/dashboard/falhas?source=${encodeURIComponent(latestFailure.failure.source)}&failure_id=${encodeURIComponent(latestFailure.failure.failure_id)}`}>Ver falha operacional</Link>
         <button className="catalog-primary catalog-hover-primary" type="button" disabled={reprocessBusy} onClick={() => reprocessIngestion(latestFailure)}><RefreshCw size={15} className={reprocessBusy ? 'animate-spin' : ''} aria-hidden="true" />{reprocessBusy ? 'Reprocessando…' : 'Reprocessar ingestão'}</button>
       </div>
     </section>}

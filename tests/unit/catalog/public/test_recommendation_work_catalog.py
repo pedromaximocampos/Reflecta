@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,14 +14,24 @@ from src.modules.catalog.domain.value_objects.catalog_status import CatalogStatu
 from src.modules.catalog.public.analysis_recommendation_work_catalog import (
     AnalysisRecommendationWorkCatalog,
 )
+from src.modules.catalog.public.analysis_featured_work_catalog import (
+    AnalysisFeaturedWorkCatalog,
+)
 from src.modules.catalog.public.author_id import AuthorId
 from src.modules.catalog.public.work_id import WorkId
 
 
 class _Uow:
-    def __init__(self, records=()):
+    def __init__(self, records=(), *, passages=(), themes=()):
         self.work_repository = AsyncMock()
         self.work_repository.list_works.return_value = list(records)
+        self.passage_repository = AsyncMock()
+        self.passage_repository.list_passages.return_value = SimpleNamespace(
+            passages=tuple(passages),
+            total=len(passages),
+        )
+        self.theme_repository = AsyncMock()
+        self.theme_repository.list_themes.return_value = list(themes)
 
     async def __aenter__(self):
         return self
@@ -133,3 +144,89 @@ async def test_list_active_rejects_invalid_pagination(limit: int, offset: int):
 
     with pytest.raises(ValueError):
         await catalog.list_active(limit=limit, offset=offset)
+
+
+@pytest.mark.asyncio
+async def test_daily_feature_uses_active_work_passage_and_top_themes():
+    first = _record("work-1", active_passage_count=2)
+    second = _record("work-2", active_passage_count=1)
+    passages = (
+        SimpleNamespace(
+            id=SimpleNamespace(value="passage-1"),
+            short_text="Trecho principal",
+            paraphrase="Leitura possível",
+            locator="p. 12",
+            reflective_value=.95,
+            priority=0,
+            themes=(
+                SimpleNamespace(
+                    theme_id=SimpleNamespace(value="theme-1"), confidence=.92,
+                ),
+            ),
+        ),
+    )
+    themes = (
+        SimpleNamespace(
+            id=SimpleNamespace(value="theme-1"),
+            label="O que posso controlar",
+            color="#3F5B46",
+            is_active=True,
+        ),
+    )
+    catalog = AnalysisFeaturedWorkCatalog(
+        _Uow((first, second), passages=passages, themes=themes),
+        AsyncMock(),
+    )
+
+    featured = await catalog.get_for_day(1)
+
+    assert featured is not None
+    assert featured.work_id == "work-1"
+    assert featured.passage.short_text == "Trecho principal"
+    assert featured.themes[0].label == "O que posso controlar"
+
+
+@pytest.mark.asyncio
+async def test_daily_feature_is_empty_without_active_work():
+    catalog = AnalysisFeaturedWorkCatalog(
+        _Uow((_record("work-1", active_passage_count=0),)),
+        AsyncMock(),
+    )
+
+    assert await catalog.get_for_day(1) is None
+
+
+@pytest.mark.asyncio
+async def test_daily_feature_rotates_between_high_quality_passages():
+    record = _record("work-1", active_passage_count=2)
+    theme = SimpleNamespace(
+        id=SimpleNamespace(value="theme-1"),
+        label="O que posso controlar",
+        color="#3F5B46",
+        is_active=True,
+    )
+    relevance = SimpleNamespace(
+        theme_id=SimpleNamespace(value="theme-1"), confidence=.9,
+    )
+    passages = tuple(
+        SimpleNamespace(
+            id=SimpleNamespace(value=f"passage-{index}"),
+            short_text=f"Trecho {index}",
+            paraphrase=f"Paráfrase {index}",
+            locator=f"p. {index}",
+            reflective_value=value,
+            priority=0,
+            themes=(relevance,),
+        )
+        for index, value in ((1, .95), (2, .9))
+    )
+    catalog = AnalysisFeaturedWorkCatalog(
+        _Uow((record,), passages=passages, themes=(theme,)),
+        AsyncMock(),
+    )
+
+    first_day = await catalog.get_for_day(1)
+    second_day = await catalog.get_for_day(2)
+
+    assert first_day.passage.short_text == "Trecho 1"
+    assert second_day.passage.short_text == "Trecho 2"

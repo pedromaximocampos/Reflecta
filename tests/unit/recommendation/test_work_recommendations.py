@@ -1,18 +1,47 @@
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 
 from src.modules.catalog.public import (
+    FeaturedPassage,
+    FeaturedTheme,
+    FeaturedWork,
     RecommendationWork,
     RecommendationWorkPage,
 )
 from src.modules.recommendation.application import (
     ExploreWorks,
+    GetFeaturedWork,
     GetHomeDashboard,
     GetRecommendationWork,
     RecommendWorks,
 )
+
+
+@pytest.mark.asyncio
+async def test_featured_work_uses_current_day_and_serializes_safe_projection():
+    featured = FeaturedWork(
+        work_id="work-a",
+        title="Meditações",
+        author_name="Marco Aurélio",
+        synopsis="Reflexões sobre a vida prática.",
+        cover_image_url=None,
+        themes=(FeaturedTheme("theme-1", "O que posso controlar", "#3F5B46"),),
+        passage=FeaturedPassage("Trecho", "Paráfrase", "p. 12"),
+    )
+    catalog = SimpleNamespace(get_for_day=AsyncMock(return_value=featured))
+    clock = SimpleNamespace(now=lambda: datetime(2026, 11, 25, tzinfo=timezone.utc))
+
+    result = await GetFeaturedWork(catalog, clock).execute()
+
+    assert result["title"] == "Meditações"
+    assert result["themes"][0]["label"] == "O que posso controlar"
+    assert result["passage"]["short_text"] == "Trecho"
+    catalog.get_for_day.assert_awaited_once_with(
+        datetime(2026, 11, 25, tzinfo=timezone.utc).date().toordinal()
+    )
 
 
 @pytest.mark.asyncio

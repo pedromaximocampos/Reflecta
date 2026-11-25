@@ -51,7 +51,7 @@ export function AceitarConviteAdmin() {
         <p role="status">Sua conta agora possui acesso administrativo ao Reflecta.</p>
         {requiresLogin
           ? <Link to={loginPath} className="catalog-primary inline-flex">Entrar novamente</Link>
-          : <Link to="/deshboard/administradores" className="catalog-primary inline-flex">Abrir painel administrativo</Link>}
+          : <Link to="/dashboard/administradores" className="catalog-primary inline-flex">Abrir painel administrativo</Link>}
       </> : !isAuthenticated ? <>
         <p>Entre com a mesma conta que recebeu este convite. Nenhuma permissão será alterada antes da sua confirmação.</p>
         <Link to={loginPath} className="catalog-primary inline-flex">Entrar para revisar o convite</Link>

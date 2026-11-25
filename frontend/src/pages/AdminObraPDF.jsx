@@ -55,7 +55,7 @@ function WorkPDF({ workId }) {
   if (workLoading && !work) return <div className="catalog-page"><PageLoading variant="detail" label="Preparando envio do PDF…" /></div>
   if (!work) return <div className="catalog-page catalog-work-flow">
     <header><h1>Não foi possível carregar a obra</h1><p>{workError || 'A obra informada não existe no catálogo.'}</p></header>
-    <Link className="catalog-primary w-fit" to="/deshboard/obras">Voltar para obras</Link>
+    <Link className="catalog-primary w-fit" to="/dashboard/obras">Voltar para obras</Link>
   </div>
 
   return <div className="catalog-page catalog-work-flow">
@@ -69,8 +69,8 @@ function WorkPDF({ workId }) {
           <p role="status">O envio foi aceito. As passagens podem aparecer aos poucos enquanto o documento é processado.</p>
           <p className="mt-3 text-sm text-muted-foreground">A ausência de passagens ainda não confirma a conclusão do processamento.</p>
           <div className="flex flex-wrap gap-3 mt-6">
-            <Link className="catalog-primary" to={`/deshboard/passagens?ingestion_id=${encodeURIComponent(ingestion.ingestion_id)}&work_id=${encodeURIComponent(work.id)}`}>Acompanhar passagens</Link>
-            <Link className="catalog-button" to="/deshboard/obras">Voltar para obras</Link>
+            <Link className="catalog-primary" to={`/dashboard/passagens?ingestion_id=${encodeURIComponent(ingestion.ingestion_id)}&work_id=${encodeURIComponent(work.id)}`}>Acompanhar passagens</Link>
+            <Link className="catalog-button" to="/dashboard/obras">Voltar para obras</Link>
           </div>
         </> : <form onSubmit={upload} aria-busy={busy}>
           <fieldset disabled={busy}>
@@ -92,6 +92,6 @@ function WorkPDF({ workId }) {
         <dl className="mt-5 text-sm space-y-3"><div><dt className="text-muted-foreground">Tipo</dt><dd>{work.type}</dd></div><div><dt className="text-muted-foreground">Idioma</dt><dd>{work.language}</dd></div></dl>
       </aside>
     </div>
-    <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/deshboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
+    <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/dashboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
   </div>
 }

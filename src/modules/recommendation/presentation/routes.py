@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from neo4j.exceptions import DriverError, Neo4jError
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.modules.auth.presentation.adapters.fast_api_auth import get_current_user
 from src.modules.auth.public import AuthenticatedPrincipal
-from src.modules.catalog.bootstrap.services import get_recommendation_work_catalog
+from src.modules.catalog.bootstrap.services import (
+    get_featured_work_catalog,
+    get_recommendation_work_catalog,
+)
 from src.modules.catalog.bootstrap.unit_of_work import get_graph_unit_of_work
 from src.modules.catalog.public.analysis_contextual_passage_catalog import (
     AnalysisContextualPassageCatalog,
@@ -12,10 +15,12 @@ from src.modules.catalog.public.analysis_contextual_passage_catalog import (
 from src.modules.journal.public.dashboard_provider import get_journal_home_reader
 from src.modules.recommendation.application import (
     ExploreWorks,
+    GetFeaturedWork,
     GetHomeDashboard,
     GetRecommendationWork,
     RecommendWorks,
 )
+from src.shared.infrastructure.system.providers import get_clock
 
 
 recommendation_router = APIRouter(
@@ -46,6 +51,28 @@ def get_explore_works() -> ExploreWorks:
 
 def get_recommendation_work() -> GetRecommendationWork:
     return GetRecommendationWork(works=get_recommendation_work_catalog())
+
+
+def get_featured_work() -> GetFeaturedWork:
+    return GetFeaturedWork(
+        catalog=get_featured_work_catalog(),
+        clock=get_clock(),
+    )
+
+
+@recommendation_router.get("/public/featured-work")
+async def get_public_featured_work(
+    response: Response,
+    use_case: GetFeaturedWork = Depends(get_featured_work),
+):
+    response.headers["Cache-Control"] = "public, max-age=300"
+    try:
+        return {"featured_work": await use_case.execute()}
+    except (SQLAlchemyError, Neo4jError, DriverError, ValueError):
+        raise HTTPException(
+            status_code=503,
+            detail="Destaque do acervo indisponível. Tente novamente mais tarde.",
+        ) from None
 
 
 @recommendation_router.get("/dashboard")

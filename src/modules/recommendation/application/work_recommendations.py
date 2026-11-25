@@ -1,10 +1,12 @@
 from typing import Any
 
 from src.modules.catalog.public import (
+    IFeaturedWorkCatalog,
     IContextualPassageCatalog,
     IRecommendationWorkCatalog,
     RecommendationWork,
 )
+from src.shared.domain.ports.system.iclock import IClock
 from src.modules.journal.public.dashboard import IJournalHomeReader, IJournalInsightsReader
 
 
@@ -40,6 +42,41 @@ class GetHomeDashboard:
             offset=recommendation_offset,
         )
         return {**journal, "recommendations": recommendations}
+
+
+class GetFeaturedWork:
+    """Returns one stable catalog highlight for the current UTC day."""
+
+    def __init__(self, catalog: IFeaturedWorkCatalog, clock: IClock) -> None:
+        self.catalog = catalog
+        self.clock = clock
+
+    async def execute(self) -> dict[str, Any] | None:
+        featured = await self.catalog.get_for_day(
+            self.clock.now().date().toordinal()
+        )
+        if featured is None:
+            return None
+        return {
+            "work_id": featured.work_id,
+            "title": featured.title,
+            "author_name": featured.author_name,
+            "synopsis": featured.synopsis,
+            "cover_image_url": featured.cover_image_url,
+            "themes": [
+                {
+                    "theme_id": theme.theme_id,
+                    "label": theme.label,
+                    "color": theme.color,
+                }
+                for theme in featured.themes
+            ],
+            "passage": {
+                "short_text": featured.passage.short_text,
+                "paraphrase": featured.passage.paraphrase,
+                "locator": featured.passage.locator,
+            },
+        }
 
 
 class RecommendWorks:

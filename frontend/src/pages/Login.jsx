@@ -23,7 +23,7 @@ export function Login() {
     try {
       const response = await login(email, senha)
       saveSession(response)
-      navigate(nextPath || (response.user?.role === 'ADMIN' ? '/deshboard' : '/inicio'), { replace: true })
+      navigate(nextPath || (response.user?.role === 'ADMIN' ? '/dashboard' : '/inicio'), { replace: true })
     } catch (error) {
       setErro(error instanceof Error ? error.message : 'Não foi possível realizar o login.')
     } finally {
@@ -32,7 +32,7 @@ export function Login() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={nextPath || (isAdmin ? '/deshboard' : '/inicio')} replace />
+    return <Navigate to={nextPath || (isAdmin ? '/dashboard' : '/inicio')} replace />
   }
 
   return (

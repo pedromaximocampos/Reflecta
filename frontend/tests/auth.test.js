@@ -25,7 +25,6 @@ import {
   saveSession,
   SESSION_EXPIRED_EVENT,
   updateSessionProfile,
-  updateSessionRole,
 } from '../src/services/authSession.js'
 import { restoreSessionFromCookie } from '../src/services/apiClient.js'
 
@@ -535,8 +534,6 @@ test('login preserves role and birth date for navigation and profile editing', a
   const updated = JSON.parse(sessionStorage.getItem('auth_user'))
   assert.equal(updated.role, 'ADMIN')
   assert.equal(updated.date_of_birth, '2001-02-03')
-  updateSessionRole('USER')
-  assert.equal(JSON.parse(sessionStorage.getItem('auth_user')).role, 'USER')
 })
 
 test('administrator invitation management and acceptance use authenticated endpoints', async () => {

@@ -70,13 +70,6 @@ export function updateSessionProfile(profile) {
   window.dispatchEvent(new Event(EVENT))
 }
 
-export function updateSessionRole(role) {
-  const user = readUser(sessionStorage.getItem('auth_user'))
-  if (!user || !['ADMIN', 'USER'].includes(role)) return
-  sessionStorage.setItem('auth_user', JSON.stringify({ ...user, role }))
-  window.dispatchEvent(new Event(EVENT))
-}
-
 function readUser(raw) {
   try {
     const user = JSON.parse(raw)

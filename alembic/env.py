@@ -34,7 +34,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", raw_db_url)
+# ConfigParser treats percent signs in URL-encoded passwords as interpolation.
+# Doubling them preserves the actual SQLAlchemy URL passed to Alembic.
+config.set_main_option("sqlalchemy.url", raw_db_url.replace("%", "%%"))
 
 # add your model's MetaData object here
 # for 'autogenerate' support

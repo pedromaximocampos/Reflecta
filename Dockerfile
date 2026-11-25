@@ -4,16 +4,15 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:0.9.13 /uv /uvx /bin/
 
+RUN groupadd --system reflecta \
+    && useradd --system --gid reflecta --home-dir /app reflecta
+
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked
 
-COPY alembic.ini ./
-COPY alembic/ alembic/
-COPY src/ src/
-
-RUN groupadd --system reflecta \
-    && useradd --system --gid reflecta --home-dir /app reflecta \
-    && chown -R reflecta:reflecta /app
+COPY --chown=reflecta:reflecta alembic.ini ./
+COPY --chown=reflecta:reflecta alembic/ alembic/
+COPY --chown=reflecta:reflecta src/ src/
 
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \

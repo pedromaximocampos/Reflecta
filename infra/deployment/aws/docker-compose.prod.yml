@@ -19,7 +19,6 @@ services:
     image: neo4j:5.26-community
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
     volumes:
       - /srv/reflecta/neo4j/data:/data
       - /srv/reflecta/neo4j/logs:/logs
@@ -29,7 +28,7 @@ services:
     networks:
       - reflecta
     healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '$$NEO4J_PASSWORD' 'RETURN 1' >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "cypher-shell -u \"$${NEO4J_AUTH%%/*}\" -p \"$${NEO4J_AUTH#*/}\" 'RETURN 1' >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 18

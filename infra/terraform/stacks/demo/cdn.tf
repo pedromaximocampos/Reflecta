@@ -91,6 +91,24 @@ resource "aws_cloudfront_origin_access_control" "catalog_assets" {
   signing_protocol                  = "sigv4"
 }
 
+resource "aws_cloudfront_function" "api_path_rewrite" {
+  name    = "${local.name_prefix}-api-path-rewrite"
+  runtime = "cloudfront-js-2.0"
+  comment = "Remove the same-origin /api prefix before forwarding to FastAPI"
+  publish = true
+  code    = <<-JAVASCRIPT
+function handler(event) {
+  var request = event.request;
+  if (request.uri === '/api') {
+    request.uri = '/';
+  } else if (request.uri.indexOf('/api/') === 0) {
+    request.uri = request.uri.substring(4);
+  }
+  return request;
+}
+JAVASCRIPT
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -104,6 +122,18 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
   }
 
+  origin {
+    domain_name = aws_eip.app.public_dns
+    origin_id   = "app-ec2"
+
+    custom_origin_config {
+      http_port              = 8000
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   default_cache_behavior {
     target_origin_id       = "frontend-s3"
     viewer_protocol_policy = "redirect-to-https"
@@ -111,6 +141,22 @@ resource "aws_cloudfront_distribution" "frontend" {
     cached_methods         = ["GET", "HEAD", "OPTIONS"]
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+  }
+
+  ordered_cache_behavior {
+    path_pattern             = "api/*"
+    target_origin_id         = "app-ec2"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD", "OPTIONS"]
+    compress                 = true
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_path_rewrite.arn
+    }
   }
 
   custom_error_response {

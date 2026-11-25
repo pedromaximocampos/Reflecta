@@ -4,7 +4,8 @@ This independent Terraform root prepares the first public Reflecta environment w
 
 ```text
 CloudFront frontend -> private S3 frontend bucket
-CloudFront API      -> EC2:8000 (CloudFront addresses only)
+                   \-> /api/* -> EC2:8000 (same-origin session cookies)
+CloudFront API      -> EC2:8000 (direct diagnostics endpoint)
 CloudFront covers   -> private S3 catalog-assets bucket
                             |
                             v
@@ -73,7 +74,8 @@ The local `terraform.tfvars`, state, and saved plan must never be committed.
 - The Neo4j EBS volume is a separate Terraform resource. Back it up with snapshots before destructive work.
 - This stack intentionally has no NAT Gateway or Application Load Balancer, avoiding two large fixed monthly costs for the first deployment.
 - CloudFront distributions can take several minutes to finish provisioning.
-- After apply, set the frontend API URL to `api_base_url` and configure the API CORS origin with `frontend_url`.
+- After apply, set the browser API URL to `${frontend_url}/api` and configure the API CORS origin with `frontend_url`; `api_base_url` remains useful for direct diagnostics.
+- The browser build uses `${frontend_url}/api`; a CloudFront Function removes the prefix before forwarding to FastAPI, keeping refresh cookies same-origin.
 - Before deploying containers, retrieve the RDS credentials through the instance role and run Alembic migrations exactly once.
 
 ## Later evolution to Fargate

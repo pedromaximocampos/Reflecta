@@ -1366,3 +1366,62 @@ button:disabled { cursor: not-allowed; }
 .passage-reflective-note h3 {
   font-weight: 600;
 }
+/* Private work PDF viewer and bounded operational diagnostics. */
+.pdf-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 23 18 / 72%);
+}
+
+.pdf-viewer-dialog {
+  width: min(1180px, 96vw);
+  height: min(880px, 92vh);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--card);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 32%);
+}
+
+.pdf-viewer-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--primary);
+}
+
+.pdf-viewer-dialog h2 { font-size: 1.05rem; font-weight: 600; }
+.pdf-viewer-dialog p { font-size: .75rem; color: var(--muted-foreground); }
+.pdf-viewer-dialog iframe { width: 100%; height: 100%; border: 0; background: #525659; }
+
+.operational-diagnostic-panel {
+  display: grid;
+  gap: .65rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: .8rem;
+  background: color-mix(in srgb, var(--muted) 48%, transparent);
+}
+
+.operational-diagnostic-panel h3 { font-weight: 600; }
+.operational-diagnostic-panel > p,
+.operational-diagnostic-panel time { font-size: .78rem; color: var(--muted-foreground); }
+.operational-diagnostic-panel ol { display: grid; gap: .65rem; }
+.operational-diagnostic-panel pre {
+  max-height: 18rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: .75rem;
+  border-radius: .6rem;
+  background: var(--background);
+  font: .76rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+}

@@ -8,6 +8,7 @@ from src.modules.catalog.bootstrap.use_cases import (
     get_replace_work_cover_use_case,
     get_request_work_ingestion_use_case,
     get_reprocess_work_ingestion_use_case,
+    get_work_document_access_use_case,
     get_delete_theme_by_id_use_case,
     get_theme_by_id_use_case,
     get_update_theme_use_case,
@@ -47,6 +48,9 @@ from src.modules.catalog.presentation.controllers.request_work_ingestion_control
 )
 from src.modules.catalog.presentation.controllers.reprocess_work_ingestion_controller import (
     ReprocessWorkIngestionController,
+)
+from src.modules.catalog.presentation.controllers.get_work_document_access_controller import (
+    GetWorkDocumentAccessController,
 )
 from src.modules.catalog.presentation.controllers.delete_themes_controller import (
     DeleteThemeByIdController,
@@ -100,6 +104,10 @@ def get_reprocess_work_ingestion_controller() -> ReprocessWorkIngestionControlle
     return ReprocessWorkIngestionController(
         reprocess_work_ingestion_use_case=get_reprocess_work_ingestion_use_case(),
     )
+
+
+def get_work_document_access_controller() -> GetWorkDocumentAccessController:
+    return GetWorkDocumentAccessController(get_work_document_access_use_case())
 
 
 def get_theme_by_id_controller() -> GetThemeByIdController:

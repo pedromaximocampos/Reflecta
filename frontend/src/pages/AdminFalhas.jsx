@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
-import { ChevronLeft, ChevronRight, ListFilter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileSearch, ListFilter, ScrollText } from 'lucide-react'
 import { PageLoading } from '../components/PageLoading'
-import { listOperationalFailures, getOperationalFailure, reprocessOperationalFailure, getAnalysisProcessingSettings } from '../services/operationalFailuresApi'
+import { listOperationalFailures, getOperationalFailure, getOperationalFailureContext, getOperationalFailureLogs, reprocessOperationalFailure, getAnalysisProcessingSettings } from '../services/operationalFailuresApi'
+import { getWorkDocumentAccess } from '../services/catalogApi'
 import { clearSession } from '../services/authSession'
 
 const PAGE_SIZE = 20
@@ -20,6 +21,13 @@ function FailureDetail({ source, id, onClose, onReprocessed }) {
   const [submitting, setSubmitting] = useState(false)
   const [settings, setSettings] = useState(null)
   const [settingsError, setSettingsError] = useState('')
+  const [context, setContext] = useState(null)
+  const [contextBusy, setContextBusy] = useState(false)
+  const [contextError, setContextError] = useState('')
+  const [logs, setLogs] = useState(null)
+  const [logsBusy, setLogsBusy] = useState(false)
+  const [logsError, setLogsError] = useState('')
+  const [pdfBusy, setPdfBusy] = useState(false)
   const pending = useRef(false)
   const dialog = useRef(null)
   useEffect(() => {
@@ -72,6 +80,28 @@ function FailureDetail({ source, id, onClose, onReprocessed }) {
     }
   }
 
+  async function loadContext() {
+    if (contextBusy) return
+    setContextBusy(true); setContextError('')
+    try { setContext(await getOperationalFailureContext(source, id)) } catch (err) { setContextError(err.message) } finally { setContextBusy(false) }
+  }
+
+  async function loadLogs() {
+    if (logsBusy) return
+    setLogsBusy(true); setLogsError('')
+    try { setLogs(await getOperationalFailureLogs(source, id)) } catch (err) { setLogsError(err.message) } finally { setLogsBusy(false) }
+  }
+
+  async function openPdf() {
+    const ingestionId = detail?.failure_attempt?.ingestion_id || (detail?.source === 'work_ingestion' ? detail?.entity_id : detail?.related_id)
+    if (!ingestionId || pdfBusy) return
+    setPdfBusy(true); setContextError('')
+    try {
+      const access = await getWorkDocumentAccess(ingestionId)
+      window.open(access.url, '_blank', 'noopener,noreferrer')
+    } catch (err) { setContextError(err.message) } finally { setPdfBusy(false) }
+  }
+
   return createPortal(<dialog ref={dialog}
     aria-labelledby="failure-detail-title"
     className="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card p-5 md:p-8 text-foreground shadow-2xl backdrop:bg-black/50"
@@ -94,6 +124,27 @@ function FailureDetail({ source, id, onClose, onReprocessed }) {
           ['Atualização do registro', formatDate(detail.updated_at)],
         ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="whitespace-pre-wrap break-all">{value}</dd></div>)}
       </dl>
+      {detail.failure_attempt && <div className="rounded-xl border border-border p-4 space-y-2">
+        <h3 className="font-medium">Contexto persistido da tentativa</h3>
+        <p className="text-sm">Etapa: {detail.failure_attempt.stage} · Tentativa: {detail.failure_attempt.attempt} · Correlação: {detail.failure_attempt.id}</p>
+        <p className="text-sm text-muted-foreground">Mensagem registrada: {detail.failure_attempt.error_message}</p>
+        {(detail.failure_attempt.start_page || detail.failure_attempt.provider_request_id) && <p className="text-sm text-muted-foreground">{detail.failure_attempt.start_page ? `Páginas ${detail.failure_attempt.start_page}–${detail.failure_attempt.end_page}` : 'Falha anterior à criação de chunks'}{detail.failure_attempt.provider_request_id ? ` · Request ID: ${detail.failure_attempt.provider_request_id}` : ''}{detail.failure_attempt.provider_response_id ? ` · Response ID: ${detail.failure_attempt.provider_response_id}` : ''}</p>}
+      </div>}
+      <div className="flex flex-wrap gap-2">
+        {['work_ingestion', 'work_chunk', 'inbox', 'outbox'].includes(detail.source) && <button type="button" className="catalog-button" disabled={contextBusy} onClick={loadContext}><FileSearch size={15} aria-hidden="true" />{contextBusy ? 'Carregando contexto…' : 'Ver contexto processado'}</button>}
+        {['work_ingestion', 'work_chunk', 'inbox', 'outbox'].includes(detail.source) && <button type="button" className="catalog-button" disabled={pdfBusy} onClick={openPdf}><FileSearch size={15} aria-hidden="true" />{pdfBusy ? 'Abrindo PDF…' : 'Visualizar PDF original'}</button>}
+        <button type="button" className="catalog-button" disabled={logsBusy} onClick={loadLogs}><ScrollText size={15} aria-hidden="true" />{logsBusy ? 'Consultando logs…' : 'Ver logs técnicos'}</button>
+      </div>
+      {contextError && <p role="alert" className="text-destructive">{contextError}</p>}
+      {context && <section className="operational-diagnostic-panel">
+        <h3>Entrada que estava sendo processada</h3>
+        {context.available ? <><p>Páginas {context.start_page}–{context.end_page} · SHA-256 validado</p><pre>{context.text}</pre></> : <p>{context.message || 'O trecho exato não está disponível para esta falha.'}</p>}
+      </section>}
+      {logsError && <p role="alert" className="text-destructive">{logsError}</p>}
+      {logs && <section className="operational-diagnostic-panel">
+        <h3>Logs técnicos</h3><p>Retenção do CloudWatch: {logs.retention_days} dias.</p>
+        {!logs.logs.length ? <p>Nenhuma linha correlacionada foi encontrada na janela desta falha.</p> : <ol>{logs.logs.map((item, index) => <li key={`${item.timestamp}:${index}`}><time>{formatDate(item.timestamp)}</time><pre>{item.message}</pre></li>)}</ol>}
+      </section>}
       {detail.processing_settings && <div className="rounded-xl border border-border p-4 space-y-2">
         <h3 className="font-medium">Parâmetros da tentativa</h3>
         <p className="text-sm break-words">Modelo: {detail.processing_settings.model} · Tempo limite: {detail.processing_settings.timeout_seconds}s · Tokens de saída: {detail.processing_settings.max_output_tokens} · Raciocínio: {detail.processing_settings.reasoning_effort ?? 'Padrão do modelo'}</p>

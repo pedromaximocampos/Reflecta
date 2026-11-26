@@ -23,6 +23,7 @@ class FakeS3Client:
         self.put_request: dict[str, Any] | None = None
         self.delete_request: dict[str, Any] | None = None
         self.head_request: dict[str, Any] | None = None
+        self.presign_request: dict[str, Any] | None = None
 
     def put_object(self, **kwargs: Any) -> dict[str, str]:
         self.put_request = kwargs
@@ -35,6 +36,10 @@ class FakeS3Client:
     def head_object(self, **kwargs: Any) -> dict[str, Any]:
         self.head_request = kwargs
         return {"ContentLength": 16}
+
+    def generate_presigned_url(self, operation: str, **kwargs: Any) -> str:
+        self.presign_request = {"operation": operation, **kwargs}
+        return "https://s3.example.test/signed-document"
 
 
 class MissingObjectS3Client(FakeS3Client):
@@ -127,6 +132,34 @@ async def test_exists_returns_false_when_s3_reports_not_found() -> None:
     )
 
     assert await storage.exists(location=location) is False
+
+
+@pytest.mark.asyncio
+async def test_creates_short_lived_inline_pdf_read_url() -> None:
+    client = FakeS3Client()
+    storage = S3WorkDocumentStorage(  # type: ignore[arg-type]
+        client,
+        make_settings(),
+        read_url_ttl_seconds=180,
+    )
+    location = WorkDocumentLocation(
+        bucket="reflecta-works-dev",
+        object_key="works/work-id/source/document-id.pdf",
+    )
+
+    url = await storage.create_read_url(location=location)
+
+    assert url == "https://s3.example.test/signed-document"
+    assert client.presign_request == {
+        "operation": "get_object",
+        "Params": {
+            "Bucket": "reflecta-works-dev",
+            "Key": "works/work-id/source/document-id.pdf",
+            "ResponseContentType": "application/pdf",
+            "ResponseContentDisposition": "inline",
+        },
+        "ExpiresIn": 180,
+    }
 
 
 @pytest.mark.asyncio

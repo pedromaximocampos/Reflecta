@@ -74,3 +74,11 @@ class WorkIngestionReprocessedValidator(BaseModel):
     work_id: str = Field(..., min_length=26, max_length=26)
     status: Literal["pending", "processing"]
     event_created: bool
+
+
+class WorkDocumentAccessValidator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ingestion_id: str = Field(..., min_length=26, max_length=26)
+    url: str = Field(..., min_length=1)
+    expires_in_seconds: int = Field(..., ge=60, le=3600)

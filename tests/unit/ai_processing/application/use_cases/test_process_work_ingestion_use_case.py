@@ -117,6 +117,7 @@ class _ChunkRepository:
 class _Uow:
     def __init__(self, repository: _ChunkRepository) -> None:
         self.work_ingestion_chunk_repository = repository
+        self.work_ingestion_failure_repository = _FailureRepository()
 
     async def __aenter__(self):
         return self
@@ -129,6 +130,15 @@ class _Uow:
 
     async def rollback(self):
         return None
+
+
+class _FailureRepository:
+    def __init__(self) -> None:
+        self.failures = []
+
+    async def create(self, failure):
+        self.failures.append(deepcopy(failure))
+        return failure
 
 
 class _Storage:
@@ -303,8 +313,9 @@ def _use_case(
     storage=None,
 ):
     unused = _UnusedDocumentComponent()
-    return ProcessWorkIngestionUseCase(
-        ai_processing_uow=_Uow(repository),
+    uow = _Uow(repository)
+    use_case = ProcessWorkIngestionUseCase(
+        ai_processing_uow=uow,
         work_ingestion_storage=storage or _Storage(text),
         document_text_extractor=extractor or unused,
         text_normalizer=normalizer or unused,
@@ -316,6 +327,8 @@ def _use_case(
         ulid_generator=_Ids(),
         clock=_Clock(),
     )
+    use_case._test_uow = uow
+    return use_case
 
 
 @pytest.mark.asyncio
@@ -422,10 +435,13 @@ async def test_failure_persists_sanitized_analysis_error_code() -> None:
     )
     ingestions = _Ingestions()
 
+    use_case = _use_case(repository, analyzer, _Passages(), ingestions, text)
     with pytest.raises(WorkPassageAnalysisError):
-        await _use_case(repository, analyzer, _Passages(), ingestions, text).execute(
-            _input()
-        )
+        await use_case.execute(_input())
 
     assert repository.chunks["chunk-1"].error_code == "quote_not_found"
     assert ingestions.error_code == "quote_not_found"
+    [failure] = use_case._test_uow.work_ingestion_failure_repository.failures
+    assert failure.error_code == "quote_not_found"
+    assert failure.context_text == text
+    assert failure.content_sha256 == repository.chunks["chunk-1"].content_sha256

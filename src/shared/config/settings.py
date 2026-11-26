@@ -59,8 +59,10 @@ class Settings(BaseSettings):
     AWS_S3_MEDIA_BUCKET: str = ""
     AWS_S3_CATALOG_ASSETS_BUCKET: str = ""
     AWS_CLOUDFRONT_CATALOG_ASSETS_BASE_URL: str = ""
+    AWS_S3_WORK_DOCUMENT_READ_URL_TTL_SECONDS: int = 300
     AWS_S3_WORK_COVER_READ_URL_TTL_SECONDS: int = 900
     AWS_S3_USER_AVATAR_READ_URL_TTL_SECONDS: int = 900
+    AWS_LOG_GROUP: str = "/reflecta/demo/application"
 
     # AWS-SQS
     AWS_SQS_REGION: Final[str]

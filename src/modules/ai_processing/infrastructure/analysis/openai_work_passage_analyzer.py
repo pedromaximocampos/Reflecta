@@ -245,6 +245,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code=f"provider_http_{error.response.status_code}",
+                request_id=error.response.headers.get("x-request-id"),
+                response_id=response_id,
             ) from error
         except httpx.ConnectError as error:
             root_cause = _root_cause(error)
@@ -260,6 +262,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code="provider_connection_error",
+                request_id=request_id,
+                response_id=response_id,
             ) from error
         except httpx.TimeoutException as error:
             _LOGGER.error(
@@ -272,6 +276,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code="provider_timeout",
+                request_id=request_id,
+                response_id=response_id,
             ) from error
         except httpx.HTTPError as error:
             _LOGGER.error(
@@ -284,6 +290,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code="provider_transport_error",
+                request_id=request_id,
+                response_id=response_id,
             ) from error
         except _ProviderResponseValidationError as error:
             _LOGGER.error(
@@ -296,6 +304,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code=error.code,
+                request_id=request_id,
+                response_id=response_id,
             ) from error
         except ValidationError as error:
             _LOGGER.error(
@@ -308,6 +318,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code="structured_output_invalid",
+                request_id=request_id,
+                response_id=response_id,
             ) from error
         except ValueError as error:
             _LOGGER.error(
@@ -320,6 +332,8 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
             raise WorkPassageAnalysisError(
                 "Work passage analysis failed.",
                 code="provider_response_invalid",
+                request_id=request_id,
+                response_id=response_id,
             ) from error
 
     async def _post_with_retry(

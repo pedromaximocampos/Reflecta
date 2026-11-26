@@ -26,6 +26,8 @@ class WorkPassageAnalysisError(WorkIngestionProcessingError):
         message: str,
         *,
         code: str = "work_passage_analysis_failed",
+        request_id: str | None = None,
+        response_id: str | None = None,
     ) -> None:
         normalized_code = code.strip()
         if not normalized_code or len(normalized_code) > 128:
@@ -34,6 +36,8 @@ class WorkPassageAnalysisError(WorkIngestionProcessingError):
             )
         super().__init__(message)
         self.code = normalized_code
+        self.request_id = request_id if request_id and request_id != "unknown" else None
+        self.response_id = response_id if response_id and response_id != "unknown" else None
 
 
 class WorkIngestionConcurrentProcessingError(WorkIngestionProcessingError):

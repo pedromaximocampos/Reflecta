@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
-import { ArrowLeft, CircleAlert, FileText, ImagePlus, RefreshCw, Upload } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Eye, FileText, ImagePlus, RefreshCw, Upload, X } from 'lucide-react'
 import { WorkCover } from '../components/WorkCover'
 import { PageLoading } from '../components/PageLoading'
-import { getWork, listWorkIngestions, removeWorkCover, reprocessWorkIngestion, uploadWorkCover } from '../services/catalogApi'
+import { getWork, getWorkDocumentAccess, listWorkIngestions, removeWorkCover, reprocessWorkIngestion, uploadWorkCover } from '../services/catalogApi'
 import { rememberCatalog } from '../services/catalogState'
 import { formatCatalogDate, formatCatalogDateTime } from '../services/workCatalog'
 
@@ -25,6 +25,9 @@ export function AdminObraDetalhe() {
   const [reprocessBusy, setReprocessBusy] = useState(false)
   const [reprocessError, setReprocessError] = useState('')
   const [reprocessMessage, setReprocessMessage] = useState('')
+  const [documentViewer, setDocumentViewer] = useState(null)
+  const [documentBusy, setDocumentBusy] = useState(false)
+  const [documentError, setDocumentError] = useState('')
 
   useEffect(() => {
     let active = true
@@ -150,18 +153,43 @@ export function AdminObraDetalhe() {
     }
   }
 
+  async function openDocument(ingestion) {
+    if (!ingestion || documentBusy) return
+    setDocumentBusy(true)
+    setDocumentError('')
+    try {
+      const access = await getWorkDocumentAccess(ingestion.ingestion_id)
+      setDocumentViewer({ ...access, ingestion })
+    } catch (err) {
+      setDocumentError(err.message)
+    } finally {
+      setDocumentBusy(false)
+    }
+  }
+
   if (loading) return <div className="catalog-page"><PageLoading variant="detail" label="Carregando obra e ingestões…" /></div>
   if (error || !work) return <div className="catalog-page"><div className="catalog-card"><h1>Não foi possível carregar a obra</h1><p role="alert" className="text-destructive">{error || 'Obra não encontrada.'}</p><Link className="catalog-button inline-flex items-center gap-2 mt-4" to="/dashboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link></div></div>
 
   const counts = work.passage_counts || { total: 0, active: 0, inactive: 0 }
   const displayedWork = coverPreviewUrl ? { ...work, cover_image_url: coverPreviewUrl } : work
   const coverAction = work.cover_image_url ? 'Alterar capa' : 'Adicionar capa'
+  const latestIngestion = ingestions
+    .filter((ingestion) => ingestion.work_id === work.id)
+    .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))[0]
   const latestFailure = ingestions
     .filter((ingestion) => ingestion.work_id === work.id && ingestion.status === 'failed' && ingestion.failure)
     .sort((left, right) => new Date(right.failure.occurred_at) - new Date(left.failure.occurred_at))[0]
   return <div className="catalog-page work-detail-page">
     <Link className="inline-flex items-center gap-2 text-sm text-primary w-fit" to="/dashboard/obras"><ArrowLeft size={16} aria-hidden="true" />Voltar para obras</Link>
-    <header className="catalog-page-header"><div><div className="flex items-center gap-3 flex-wrap"><h1>{work.title}</h1><span className={`catalog-badge work-status-${work.status?.toLowerCase()}`}>{workStatuses[work.status] || work.status}</span></div></div><div className="catalog-header-actions"><Link className="catalog-button" to={`/dashboard/passagens?work_id=${encodeURIComponent(work.id)}`}><FileText size={15} aria-hidden="true" />Ver passagens</Link><Link className="catalog-primary" to={`/dashboard/obras/${encodeURIComponent(work.id)}/pdf`}><Upload size={15} aria-hidden="true" />Enviar PDF</Link></div></header>
+    <header className="catalog-page-header"><div><div className="flex items-center gap-3 flex-wrap"><h1>{work.title}</h1><span className={`catalog-badge work-status-${work.status?.toLowerCase()}`}>{workStatuses[work.status] || work.status}</span></div></div><div className="catalog-header-actions">{latestIngestion && <button className="catalog-button" type="button" disabled={documentBusy} onClick={() => openDocument(latestIngestion)}><Eye size={15} aria-hidden="true" />{documentBusy ? 'Abrindo…' : 'Visualizar PDF'}</button>}<Link className="catalog-button" to={`/dashboard/passagens?work_id=${encodeURIComponent(work.id)}`}><FileText size={15} aria-hidden="true" />Ver passagens</Link><Link className="catalog-primary" to={`/dashboard/obras/${encodeURIComponent(work.id)}/pdf`}><Upload size={15} aria-hidden="true" />Enviar PDF</Link></div></header>
+
+    {documentError && <p className="text-destructive" role="alert">{documentError}</p>}
+    {documentViewer && <div className="pdf-viewer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDocumentViewer(null) }}>
+      <section className="pdf-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="work-pdf-title">
+        <header><div><h2 id="work-pdf-title">PDF de {work.title}</h2><p>Ingestão {documentViewer.ingestion_id}</p></div><button type="button" className="catalog-button" onClick={() => setDocumentViewer(null)} aria-label="Fechar visualizador"><X size={16} aria-hidden="true" />Fechar</button></header>
+        <iframe title={`PDF de ${work.title}`} src={documentViewer.url} />
+      </section>
+    </div>}
 
     {latestFailure && <section className="catalog-card work-operational-failure" aria-labelledby="work-failure-title">
       <CircleAlert size={22} aria-hidden="true" />

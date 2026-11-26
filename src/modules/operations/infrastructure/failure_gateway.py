@@ -5,6 +5,7 @@ from src.modules.journal.infrastructure.persistence.postgresql.models.journal_en
 from src.modules.journal.infrastructure.persistence.postgresql.models.analysis_reprocess_model import AnalysisReprocessModel as Reprocess
 from src.modules.internal_events.infrastructure.persistence.postgresql.models.outbox_model import OutboxModel as Outbox
 from src.modules.operations.application.diagnostics import safe_diagnostic, safe_outbox_diagnostic
+from src.modules.ai_processing.infrastructure.persistence.postgresql.models import WorkIngestionFailureAttemptModel
 
 
 def processing_table(name, schema, *names):
@@ -142,6 +143,45 @@ class OperationalFailureGateway:
             if row is None:
                 return None
             result = self.serialize(row)
+            attempt_query = select(WorkIngestionFailureAttemptModel)
+            if source == "work_chunk":
+                attempt_query = attempt_query.where(
+                    WorkIngestionFailureAttemptModel.chunk_id == row["entity_id"]
+                )
+            else:
+                ingestion_id = (
+                    row["entity_id"]
+                    if source == "work_ingestion"
+                    else row["related_id"]
+                )
+                attempt_query = attempt_query.where(
+                    WorkIngestionFailureAttemptModel.ingestion_id == ingestion_id
+                )
+            attempt = await session.scalar(
+                attempt_query.order_by(
+                    WorkIngestionFailureAttemptModel.occurred_at.desc(),
+                    WorkIngestionFailureAttemptModel.id.desc(),
+                ).limit(1)
+            )
+            if attempt is not None:
+                result["failure_attempt"] = {
+                    "id": attempt.id,
+                    "ingestion_id": attempt.ingestion_id,
+                    "chunk_id": attempt.chunk_id,
+                    "stage": attempt.stage,
+                    "attempt": attempt.attempt,
+                    "error_code": attempt.error_code,
+                    "error_message": attempt.error_message,
+                    "occurred_at": attempt.occurred_at.isoformat(),
+                    "start_page": attempt.start_page,
+                    "end_page": attempt.end_page,
+                    "start_offset": attempt.start_offset,
+                    "end_offset": attempt.end_offset,
+                    "content_sha256": attempt.content_sha256,
+                    "provider_request_id": attempt.provider_request_id,
+                    "provider_response_id": attempt.provider_response_id,
+                    "has_persisted_context": attempt.context_text is not None,
+                }
             if source == "journal":
                 entry = await session.scalar(select(Entry).where(Entry.id == row["entity_id"]))
                 latest = await session.scalar(select(Analysis.id).where(Analysis.journal_entry_id == row["entity_id"],

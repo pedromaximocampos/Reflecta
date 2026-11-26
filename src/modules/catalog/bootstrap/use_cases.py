@@ -28,6 +28,9 @@ from src.modules.catalog.application.use_cases.request_work_ingestion.request_wo
 from src.modules.catalog.application.use_cases.reprocess_work_ingestion import (
     ReprocessWorkIngestionUseCase,
 )
+from src.modules.catalog.application.use_cases.get_work_document_access import (
+    GetWorkDocumentAccessUseCase,
+)
 from src.modules.catalog.application.use_cases.manage_passages import (
     CreatePassageUseCase,
     DeletePassageUseCase,
@@ -123,6 +126,15 @@ def get_reprocess_work_ingestion_use_case() -> ReprocessWorkIngestionUseCase:
         catalog_sql_uow=get_sql_unit_of_work(),
         outbox_service=get_outbox_service(),
         clock=get_clock(),
+    )
+
+
+def get_work_document_access_use_case() -> GetWorkDocumentAccessUseCase:
+    settings = get_settings()
+    return GetWorkDocumentAccessUseCase(
+        catalog_sql_uow=get_sql_unit_of_work(),
+        work_document_storage=get_work_document_storage(),
+        expires_in_seconds=settings.AWS_S3_WORK_DOCUMENT_READ_URL_TTL_SECONDS,
     )
 
 

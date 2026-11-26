@@ -13,6 +13,7 @@ from src.modules.catalog.bootstrap.controllers import (
     get_replace_work_cover_controller,
     get_request_work_ingestion_controller,
     get_reprocess_work_ingestion_controller,
+    get_work_document_access_controller,
     get_delete_theme_by_id_controller,
     get_theme_by_id_controller,
     get_update_theme_controller,
@@ -56,6 +57,9 @@ from src.modules.catalog.presentation.controllers.request_work_ingestion_control
 from src.modules.catalog.presentation.controllers.reprocess_work_ingestion_controller import (
     ReprocessWorkIngestionController,
 )
+from src.modules.catalog.presentation.controllers.get_work_document_access_controller import (
+    GetWorkDocumentAccessController,
+)
 from src.modules.catalog.presentation.controllers.delete_themes_controller import (
     DeleteThemeByIdController,
 )
@@ -86,6 +90,7 @@ from src.modules.catalog.presentation.validators.request_work_ingestion import (
     ValidatedWorkDocumentUpload,
     WorkIngestionAcceptedValidator,
     WorkIngestionReprocessedValidator,
+    WorkDocumentAccessValidator,
     validate_work_document_upload,
 )
 from src.modules.catalog.presentation.validators.passage import (
@@ -441,6 +446,26 @@ async def reprocess_work_ingestion(
     current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
     controller: ReprocessWorkIngestionController = Depends(
         get_reprocess_work_ingestion_controller
+    ),
+) -> Response:
+    return await adapter_fastapi_request(
+        request,
+        controller.handle_request,
+        authenticated_user_id=current_user.user_id.value,
+    )
+
+
+@catalog_router.get(
+    "/work-ingestions/{ingestion_id}/document-access",
+    summary="Create a short-lived URL for an ingested work PDF",
+    response_model=WorkDocumentAccessValidator,
+)
+async def get_work_document_access(
+    request: Request,
+    ingestion_id: str = Path(..., min_length=26, max_length=26),
+    current_user: AuthenticatedPrincipal = Depends(require_role(UserRole.ADMIN)),
+    controller: GetWorkDocumentAccessController = Depends(
+        get_work_document_access_controller
     ),
 ) -> Response:
     return await adapter_fastapi_request(

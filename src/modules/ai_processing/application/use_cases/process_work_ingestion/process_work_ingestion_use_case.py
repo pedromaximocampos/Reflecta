@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
 
 from src.modules.ai_processing.application.contracts import IThemeCatalog
@@ -9,8 +9,13 @@ from src.modules.ai_processing.application.dto import (
     WorkChunkAnalysisDTO,
 )
 from src.modules.ai_processing.application.exceptions import (
+    WorkDocumentChunkingError,
+    WorkDocumentExtractionError,
+    WorkDocumentNormalizationError,
     WorkIngestionConcurrentProcessingError,
     WorkIngestionProcessingError,
+    WorkIngestionProcessingStorageError,
+    WorkPassageAnalysisError,
 )
 from src.modules.ai_processing.application.ports.analysis import IWorkPassageAnalyzer
 from src.modules.ai_processing.application.ports.catalog import (
@@ -23,7 +28,10 @@ from src.modules.ai_processing.application.ports.document import (
     IWorkDocumentTextExtractor,
 )
 from src.modules.ai_processing.application.ports.storage import IWorkIngestionStorage
-from src.modules.ai_processing.domain.entities import WorkIngestionChunk
+from src.modules.ai_processing.domain.entities import (
+    WorkIngestionChunk,
+    WorkIngestionFailureAttempt,
+)
 from src.modules.ai_processing.domain.ports.unit_of_work import (
     IAIProcessingUnitOfWork,
 )
@@ -84,6 +92,7 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
         ingestion_input: ProcessWorkIngestionInputDTO,
     ) -> ProcessWorkIngestionOutputDTO:
         current_chunk: WorkIngestionChunk | None = None
+        current_chunk_text: str | None = None
         _LOGGER.info(
             "Work ingestion started: event_id=%s ingestion_id=%s delivery_attempt=%s",
             ingestion_input.event_id,
@@ -154,6 +163,7 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
                     normalized_text,
                     current_chunk,
                 )
+                current_chunk_text = chunk_text
                 analysis = await self._passage_analyzer.analyze(
                     work_id=ingestion_input.work_id,
                     chunk_text=chunk_text,
@@ -169,11 +179,19 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
                 )
                 await self._mark_chunk_completed(current_chunk)
                 current_chunk = None
+                current_chunk_text = None
         except WorkIngestionConcurrentProcessingError:
             raise
         except Exception as error:
             if current_chunk is not None:
-                await self._mark_chunk_failed(current_chunk, error)
+                await self._mark_chunk_failed(
+                    ingestion_input,
+                    current_chunk,
+                    error,
+                    context_text=current_chunk_text,
+                )
+            else:
+                await self._record_ingestion_failure(ingestion_input, error)
             await self._mark_ingestion_failed(ingestion_input, error)
             if isinstance(error, WorkIngestionProcessingError):
                 raise
@@ -300,8 +318,11 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
 
     async def _mark_chunk_failed(
         self,
+        ingestion_input: ProcessWorkIngestionInputDTO,
         chunk: WorkIngestionChunk,
         error: Exception,
+        *,
+        context_text: str | None,
     ) -> None:
         try:
             now = self._clock.now()
@@ -316,11 +337,59 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
                     chunk,
                     expected_attempts=expected_attempts,
                 )
+                failure = self._failure_attempt(
+                    ingestion_input,
+                    error,
+                    attempt=chunk.attempts,
+                    chunk=chunk,
+                    occurred_at=now,
+                    context_text=context_text,
+                )
+                await uow.work_ingestion_failure_repository.create(failure)
                 await uow.commit()
+            _LOGGER.error(
+                "Work ingestion chunk failure recorded: failure_id=%s "
+                "ingestion_id=%s chunk_id=%s attempt=%s error_code=%s",
+                failure.id,
+                ingestion_input.ingestion_id.value,
+                chunk.id.value,
+                chunk.attempts,
+                failure.error_code,
+            )
         except Exception:
             _LOGGER.exception(
                 "Failed to persist chunk failure: chunk_id=%s",
                 chunk.id.value,
+            )
+
+    async def _record_ingestion_failure(
+        self,
+        ingestion_input: ProcessWorkIngestionInputDTO,
+        error: Exception,
+    ) -> None:
+        try:
+            failure = self._failure_attempt(
+                ingestion_input,
+                error,
+                attempt=max(1, ingestion_input.delivery_attempt),
+                chunk=None,
+                occurred_at=self._clock.now(),
+            )
+            async with self._ai_processing_uow as uow:
+                await uow.work_ingestion_failure_repository.create(failure)
+                await uow.commit()
+            _LOGGER.error(
+                "Work ingestion failure recorded: failure_id=%s "
+                "ingestion_id=%s attempt=%s error_code=%s",
+                failure.id,
+                ingestion_input.ingestion_id.value,
+                failure.attempt,
+                failure.error_code,
+            )
+        except Exception:
+            _LOGGER.exception(
+                "Failed to persist ingestion failure context: ingestion_id=%s",
+                ingestion_input.ingestion_id.value,
             )
 
     async def _mark_ingestion_failed(
@@ -340,6 +409,35 @@ class ProcessWorkIngestionUseCase(IProcessWorkIngestionUseCase):
                 "Failed to persist ingestion failure: ingestion_id=%s",
                 ingestion_input.ingestion_id.value,
             )
+
+    def _failure_attempt(
+        self,
+        ingestion_input: ProcessWorkIngestionInputDTO,
+        error: Exception,
+        *,
+        attempt: int,
+        chunk: WorkIngestionChunk | None,
+        occurred_at: datetime,
+        context_text: str | None = None,
+    ) -> WorkIngestionFailureAttempt:
+        return WorkIngestionFailureAttempt(
+            id=self._ulid_generator.generate_ulid(),
+            ingestion_id=ingestion_input.ingestion_id,
+            chunk_id=chunk.id if chunk else None,
+            stage=_failure_stage(error),
+            attempt=attempt,
+            error_code=_failure_code(error),
+            error_message=_failure_message(error),
+            occurred_at=occurred_at,
+            start_page=chunk.start_page if chunk else None,
+            end_page=chunk.end_page if chunk else None,
+            start_offset=chunk.start_offset if chunk else None,
+            end_offset=chunk.end_offset if chunk else None,
+            content_sha256=chunk.content_sha256 if chunk else None,
+            provider_request_id=getattr(error, "request_id", None),
+            provider_response_id=getattr(error, "response_id", None),
+            context_text=context_text,
+        )
 
     async def _chunk_counts(
         self,
@@ -432,3 +530,22 @@ def _failure_code(error: Exception) -> str:
     if isinstance(code, str) and code.strip():
         return code.strip()[:128]
     return type(error).__name__[:128]
+
+
+def _failure_message(error: Exception) -> str:
+    message = " ".join(str(error).split())
+    return (message or type(error).__name__)[:2000]
+
+
+def _failure_stage(error: Exception) -> str:
+    if isinstance(error, WorkIngestionProcessingStorageError):
+        return "storage"
+    if isinstance(error, WorkDocumentExtractionError):
+        return "document_extraction"
+    if isinstance(error, WorkDocumentNormalizationError):
+        return "document_normalization"
+    if isinstance(error, WorkDocumentChunkingError):
+        return "document_chunking"
+    if isinstance(error, WorkPassageAnalysisError):
+        return "passage_analysis"
+    return "work_ingestion"

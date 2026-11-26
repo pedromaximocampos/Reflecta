@@ -28,9 +28,18 @@ _LOGGER = logging.getLogger(__name__)
 class S3WorkDocumentStorage(IWorkDocumentStorage):
     _NOT_FOUND_ERROR_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
 
-    def __init__(self, client: S3Client, settings: S3Settings) -> None:
+    def __init__(
+        self,
+        client: S3Client,
+        settings: S3Settings,
+        *,
+        read_url_ttl_seconds: int = 300,
+    ) -> None:
+        if read_url_ttl_seconds < 60 or read_url_ttl_seconds > 3600:
+            raise ValueError("Work document read URL TTL must be between 60 and 3600 seconds.")
         self.__client = client
         self.__settings = settings
+        self.__read_url_ttl_seconds = read_url_ttl_seconds
 
     async def upload(
         self,
@@ -99,6 +108,24 @@ class S3WorkDocumentStorage(IWorkDocumentStorage):
         except BotoCoreError as error:
             self.__log_aws_error("exists", error)
             raise WorkDocumentStorageError("exists") from error
+
+    async def create_read_url(self, *, location: WorkDocumentLocation) -> str:
+        self.__validate_location(location)
+        try:
+            return await asyncio.to_thread(
+                self.__client.generate_presigned_url,
+                "get_object",
+                Params={
+                    "Bucket": location.bucket,
+                    "Key": location.object_key,
+                    "ResponseContentType": "application/pdf",
+                    "ResponseContentDisposition": "inline",
+                },
+                ExpiresIn=self.__read_url_ttl_seconds,
+            )
+        except (BotoCoreError, ClientError) as error:
+            self.__log_aws_error("create_read_url", error)
+            raise WorkDocumentStorageError("create_read_url") from error
 
     def __put_object(
         self,

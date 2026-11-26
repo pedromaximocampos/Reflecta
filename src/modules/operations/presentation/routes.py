@@ -2,7 +2,11 @@ from datetime import datetime
 from typing import Literal
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from src.modules.ai_processing.application.processing_settings import AnalysisProcessingSettings
+from src.modules.ai_processing.application.exceptions import (
+    WorkIngestionProcessingStorageError,
+)
 from sqlalchemy.exc import SQLAlchemyError
+from botocore.exceptions import BotoCoreError, ClientError
 from src.modules.auth.presentation.adapters.fast_api_auth import require_role
 from src.modules.auth.public import AuthenticatedPrincipal, UserRole
 
@@ -31,6 +35,33 @@ def get_failure_gateway():
     return OperationalFailureGateway(individuum_mvp_provider)
 
 
+def get_failure_context_gateway():
+    from src.modules.ai_processing.bootstrap.storage import get_work_ingestion_storage
+    from src.modules.operations.infrastructure.work_ingestion_diagnostics_gateway import (
+        WorkIngestionFailureContextGateway,
+    )
+    from src.shared.infrastructure.persistence.postgresql.provider import (
+        individuum_mvp_provider,
+    )
+    return WorkIngestionFailureContextGateway(
+        individuum_mvp_provider,
+        get_work_ingestion_storage(),
+    )
+
+
+def get_operational_log_gateway():
+    from src.modules.operations.infrastructure.work_ingestion_diagnostics_gateway import (
+        CloudWatchOperationalLogGateway,
+    )
+    from src.shared.config.settings import get_settings
+    settings = get_settings()
+    return CloudWatchOperationalLogGateway(
+        aws_region=settings.AWS_S3_REGION,
+        log_group=settings.AWS_LOG_GROUP,
+        aws_profile=settings.AWS_PROFILE,
+    )
+
+
 @operations_router.get("")
 async def list_operational_failures(
     source: Source | None = None, state: State | None = None,
@@ -48,6 +79,52 @@ async def list_operational_failures(
             since=since, until=until, limit=limit, offset=offset)
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="Consulta de falhas indisponível. Tente novamente.") from None
+
+
+@operations_router.get("/context")
+async def get_operational_failure_context(
+    source: Source,
+    failure_id: str = Query(..., min_length=1, max_length=300),
+    admin: AuthenticatedPrincipal = Depends(require_admin),
+    gateway=Depends(get_failure_context_gateway),
+):
+    try:
+        result = await gateway.get_context(source, failure_id)
+    except (
+        SQLAlchemyError,
+        BotoCoreError,
+        ClientError,
+        WorkIngestionProcessingStorageError,
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível recuperar o contexto da falha.",
+        ) from None
+    if result is None:
+        raise HTTPException(status_code=404, detail="Falha não encontrada.")
+    return result
+
+
+@operations_router.get("/logs")
+async def get_operational_failure_logs(
+    source: Source,
+    failure_id: str = Query(..., min_length=1, max_length=300),
+    admin: AuthenticatedPrincipal = Depends(require_admin),
+    failure_gateway=Depends(get_failure_gateway),
+    log_gateway=Depends(get_operational_log_gateway),
+):
+    try:
+        detail = await failure_gateway.detail(source, failure_id)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Falha não encontrada.")
+        return await log_gateway.list_logs(detail)
+    except HTTPException:
+        raise
+    except (SQLAlchemyError, BotoCoreError, ClientError, ValueError):
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível consultar os logs desta falha.",
+        ) from None
 
 
 @operations_router.get("/{source}/{failure_id:path}")

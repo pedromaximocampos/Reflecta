@@ -6,6 +6,7 @@ from typing import Protocol, Self
 from src.modules.ai_processing.domain.ports.repositories import (
     IInboxEventRepository,
     IWorkIngestionChunkRepository,
+    IWorkIngestionFailureRepository,
 )
 
 
@@ -17,6 +18,11 @@ class IAIProcessingUnitOfWork(Protocol):
     def work_ingestion_chunk_repository(
         self,
     ) -> IWorkIngestionChunkRepository: ...
+
+    @property
+    def work_ingestion_failure_repository(
+        self,
+    ) -> IWorkIngestionFailureRepository: ...
 
     async def commit(self) -> None: ...
 

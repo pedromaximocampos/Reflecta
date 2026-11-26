@@ -120,6 +120,16 @@ data "aws_iam_policy_document" "app_runtime" {
       resources = var.consumer_queue_arns
     }
   }
+
+  statement {
+    sid    = "ReadApplicationDiagnostics"
+    effect = "Allow"
+    actions = [
+      "logs:FilterLogEvents",
+      "logs:GetLogEvents"
+    ]
+    resources = ["${aws_cloudwatch_log_group.app.arn}:*"]
+  }
 }
 
 resource "aws_iam_role_policy" "app_runtime" {

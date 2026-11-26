@@ -42,6 +42,9 @@ export function uploadWork(id, file) {
 export function reprocessWorkIngestion(id) {
   return adminRequest(`/work-ingestions/${encodeURIComponent(id)}/reprocess`, { method: 'POST' })
 }
+export function getWorkDocumentAccess(id, { signal } = {}) {
+  return adminRequest(`/work-ingestions/${encodeURIComponent(id)}/document-access`, { signal })
+}
 export function listPassages(filters = {}, { signal } = {}) {
   const query = new URLSearchParams(
     Object.entries(filters)

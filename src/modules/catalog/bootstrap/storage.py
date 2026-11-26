@@ -25,6 +25,9 @@ def get_work_document_storage() -> IWorkDocumentStorage:
     return S3WorkDocumentStorage(
         client=make_s3_client(s3_settings),
         settings=s3_settings,
+        read_url_ttl_seconds=(
+            application_settings.AWS_S3_WORK_DOCUMENT_READ_URL_TTL_SECONDS
+        ),
     )
 
 

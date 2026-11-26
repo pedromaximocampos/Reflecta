@@ -18,6 +18,16 @@ export function getOperationalFailure(source, id, { signal } = {}) {
   return adminRequest(`/${encodeURIComponent(source)}/${encodeURIComponent(id)}`, { signal })
 }
 
+export function getOperationalFailureContext(source, id, { signal } = {}) {
+  const query = new URLSearchParams({ source, failure_id: id })
+  return adminRequest(`/context?${query}`, { signal })
+}
+
+export function getOperationalFailureLogs(source, id, { signal } = {}) {
+  const query = new URLSearchParams({ source, failure_id: id })
+  return adminRequest(`/logs?${query}`, { signal })
+}
+
 export function getAnalysisProcessingSettings({ signal } = {}) {
   return adminRequest('/analysis-settings', { signal })
 }

@@ -6,6 +6,13 @@ import { refreshWorksAndIngestionsCache } from '../services/catalogCache'
 import { rememberCatalog } from '../services/catalogState'
 import { CatalogWorkSteps } from '../components/CatalogWorkSteps'
 
+const WORK_TYPE_OPTIONS = [
+  ['book', 'Livro'],
+  ['article', 'Artigo'],
+  ['essay', 'Ensaio'],
+  ['academic_introduction', 'Introdução acadêmica'],
+]
+
 export function AdminObraCadastro() {
   const navigate = useNavigate()
   const [coverFile, setCoverFile] = useState(null)
@@ -64,11 +71,15 @@ export function AdminObraCadastro() {
         {[
           ['title', 'Título', 'Introdução ao Manual de Epicteto'],
           ['author', 'Autor do texto', 'Aldo Dinucci'],
-          ['type', 'Tipo', 'academic_introduction'],
+          ['type', 'Tipo', 'book'],
           ['language', 'Idioma', 'pt-BR'],
           ['description', 'Descrição do autor (opcional)', ''],
         ].map(([name, label, placeholder]) => <label key={name}>{label}
-          {name === 'description' ? <textarea name={name} rows={3} placeholder="Sobre o autor do texto" /> : <input name={name} required placeholder={placeholder} defaultValue={name === 'language' ? 'pt-BR' : name === 'type' ? 'academic_introduction' : ''} />}
+          {name === 'description'
+            ? <textarea name={name} rows={3} placeholder="Sobre o autor do texto" />
+            : name === 'type'
+              ? <select name={name} required defaultValue="book">{WORK_TYPE_OPTIONS.map(([value, optionLabel]) => <option key={value} value={value}>{optionLabel}</option>)}</select>
+              : <input name={name} required placeholder={placeholder} defaultValue={name === 'language' ? 'pt-BR' : ''} />}
         </label>)}
         <label>Capa da obra (opcional)<input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => {
           const nextFile = event.target.files[0] || null

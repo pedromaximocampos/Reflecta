@@ -5,7 +5,8 @@ import {
   saveSession,
 } from './authSession.js'
 
-const API_URL = (import.meta.env?.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
+const DEFAULT_API_URL = import.meta.env?.PROD ? '/api' : 'http://localhost:8000'
+const API_URL = (import.meta.env?.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '')
 let refreshInFlight = null
 
 async function readResponse(response) {

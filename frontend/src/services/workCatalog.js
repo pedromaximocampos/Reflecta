@@ -32,7 +32,9 @@ const ingestionLabels = {
 }
 
 export function describeIngestion(ingestion = {}) {
-  const status = ingestion.failure ? 'failed' : ingestion.status
+  const hasActiveFailure = ingestion.status === 'failed'
+    || (ingestion.status === 'pending' && Boolean(ingestion.failure))
+  const status = hasActiveFailure ? 'failed' : ingestion.status
   const progress = ingestion.progress || {}
   const total = Number(progress.total || 0)
   const completed = Number(progress.completed || 0)

@@ -50,9 +50,26 @@ class ListWorkIngestionsUseCase(IListWorkIngestionsUseCase):
                         counts_by_ingestion.get(summary.ingestion_id, {})
                     ),
                     WorkIngestionFailureOutputDTO.from_record(
-                        failures_by_ingestion.get(summary.ingestion_id.value)
+                        self._active_failure_for_summary(
+                            summary.status,
+                            failures_by_ingestion.get(summary.ingestion_id.value),
+                        )
                     ),
                 )
                 for summary in summaries
             )
         )
+
+    @staticmethod
+    def _active_failure_for_summary(
+        status: str,
+        failure: dict[str, object] | None,
+    ) -> dict[str, object] | None:
+        """Do not let a failure from an older event mask recovered processing."""
+        if failure is None:
+            return None
+        if status == "failed":
+            return failure
+        if status == "pending" and failure.get("source") == "outbox":
+            return failure
+        return None

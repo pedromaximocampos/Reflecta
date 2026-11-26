@@ -80,6 +80,13 @@ class _Failures:
     async def latest_active_for_ingestions(self, ingestion_ids):
         self.ids = ingestion_ids
         return {
+            INGESTION_ONE.value: {
+                "source": "inbox",
+                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAE",
+                "code": "WorkIngestionProcessingError",
+                "message": "Falha histórica já recuperada.",
+                "occurred_at": NOW.isoformat(),
+            },
             INGESTION_TWO.value: {
                 "source": "outbox",
                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAD",
@@ -152,6 +159,19 @@ async def test_lists_ingestions_with_batch_chunk_progress() -> None:
             },
         ]
     }
+
+
+@pytest.mark.asyncio
+async def test_suppresses_stale_failure_after_ingestion_recovery() -> None:
+    result = await ListWorkIngestionsUseCase(
+        _Catalog(),
+        _Uow(_Chunks()),
+        _Failures(),
+    ).execute(limit=50)
+
+    processing = result.to_dict()["ingestions"][0]
+    assert processing["status"] == "processing"
+    assert processing["failure"] is None
 
 
 @pytest.mark.asyncio

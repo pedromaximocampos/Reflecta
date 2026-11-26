@@ -44,6 +44,16 @@ test('ingestion presentation distinguishes processing from administrative review
     progress: { total: 25, completed: 25 },
   }).label, 'Concluída')
   assert.deepEqual(describeIngestion({
+    status: 'processing',
+    progress: { total: 25, completed: 17, percentage: 68 },
+    failure: { source: 'inbox', message: 'Falha histórica já recuperada.' },
+  }), {
+    status: 'processing',
+    label: 'Em processamento',
+    detail: '17 de 25 chunks concluídos',
+    percentage: 68,
+  })
+  assert.deepEqual(describeIngestion({
     status: 'pending',
     progress: { total: 0 },
     failure: { message: 'As credenciais AWS expiraram.' },

@@ -22,8 +22,8 @@ from src.modules.catalog.public.work_id import WorkId
 _LOGGER = logging.getLogger(__name__)
 
 _MAX_PASSAGES_PER_CHUNK = 5
-_MIN_PRIMARY_THEME_CONFIDENCE = 0.65
-_MIN_REFLECTIVE_VALUE = 0.75
+_MIN_PRIMARY_THEME_CONFIDENCE = 0.80
+_MIN_REFLECTIVE_VALUE = 0.80
 
 
 class _ProviderResponseValidationError(ValueError):
@@ -45,7 +45,7 @@ class _StrictModel(BaseModel):
 class _ThemeMatch(_StrictModel):
     theme_id: str = Field(min_length=1, max_length=128)
     confidence: float = Field(
-        ge=_MIN_PRIMARY_THEME_CONFIDENCE,
+        gt=_MIN_PRIMARY_THEME_CONFIDENCE,
         le=1,
         allow_inf_nan=False,
     )
@@ -129,7 +129,7 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
         "sua associação ao tema escolhido, evitando explicações genéricas. "
         "confidence representa a força da associação entre a passagem e o tema, não "
         "a qualidade literária do texto. Retorne apenas associações com confidence "
-        "igual ou superior a 0.65. "
+        "superior a 0.80. "
         "Avalie separadamente o valor reflexivo geral da passagem para uso futuro "
         "junto a uma frase de diário. Essa avaliação não mede a relação com um tema "
         "específico nem a relação com um diário específico, que ainda não existe "
@@ -146,7 +146,7 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
         "em elementos observáveis da passagem. Fama do autor, beleza da escrita, "
         "presença de palavras filosóficas ou alta confiança temática não aumentam "
         "por si sós o valor reflexivo. Retorne somente passagens cuja soma dos quatro "
-        "critérios seja pelo menos 6 de 8. "
+        "critérios seja pelo menos 7 de 8. "
         "Se nenhuma passagem atender a todos os critérios, retorne passages vazio. "
         "Não produza diagnóstico clínico, aconselhamento médico ou interpretações "
         "sobre a saúde mental do autor ou do leitor. Retorne exclusivamente a "

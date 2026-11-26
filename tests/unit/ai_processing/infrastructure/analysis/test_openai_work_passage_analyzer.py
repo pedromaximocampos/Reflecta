@@ -87,8 +87,8 @@ def test_structured_output_enforces_curated_passage_and_theme_limits() -> None:
         "maxItems"
     ] == 1
     assert schema["$defs"]["_ThemeMatch"]["properties"]["confidence"][
-        "minimum"
-    ] == 0.65
+        "exclusiveMinimum"
+    ] == 0.8
     assessment = schema["$defs"]["_ReflectiveAssessment"]["properties"]
     assert assessment["self_contained"]["maximum"] == 2
     assert assessment["reflective_depth"]["minimum"] == 0
@@ -98,7 +98,7 @@ def test_structured_output_enforces_curated_passage_and_theme_limits() -> None:
     assert "não o atribua ao autor principal" in payload["instructions"]
     assert "substring exatamente idêntica" in payload["instructions"]
     assert "não normalize espaços" in payload["instructions"]
-    assert "pelo menos 6 de 8" in payload["instructions"]
+    assert "pelo menos 7 de 8" in payload["instructions"]
 
 
 @pytest.mark.asyncio
@@ -208,7 +208,7 @@ async def test_analyzer_discards_a_quote_that_is_not_in_the_chunk(
                         "paraphrase": "Resumo.",
                         "interpretation_note": "Explicação.",
                         "reflective_assessment": _reflective_assessment(),
-                        "themes": [{"theme_id": "theme-1", "confidence": 0.8}],
+                        "themes": [{"theme_id": "theme-1", "confidence": 0.81}],
                     }
                 ]
             }
@@ -359,8 +359,8 @@ async def test_analyzer_discards_passage_below_reflective_threshold(
                         "interpretation_note": "Associa escolha e responsabilidade.",
                         "reflective_assessment": _reflective_assessment(
                             reflective_depth=1,
-                            lived_experience_applicability=0,
-                            open_endedness=1,
+                            lived_experience_applicability=1,
+                            open_endedness=2,
                         ),
                         "themes": [
                             {"theme_id": "theme-1", "confidence": 0.9}

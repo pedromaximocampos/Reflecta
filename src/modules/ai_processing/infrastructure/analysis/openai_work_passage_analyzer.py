@@ -451,7 +451,7 @@ class OpenAIWorkPassageAnalyzer(IWorkPassageAnalyzer):
                 continue
 
             reflective_value = suggestion.reflective_assessment.value
-            if reflective_value < _MIN_REFLECTIVE_VALUE:
+            if reflective_value <= _MIN_REFLECTIVE_VALUE:
                 _log_discarded_suggestion("low_reflective_value", response_id)
                 continue
 
